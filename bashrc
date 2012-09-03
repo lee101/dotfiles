@@ -2,7 +2,7 @@
 if [[ -s $HOME/.rvm/scripts/rvm ]] ; then source $HOME/.rvm/scripts/rvm ; fi
 export EDITOR="vi"
 
-source `dirname "$BASH_SOURCE"`/bash_aliases
+source `dirname "$BASH_SOURCE"`/.bash_aliases
 
 if which defaults > /dev/null 2>&1 ; then
   defaults write com.apple.finder AppleShowAllFiles TRUE
@@ -63,7 +63,7 @@ ${prompt} ${reset_color}"
 fi
 
 test -e $HOME/projects && export CDPATH=$CDPATH:.:$HOME/projects/atlas:$HOME/projects/toolkit:$HOME/projects:$HOME/Library/Application\ Support/TextMate/Bundles
-test -e $HOME/projects && export PATH=$PATH:$HOME/projects/toolkit/pairing_station/:$HOME/projects/toolkit/deployment_tools/bin:$HOME/projects/:/usr/local/share/npm/bin:$HOME/bin:/usr/local/bin
+test -e $HOME/projects && export PATH=$PATH:$HOME/.bin:/usr/local/share/npm/bin:$HOME/bin:/usr/local/bin
 
 export RUBYOPT=rubygems
 export RUBYLIB=.
