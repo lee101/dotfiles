@@ -79,3 +79,5 @@ if [ -f ~/bin/vcprompt ]; then
     export RPROMPT='%F{cyan}$(vcprompt -f \(%n:%b%r%m%u\))%f'
 fi
 
+
+PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
