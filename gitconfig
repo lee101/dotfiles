@@ -1,3 +1,5 @@
 [user]
 	name = Daniel Heath
 	email = daniel.r.heath@gmail.com
+[push]
+	default = matching
