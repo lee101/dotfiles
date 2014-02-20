@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -e
-ls -1 . | xargs -P 30  -L 1 `dirname "$BASH_SOURCE"`/gpl-folder
-
-

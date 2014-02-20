@@ -1,9 +1,0 @@
-
---type-set=haml=.haml
---type-set=sass=.scss
---type-add=sass=.sass
---type-set=feature=.feature
---type-set=coffeescript=.coffee
---type-set=config=.conf
---type-set=sql=.sql
---nosql
