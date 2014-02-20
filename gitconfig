@@ -1,5 +1,25 @@
 [user]
-	name = Daniel Heath
-	email = daniel.r.heath@gmail.com
+	name = Lee Penkman
+	email = leepenkman@gmail.com
 [push]
-	default = matching
+	default = current
+[color]
+	ui = auto
+[alias]
+    st = status
+    ci = commit
+    br = branch
+    co = checkout
+    df = diff
+    ds = diff --staged
+    lg = log -p
+    lol = log --graph --decorate --pretty=oneline --abbrev-commit
+    lola = log --graph --decorate --pretty=oneline --abbrev-commit --all --date=local
+    ls = ls-files
+    unstage = reset HEAD
+
+    # Show files ignored by git:
+    ign = ls-files -o -i --exclude-standard
+[core]
+    whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
+	excludesfile = ~/.gitignore_global
