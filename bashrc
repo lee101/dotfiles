@@ -173,6 +173,7 @@ function gsp { git stash pop "$@" ; }
 
 function gcmp { git commit -m "$@" ; git push; }
 function gcmap { git commit -a -m "$@" ; git push; }
+function gcme { git add -A; git commit -a -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; git push; }
 
 # alias gswf="gsw | grep '\-\-\- a/' | cut -b 6-"
