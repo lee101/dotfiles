@@ -260,7 +260,7 @@ export HISTSIZE=9999
 export HISTFILESIZE=999999
 
 export JAVA_HOME=/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/jdk1.7.0_45
-export PATH=${PATH}:${JAVA_HOME}/bin:/home/lee/ssd/programs:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/node-v0.10.24-linux-x64/bin:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/google_appengine
+export PATH=${PATH}:${JAVA_HOME}/bin:/home/lee/ssd/programs:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/node-v0.10.26-linux-x64/bin:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/google_appengine
 
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
@@ -268,3 +268,4 @@ bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
 command_exists () {
     type "$1" &> /dev/null ;
 }
+
