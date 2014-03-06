@@ -199,6 +199,7 @@ alias dlg='docker logs'
 alias drm='docker rm'
 alias drmi='docker rmi'
 alias dkl='docker kill'
+alias dis='docker inspect'
 
 
 alias ack='ack-grep'
