@@ -163,13 +163,24 @@ alias gsm='git submodule'
 alias gsmu='git submodule update --init'
 alias grmt='git remote -v'
 alias grmte='git remote -v'
+alias grmts='git remote set-url'
+alias grmtsu='git remote set-url'
+alias grmtes='git remote set-url'
+alias grmtesu='git remote set-url'
 alias grmtso='git remote set-url origin'
 alias grmtsuo='git remote set-url origin'
 alias grmteso='git remote set-url origin'
 alias grmtesuo='git remote set-url origin'
 
 function gss { git stash save "$@" ; }
+function gssw { git stash show "$@" ; }
+function gssw1 { git stash show -p stash@{0}; }
+function gssw2 { git stash show -p stash@{1}; }
+function gssw3 { git stash show -p stash@{2}; }
 function gsp { git stash pop "$@" ; }
+function gsp1 { git stash pop -p stash@{0}; }
+function gsp2 { git stash pop -p stash@{1}; }
+function gsp3 { git stash pop -p stash@{2}; }
 
 function gcmp { git commit -m "$@" ; git push; }
 function gcmap { git commit -a -m "$@" ; git push; }
