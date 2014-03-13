@@ -134,6 +134,7 @@ alias glgme='git log --author=lee'
 alias gmg='git merge'
 alias gmga='git merge --abort'
 alias gmgm='git merge master'
+alias gmm='git merge master'
 alias grb='git rebase'
 alias grbm='git rebase master'
 alias grbc='git rebase --continue'
@@ -171,6 +172,8 @@ alias grmtso='git remote set-url origin'
 alias grmtsuo='git remote set-url origin'
 alias grmteso='git remote set-url origin'
 alias grmtesuo='git remote set-url origin'
+alias gdel='git clean -f'
+alias gcl='git clean -f'
 
 function gss { git stash save "$@" ; }
 function gssw { git stash show "$@" ; }
@@ -199,6 +202,9 @@ alias dlg='docker logs'
 alias drm='docker rm'
 alias drmi='docker rmi'
 alias dkl='docker kill'
+alias dklall='docker rm `docker ps -notrunc -a -q`'
+alias dkillall='docker rm `docker ps -notrunc -a -q`'
+alias dkillalli='docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
 
 
