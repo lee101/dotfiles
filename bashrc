@@ -136,6 +136,8 @@ alias gmga='git merge --abort'
 alias gmgm='git merge master'
 alias gmm='git merge master'
 alias grb='git rebase'
+alias grbi='git rebase -i'
+alias grbim='git rebase -i master'
 alias grbm='git rebase master'
 alias grbc='git rebase --continue'
 alias grba='git rebase --abort'
@@ -186,9 +188,12 @@ function gsp2 { git stash pop -p stash@{1}; }
 function gsp3 { git stash pop -p stash@{2}; }
 
 function gcmp { git commit -m "$@" ; git push; }
+function gcmpf { git commit -m "$@" ; git push -f; }
 function gcmap { git commit -a -m "$@" ; git push; }
+function gcmapf { git commit -a -m "$@" ; git push -f; }
 function gcme { git add -A; git commit -a -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; git push; }
+function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
 
 # alias gswf="gsw | grep '\-\-\- a/' | cut -b 6-"
 
@@ -202,10 +207,13 @@ alias dlg='docker logs'
 alias drm='docker rm'
 alias drmi='docker rmi'
 alias dkl='docker kill'
-alias dklall='docker rm `docker ps -notrunc -a -q`'
-alias dkillall='docker rm `docker ps -notrunc -a -q`'
+alias dstp='docker stop'
+alias dklall='docker rm `docker ps -no-trunc -a -q`'
+alias dkillall='docker rm `docker ps -no-trunc -a -q`'
 alias dkillalli='docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
+
+function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
 
 
 alias ack='ack-grep'
