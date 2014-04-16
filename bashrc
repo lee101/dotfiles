@@ -143,6 +143,7 @@ alias grbc='git rebase --continue'
 alias grba='git rebase --abort'
 alias grl='git reflog'
 alias gad='git add'
+alias gadi='git add -i'
 alias gada='git add -A'
 alias gaa='git add -A'
 alias gph='git push'
@@ -157,6 +158,7 @@ alias gsw='git show'
 alias grs='git reset'
 alias grsm='git reset master'
 alias grsh='git reset --hard'
+alias grshh='git reset --hard HEAD'
 alias grshm='git reset --hard master'
 alias grss='git reset --soft'
 alias grssm='git reset --soft master'
@@ -215,6 +217,10 @@ alias dis='docker inspect'
 
 function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
 
+alias pfr='pip freeze'
+alias pfrr='pip freeze > requirements.txt'
+alias pin='pip install'
+alias pinu='pip install -U'
 
 alias ack='ack-grep'
 
