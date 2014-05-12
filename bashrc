@@ -120,6 +120,7 @@ fi
 
 alias gst='git status'
 alias gco='git checkout'
+alias gcob='git checkout -b'
 alias gcom='git checkout master'
 alias gcl='git clone'
 alias gcm='git commit -m'
@@ -128,6 +129,7 @@ alias gcmamd='git commit --amend -C HEAD'
 alias gbr='git branch'
 alias gdf='git diff'
 alias gdfc='git diff --cached'
+alias gdfx='git diff --cached'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -163,6 +165,8 @@ alias grshm='git reset --hard master'
 alias grss='git reset --soft'
 alias grssm='git reset --soft master'
 alias gcp='git cherry-pick'
+alias gcpc='git cherry-pick --continue'
+alias gcpa='git cherry-pick --abort'
 alias gus='git reset HEAD' # git unstage
 alias gsm='git submodule'
 alias gsmu='git submodule update --init'
@@ -178,6 +182,7 @@ alias grmteso='git remote set-url origin'
 alias grmtesuo='git remote set-url origin'
 alias gdel='git clean -f'
 alias gcl='git clean -f'
+alias grv='git revert'
 
 function gss { git stash save "$@" ; }
 function gssw { git stash show "$@" ; }
@@ -210,12 +215,16 @@ alias drm='docker rm'
 alias drmi='docker rmi'
 alias dkl='docker kill'
 alias dstp='docker stop'
-alias dklall='docker rm `docker ps -no-trunc -a -q`'
-alias dkillall='docker rm `docker ps -no-trunc -a -q`'
-alias dkillalli='docker rmi $(docker images -a -q)'
+alias dklall='docker stop $(docker ps -a -q); docker rm `docker ps --no-trunc -a -q`'
+alias dkillall='docker stop $(docker ps -a -q);docker rm `docker ps --no-trunc -a -q`'
+alias dklalli='dklall;docker rmi $(docker images -a -q)'
+alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
 
 function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
+function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
+
+alias dmount='dbind'
 
 alias pfr='pip freeze'
 alias pfrr='pip freeze > requirements.txt'
