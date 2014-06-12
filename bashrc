@@ -215,6 +215,7 @@ alias dlg='docker logs'
 alias drm='docker rm'
 alias drmi='docker rmi'
 alias dkl='docker kill'
+alias dstt='docker start'
 alias dstp='docker stop'
 alias dklall='docker stop $(docker ps -a -q); docker rm `docker ps --no-trunc -a -q`'
 alias dkillall='docker stop $(docker ps -a -q);docker rm `docker ps --no-trunc -a -q`'
@@ -233,6 +234,9 @@ alias pin='pip install'
 alias pinu='pip install -U'
 
 alias ack='ack-grep'
+
+
+alias webserver='python -m SimpleHTTPServer 9090'
 
 
 alias o='xdg-open'
