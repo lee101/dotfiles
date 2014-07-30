@@ -238,6 +238,7 @@ alias ack='ack-grep'
 
 alias webserver='python -m SimpleHTTPServer 9090'
 
+alias findn='find . -name '
 
 alias o='xdg-open'
 
@@ -315,3 +316,5 @@ command_exists () {
     type "$1" &> /dev/null ;
 }
 
+
+export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
