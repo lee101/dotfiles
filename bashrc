@@ -318,3 +318,7 @@ command_exists () {
 
 
 export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+
+# Set architecture flags
+export ARCHFLAGS="-arch x86_64"
+chflags nohidden ~/Library/
