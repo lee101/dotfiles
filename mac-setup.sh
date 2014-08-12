@@ -47,3 +47,13 @@ brew install postgresql
 # launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.postgresql.plist
 # pg_ctl -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log start
 psql postgres -c 'CREATE EXTENSION "adminpack";'
+
+
+brew install libyaml
+sudo pip install fabric==1.8.1
+sudo pip install pyyaml
+
+brew install node
+npm install -g grunt-cli
+npm install -g less
+npm install -g bower
