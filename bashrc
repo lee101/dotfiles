@@ -326,3 +326,9 @@ chflags nohidden ~/Library/
 # virtualenv
 export WORKON_HOME=$HOME/.virtualenvs
 source /usr/local/bin/virtualenvwrapper.sh
+
+# The next line updates PATH for the Google Cloud SDK.
+source '/Users/lee/google-cloud-sdk/path.bash.inc'
+
+# The next line enables bash completion for gcloud.
+source '/Users/lee/google-cloud-sdk/completion.bash.inc'
