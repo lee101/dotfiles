@@ -57,3 +57,25 @@ brew install node
 npm install -g grunt-cli
 npm install -g less
 npm install -g bower
+
+
+brew install links
+brew install coreutils
+
+ln -s /Applications/PyCharm.app/bin/inspect.sh /usr/bin/charm
+
+# nokogiri
+
+sudo port install libxml2 libxslt
+sudo gem install nokogiri
+
+#install xcode
+sudo xcodebuild -license
+xcode-select --install
+
+defaults write com.apple.finder AppleShowAllFiles TRUE
+
+brew install ack
+
+
+
