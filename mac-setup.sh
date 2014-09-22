@@ -77,5 +77,10 @@ defaults write com.apple.finder AppleShowAllFiles TRUE
 
 brew install ack
 
+npm install -g phantomjs
 
+sudo pip install nose
 
+sudo pip install nltk
+sudo pip install gensim
+sudo pip install textblob

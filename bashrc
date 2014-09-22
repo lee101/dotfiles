@@ -333,3 +333,8 @@ source '/Users/lee/google-cloud-sdk/path.bash.inc'
 source '/Users/lee/google-cloud-sdk/completion.bash.inc'
 
 export RAILS_ENV=development
+
+export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
+
+## Get rid of the default anaconda install
+#export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
