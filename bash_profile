@@ -13,7 +13,7 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 
 
 # added by Anaconda 2.0.1 installer
-export PATH="/Users/lee/anaconda/bin:$PATH"
+#export PATH="/Users/lee/anaconda/bin:$PATH"
 
 # Setting PATH for Python 3.4
 # The orginal version is saved in .bash_profile.pysave

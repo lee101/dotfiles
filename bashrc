@@ -276,7 +276,7 @@ mktbz() { tar cvjf "${1%%/}.tar.bz2" "${1%%/}/"; }
 force_color_prompt=yes
 
 ## Sudo fixes
-alias install='sudo apt-get install'
+alias install='brew install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 
@@ -305,8 +305,8 @@ export EDITOR=vim
 export HISTSIZE=9999
 export HISTFILESIZE=999999
 
-export JAVA_HOME=/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/jdk1.7.0_45
-export PATH=${PATH}:${JAVA_HOME}/bin:/home/lee/ssd/programs:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/node-v0.10.26-linux-x64/bin:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/google_appengine
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
@@ -338,3 +338,12 @@ export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
 
 ## Get rid of the default anaconda install
 #export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
+
+export PATH="$HOME/programs/AWS-ElasticBeanstalk-CLI-2.6.3/eb/macosx/python2.7/:$PATH"
+export SCALA_HOME="$HOME/programs/scala-2.11.2"
+export PATH="$PATH:$SCALA_HOME/bin"
+export PATH="$PATH:$HOME/programs/activator-1.2.10-minimal"
+
+export M2_HOME="$HOME/programs/apache-maven-3.2.3"
+export M2="$M2_HOME/bin"
+export PATH=$M2:$PATH
