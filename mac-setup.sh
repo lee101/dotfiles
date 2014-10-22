@@ -84,3 +84,5 @@ sudo pip install nose
 sudo pip install nltk
 sudo pip install gensim
 sudo pip install textblob
+
+brew install imagemagick

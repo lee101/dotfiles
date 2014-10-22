@@ -347,3 +347,6 @@ export PATH="$PATH:$HOME/programs/activator-1.2.10-minimal"
 export M2_HOME="$HOME/programs/apache-maven-3.2.3"
 export M2="$M2_HOME/bin"
 export PATH=$M2:$PATH
+
+### Added by the Heroku Toolbelt
+export PATH="/usr/local/heroku/bin:$PATH"
