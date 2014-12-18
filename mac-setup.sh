@@ -86,3 +86,6 @@ sudo pip install gensim
 sudo pip install textblob
 
 brew install imagemagick
+
+brew install dnsmasq
+

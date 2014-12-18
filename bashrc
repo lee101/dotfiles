@@ -350,3 +350,6 @@ export PATH=$M2:$PATH
 
 ### Added by the Heroku Toolbelt
 export PATH="/usr/local/heroku/bin:$PATH"
+
+
+export DOCKER_HOST=tcp://127.0.0.1:2376
