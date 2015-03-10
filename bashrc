@@ -219,6 +219,7 @@ alias dstt='docker start'
 alias dstp='docker stop'
 alias dklall='docker stop $(docker ps -a -q); docker rm `docker ps --no-trunc -a -q`'
 alias dkillall='docker stop $(docker ps -a -q);docker rm `docker ps --no-trunc -a -q`'
+alias dkillunused='docker rm `docker ps --no-trunc -a -q`;docker rmi $(docker images -a -q)'
 alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
@@ -232,6 +233,9 @@ alias pfr='pip freeze'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
+
+
+alias charm='/Applications/PyCharm.app/Contents/MacOS/pycharm'
 
 
 
@@ -353,3 +357,12 @@ export PATH="/usr/local/heroku/bin:$PATH"
 
 
 export DOCKER_HOST=tcp://127.0.0.1:2376
+
+export AWS_REGION=ap-southeast-2
+
+
+export PATH="$HOME/programs/go_appengine:$PATH"
+export GOPATH="$HOME/programs/go_appengine/gopath"
+export GOROOT="$HOME/programs/go_appengine/goroot"
+export PATH="$GOROOT/bin:$PATH"
+
