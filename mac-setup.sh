@@ -89,3 +89,4 @@ brew install imagemagick
 
 brew install dnsmasq
 
+brew install hub

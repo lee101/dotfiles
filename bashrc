@@ -220,11 +220,13 @@ alias dstp='docker stop'
 alias dklall='docker stop $(docker ps -a -q); docker rm `docker ps --no-trunc -a -q`'
 alias dkillall='docker stop $(docker ps -a -q);docker rm `docker ps --no-trunc -a -q`'
 alias dkillunused='docker rm `docker ps --no-trunc -a -q`;docker rmi $(docker images -a -q)'
+alias dkillallunused='dkillunused'
 alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
 
 function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
+function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
 
 alias dmount='dbind'
@@ -233,6 +235,8 @@ alias pfr='pip freeze'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
+
+eval "$(hub alias -s)"
 
 
 alias charm='/Applications/PyCharm.app/Contents/MacOS/pycharm'
@@ -343,7 +347,6 @@ export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
 ## Get rid of the default anaconda install
 #export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
 
-export PATH="$HOME/programs/AWS-ElasticBeanstalk-CLI-2.6.3/eb/macosx/python2.7/:$PATH"
 export SCALA_HOME="$HOME/programs/scala-2.11.2"
 export PATH="$PATH:$SCALA_HOME/bin"
 export PATH="$PATH:$HOME/programs/activator-1.2.10-minimal"
@@ -365,4 +368,5 @@ export PATH="$HOME/programs/go_appengine:$PATH"
 export GOPATH="$HOME/programs/go_appengine/gopath"
 export GOROOT="$HOME/programs/go_appengine/goroot"
 export PATH="$GOROOT/bin:$PATH"
+
 
