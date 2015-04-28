@@ -15,4 +15,5 @@ CVS
 /.ropeproject
 /.vimrc
 .idea
+npm-debug.log
 
