@@ -239,8 +239,8 @@ alias pinu='pip install -U'
 eval "$(hub alias -s)"
 
 
-alias charm='/Applications/PyCharm.app/Contents/MacOS/pycharm'
-
+alias charm='open -a /Applications/PyCharm.app'
+alias storm='open -a /Applications/WebStorm.app'
 
 
 alias webserver='python -m SimpleHTTPServer 9090'
