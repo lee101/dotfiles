@@ -243,6 +243,8 @@ alias charm='open -a /Applications/PyCharm.app'
 alias storm='open -a /Applications/WebStorm.app'
 
 
+alias usage='du -sh * | sort -h'
+
 alias webserver='python -m SimpleHTTPServer 9090'
 
 alias findn='find . -name '
