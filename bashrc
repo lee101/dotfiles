@@ -361,6 +361,12 @@ export PATH="/usr/local/heroku/bin:$PATH"
 
 export DOCKER_HOST=tcp://127.0.0.1:2376
 
+### reload because colors are weird otherwise?
+if [ -z "$ASDF" ]; then
+    export ASDF="asdf"
+    reload
+fi
+
 export AWS_REGION=ap-southeast-2
 
 
@@ -368,5 +374,7 @@ export PATH="$HOME/programs/go_appengine:$PATH"
 export GOPATH="$HOME/programs/go_appengine/gopath"
 export GOROOT="$HOME/programs/go_appengine/goroot"
 export PATH="$GOROOT/bin:$PATH"
+
+export PATH="$(brew --prefix coreutils)/libexec/gnubin:/usr/local/bin:$PATH"
 
 
