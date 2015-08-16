@@ -90,3 +90,5 @@ brew install imagemagick
 brew install dnsmasq
 
 brew install hub
+
+sudo pip install --upgrade httpie

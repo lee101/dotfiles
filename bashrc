@@ -376,7 +376,9 @@ export PATH="$HOME/programs/go_appengine:$PATH"
 export GOPATH="$HOME/programs/go_appengine/gopath"
 export GOROOT="$HOME/programs/go_appengine/goroot"
 export PATH="$GOROOT/bin:$PATH"
+export PATH=$PATH:$GOPATH/bin
 
 export PATH="$(brew --prefix coreutils)/libexec/gnubin:/usr/local/bin:$PATH"
+export PATH="/Users/lee/Library/Android/sdk/platform-tools:$PATH"
 
 
