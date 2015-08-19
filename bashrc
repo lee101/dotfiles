@@ -173,10 +173,13 @@ alias gsm='git submodule'
 alias gsmu='git submodule update --init'
 alias grmt='git remote -v'
 alias grmte='git remote -v'
+alias grmta='git remote add'
+alias grmtau='git remote add upstream'
+alias grmtao='git remote add origin'
 alias grmts='git remote set-url'
-alias grmtsu='git remote set-url'
+alias grmtsu='git remote set-url upstream'
 alias grmtes='git remote set-url'
-alias grmtesu='git remote set-url'
+alias grmtesu='git remote set-url upstream'
 alias grmtso='git remote set-url origin'
 alias grmtsuo='git remote set-url origin'
 alias grmteso='git remote set-url origin'
@@ -184,6 +187,8 @@ alias grmtesuo='git remote set-url origin'
 alias gdel='git clean -f'
 alias gcl='git clean -f'
 alias grv='git revert'
+
+function gusco { git reset HEAD "$@" ; git checkout -- "$@" ; }
 
 function gss { git stash save "$@" ; }
 function gssw { git stash show "$@" ; }
