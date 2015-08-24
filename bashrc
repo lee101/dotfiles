@@ -386,4 +386,5 @@ export PATH=$PATH:$GOPATH/bin
 export PATH="$(brew --prefix coreutils)/libexec/gnubin:/usr/local/bin:$PATH"
 export PATH="/Users/lee/Library/Android/sdk/platform-tools:$PATH"
 
-
+export NVM_DIR=$(brew --prefix)/var/nvm
+source $(brew --prefix nvm)/nvm.sh
