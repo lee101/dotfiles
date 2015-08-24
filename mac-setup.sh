@@ -92,3 +92,5 @@ brew install dnsmasq
 brew install hub
 
 sudo pip install --upgrade httpie
+
+brew install nvm
