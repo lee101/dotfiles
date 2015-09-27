@@ -341,6 +341,8 @@ chflags nohidden ~/Library/
 export WORKON_HOME=$HOME/.virtualenvs
 source /usr/local/bin/virtualenvwrapper.sh
 
+export LESS="-eirMX"
+
 # The next line updates PATH for the Google Cloud SDK.
 source '/Users/lee/google-cloud-sdk/path.bash.inc'
 
