@@ -11,6 +11,7 @@ CVS
 /.project
 /.tags*
 .*.sw?
+*.swp
 /tags
 /.ropeproject
 /.vimrc
