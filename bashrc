@@ -244,9 +244,6 @@ alias pinu='pip install -U'
 eval "$(hub alias -s)"
 
 
-alias charm='open -a /Applications/PyCharm.app'
-alias storm='open -a /Applications/WebStorm.app'
-
 
 alias usage='du -sh * | sort -h'
 
@@ -291,7 +288,7 @@ mktbz() { tar cvjf "${1%%/}.tar.bz2" "${1%%/}/"; }
 force_color_prompt=yes
 
 ## Sudo fixes
-alias install='brew install'
+alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 
@@ -385,8 +382,4 @@ export GOROOT="$HOME/programs/go_appengine/goroot"
 export PATH="$GOROOT/bin:$PATH"
 export PATH=$PATH:$GOPATH/bin
 
-export PATH="$(brew --prefix coreutils)/libexec/gnubin:/usr/local/bin:$PATH"
-export PATH="/Users/lee/Library/Android/sdk/platform-tools:$PATH"
 
-export NVM_DIR=$(brew --prefix)/var/nvm
-source $(brew --prefix nvm)/nvm.sh
