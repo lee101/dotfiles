@@ -188,6 +188,11 @@ alias gdel='git clean -f'
 alias gcl='git clean -f'
 alias grv='git revert'
 
+function gbsu {
+    current_branch=`git rev-parse --abbrev-ref HEAD`
+    git branch --set-upstream-to=origin/$current_branch $current_branch
+}
+
 function gusco { git reset HEAD "$@" ; git checkout -- "$@" ; }
 
 function gss { git stash save "$@" ; }
