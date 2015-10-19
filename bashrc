@@ -294,6 +294,7 @@ alias ninstall='sudo npm install'
 
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
+alias r='rm -rf'
 
 function my_ipe() # Get IP adress on ethernet.
 {
