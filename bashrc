@@ -388,4 +388,4 @@ export GOROOT="$HOME/programs/go_appengine/goroot"
 export PATH="$GOROOT/bin:$PATH"
 export PATH=$PATH:$GOPATH/bin
 
-
+source ~/.secretbashrc
