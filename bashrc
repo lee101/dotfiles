@@ -187,6 +187,7 @@ alias grmtesuo='git remote set-url origin'
 alias gdel='git clean -f'
 alias gcl='git clean -f'
 alias grv='git revert'
+alias gds='git describe'
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
