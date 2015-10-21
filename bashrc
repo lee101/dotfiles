@@ -247,9 +247,17 @@ alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
 
+pins() {
+    package_name=$1
+    requirements_file=$2
+    if [[ -z $requirements_file ]]
+    then
+        requirements_file='./requirements.txt'
+    fi
+    pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
+}
+
 eval "$(hub alias -s)"
-
-
 
 alias usage='du -sh * | sort -h'
 
