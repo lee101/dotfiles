@@ -123,6 +123,7 @@ alias gco='git checkout'
 alias gcob='git checkout -b'
 alias gcom='git checkout master'
 alias gcl='git clone'
+alias gclo='git clone'
 alias gcm='git commit -m'
 alias gcmt='git commit'
 alias gcma='git commit -a -m'
@@ -131,6 +132,7 @@ alias gbr='git branch'
 alias gdf='git diff'
 alias gdfc='git diff --cached'
 alias gdfx='git diff --cached'
+alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -173,17 +175,28 @@ alias gsm='git submodule'
 alias gsmu='git submodule update --init'
 alias grmt='git remote -v'
 alias grmte='git remote -v'
+alias grmta='git remote add'
+alias grmtau='git remote add upstream'
+alias grmtao='git remote add origin'
 alias grmts='git remote set-url'
-alias grmtsu='git remote set-url'
+alias grmtsu='git remote set-url upstream'
 alias grmtes='git remote set-url'
-alias grmtesu='git remote set-url'
+alias grmtesu='git remote set-url upstream'
 alias grmtso='git remote set-url origin'
 alias grmtsuo='git remote set-url origin'
 alias grmteso='git remote set-url origin'
 alias grmtesuo='git remote set-url origin'
 alias gdel='git clean -f'
-alias gcl='git clean -f'
+alias gclf='git clean -f'
 alias grv='git revert'
+alias gds='git describe'
+
+function gbsu {
+    current_branch=`git rev-parse --abbrev-ref HEAD`
+    git branch --set-upstream-to=origin/$current_branch $current_branch
+}
+
+function gusco { git reset HEAD "$@" ; git checkout -- "$@" ; }
 
 function gss { git stash save "$@" ; }
 function gssw { git stash show "$@" ; }
@@ -219,11 +232,14 @@ alias dstt='docker start'
 alias dstp='docker stop'
 alias dklall='docker stop $(docker ps -a -q); docker rm `docker ps --no-trunc -a -q`'
 alias dkillall='docker stop $(docker ps -a -q);docker rm `docker ps --no-trunc -a -q`'
+alias dkillunused='docker rm `docker ps --no-trunc -a -q`;docker rmi $(docker images -a -q)'
+alias dkillallunused='dkillunused'
 alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
 
 function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
+function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
 
 alias dmount='dbind'
@@ -233,8 +249,19 @@ alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
 
-alias ack='ack-grep'
+pins() {
+    package_name=$1
+    requirements_file=$2
+    if [[ -z $requirements_file ]]
+    then
+        requirements_file='./requirements.txt'
+    fi
+    pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
+}
 
+eval "$(hub alias -s)"
+
+alias usage='du -sh * | sort -h'
 
 alias webserver='python -m SimpleHTTPServer 9090'
 
@@ -283,6 +310,7 @@ alias ninstall='sudo npm install'
 
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
+alias r='rm -rf'
 
 function my_ipe() # Get IP adress on ethernet.
 {
@@ -306,8 +334,8 @@ export EDITOR=vim
 export HISTSIZE=9999
 export HISTFILESIZE=999999
 
-export JAVA_HOME=/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/jdk1.7.0_45
-export PATH=${PATH}:${JAVA_HOME}/bin:/home/lee/ssd/programs:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/node-v0.10.26-linux-x64/bin:/media/lee/de986b9b-40c5-47fd-b57b-003b92ea1190/programs/google_appengine
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
@@ -334,3 +362,41 @@ source '/Users/lee/google-cloud-sdk/path.bash.inc'
 
 # The next line enables bash completion for gcloud.
 source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+
+export RAILS_ENV=development
+
+export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
+
+## Get rid of the default anaconda install
+#export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
+
+export SCALA_HOME="$HOME/programs/scala-2.11.2"
+export PATH="$PATH:$SCALA_HOME/bin"
+export PATH="$PATH:$HOME/programs/activator-1.2.10-minimal"
+
+export M2_HOME="$HOME/programs/apache-maven-3.2.3"
+export M2="$M2_HOME/bin"
+export PATH=$M2:$PATH
+
+### Added by the Heroku Toolbelt
+export PATH="/usr/local/heroku/bin:$PATH"
+
+
+export DOCKER_HOST=tcp://127.0.0.1:2376
+
+### reload because colors are weird otherwise?
+if [ -z "$ASDF" ]; then
+    export ASDF="asdf"
+    reload
+fi
+
+export AWS_REGION=ap-southeast-2
+
+
+export PATH="$HOME/programs/go_appengine:$PATH"
+export GOPATH="$HOME/programs/go_appengine/gopath"
+export GOROOT="$HOME/programs/go_appengine/goroot"
+export PATH="$GOROOT/bin:$PATH"
+export PATH=$PATH:$GOPATH/bin
+
+source ~/.secretbashrc
