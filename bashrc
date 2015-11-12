@@ -245,6 +245,7 @@ function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt
 alias dmount='dbind'
 
 alias pfr='pip freeze'
+alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
