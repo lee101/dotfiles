@@ -123,6 +123,7 @@ alias gco='git checkout'
 alias gcob='git checkout -b'
 alias gcom='git checkout master'
 alias gcl='git clone'
+alias gclo='git clone'
 alias gcm='git commit -m'
 alias gcmt='git commit'
 alias gcma='git commit -a -m'
@@ -131,6 +132,7 @@ alias gbr='git branch'
 alias gdf='git diff'
 alias gdfc='git diff --cached'
 alias gdfx='git diff --cached'
+alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -185,8 +187,14 @@ alias grmtsuo='git remote set-url origin'
 alias grmteso='git remote set-url origin'
 alias grmtesuo='git remote set-url origin'
 alias gdel='git clean -f'
-alias gcl='git clean -f'
+alias gclf='git clean -f'
 alias grv='git revert'
+alias gds='git describe'
+
+function gbsu {
+    current_branch=`git rev-parse --abbrev-ref HEAD`
+    git branch --set-upstream-to=origin/$current_branch $current_branch
+}
 
 function gusco { git reset HEAD "$@" ; git checkout -- "$@" ; }
 
@@ -237,16 +245,22 @@ function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt
 alias dmount='dbind'
 
 alias pfr='pip freeze'
+alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
 
+pins() {
+    package_name=$1
+    requirements_file=$2
+    if [[ -z $requirements_file ]]
+    then
+        requirements_file='./requirements.txt'
+    fi
+    pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
+}
+
 eval "$(hub alias -s)"
-
-
-alias charm='open -a /Applications/PyCharm.app'
-alias storm='open -a /Applications/WebStorm.app'
-
 
 alias usage='du -sh * | sort -h'
 
@@ -297,6 +311,7 @@ alias ninstall='sudo npm install'
 
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
+alias r='rm -rf'
 
 function my_ipe() # Get IP adress on ethernet.
 {
