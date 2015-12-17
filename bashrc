@@ -89,6 +89,8 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+alias d='cd'
+
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
@@ -358,9 +360,6 @@ source /usr/local/bin/virtualenvwrapper.sh
 
 export LESS="-eirMX"
 
-# The next line updates PATH for the Google Cloud SDK.
-source '/Users/lee/google-cloud-sdk/path.bash.inc'
-
 # The next line enables bash completion for gcloud.
 source '/Users/lee/google-cloud-sdk/completion.bash.inc'
 
@@ -401,3 +400,9 @@ export PATH="$GOROOT/bin:$PATH"
 export PATH=$PATH:$GOPATH/bin
 
 source ~/.secretbashrc
+
+# The next line updates PATH for the Google Cloud SDK.
+source '/usr/home/lpenkman/google-cloud-sdk/path.bash.inc'
+
+# The next line enables shell command completion for gcloud.
+source '/usr/home/lpenkman/google-cloud-sdk/completion.bash.inc'
