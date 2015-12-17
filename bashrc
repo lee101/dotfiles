@@ -160,6 +160,15 @@ alias gpshf='git push -f'
 alias gpl='git pull'
 alias gpm='git checkout master;git pull;git checkout -;'
 alias gplm='git checkout master;git pull;git checkout -;'
+
+alias gct='git checkout --track'
+alias gexport='git archive --format zip --output'
+alias gdel='git branch -D'
+alias gmu='git fetch origin -v; git fetch upstream -v; git merge upstream/master'
+alias gll='git log --graph --pretty=oneline --abbrev-commit'
+alias gg="git log --graph --pretty=format:'%C(bold)%h%Creset%C(yellow)%d%Creset %s %C(yellow)%an %C(cyan)%cr%Creset' --abbrev-commit --date=relative"
+alias ggs="gg --stat"
+
 alias gpf='git push -f'
 alias gsw='git show'
 alias grs='git reset'
@@ -192,6 +201,8 @@ alias gdel='git clean -f'
 alias gclf='git clean -f'
 alias grv='git revert'
 alias gds='git describe'
+alias gw='git whatchanged'
+
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
