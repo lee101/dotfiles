@@ -569,3 +569,4 @@ filetype plugin indent on
 syntax on
 map <C-j> :NERDTreeToggle<CR>
 
+command W :execute ':silent w !sudo tee % > /dev/null' | :edit!
