@@ -157,7 +157,7 @@ alias gph='git push; git push --tags'
 alias gpsh='git push; git push --tags'
 alias gphf='git push -f; git push -f --tags'
 alias gpshf='git push -f; git push -f --tags'
-alias gpl='git pull; git pull --tags'
+alias gpl='git pull'
 alias gpm='git checkout master;git pull;git checkout -;'
 alias gplm='git checkout master;git pull;git checkout -;'
 
