@@ -285,9 +285,11 @@ alias findn='find . -name '
 
 alias o='xdg-open'
 
+
 if [ ! $(uname -s) = "Darwin" ]; then
   alias pbcopy='xclip -selection clipboard'
   alias pbpaste='xclip -selection clipboard -o'
+  alias open='xdg-open'
 fi
 # Easy extract
 extract () {
