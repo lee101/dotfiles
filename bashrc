@@ -276,7 +276,7 @@ pins() {
 
 eval "$(hub alias -s)"
 
-alias usage='du -sh * | sort -h'
+alias usage='du -sh .[!.]* * | sort -h'
 
 alias webserver='python -m SimpleHTTPServer 9090'
 
