@@ -416,3 +416,5 @@ export PATH="/Users/lee/Library/Android/sdk/platform-tools:$PATH"
 
 export NVM_DIR=$(brew --prefix)/var/nvm
 source $(brew --prefix nvm)/nvm.sh
+source ~/.secretbashrc
+ssh-add ~/.ssh/id_rsa_github
