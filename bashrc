@@ -121,6 +121,9 @@ fi
 ## =============           My things        =================
 ## =============           My things        =================
 
+alias u='cd ..'
+
+
 alias gst='git status'
 alias gco='git checkout'
 alias gcob='git checkout -b'
