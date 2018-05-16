@@ -404,7 +404,6 @@ export PATH=$M2:$PATH
 export PATH="/usr/local/heroku/bin:$PATH"
 
 
-export DOCKER_HOST=tcp://127.0.0.1:2376
 
 ### reload because colors are weird otherwise?
 if [ -z "$ASDF" ]; then
@@ -428,3 +427,7 @@ source '/usr/home/lpenkman/google-cloud-sdk/path.bash.inc'
 
 # The next line enables shell command completion for gcloud.
 source '/usr/home/lpenkman/google-cloud-sdk/completion.bash.inc'
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
