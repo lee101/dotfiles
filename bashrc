@@ -124,6 +124,17 @@ fi
 alias u='cd ..'
 
 
+alias hst='hg summary;hg st'
+alias hdf='hg diff'
+alias hrv='hg revert -r'
+alias hup='hg update'
+alias hbr='hg branches'
+alias hpsh='hg push'
+alias hpl='hg pull'
+alias hlg='hg log'
+
+function hcmep { hg commit -m "$@" ; hg push; }
+
 alias gst='git status'
 alias gco='git checkout'
 alias gcob='git checkout -b'
