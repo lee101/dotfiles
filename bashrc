@@ -132,6 +132,7 @@ alias hbr='hg branches'
 alias hpsh='hg push'
 alias hpl='hg pull'
 alias hlg='hg log'
+alias hds='hg heads'
 
 function hcmep { hg commit -m "$@" ; hg push; }
 
