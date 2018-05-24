@@ -132,7 +132,10 @@ alias hbr='hg branches'
 alias hpsh='hg push'
 alias hpl='hg pull'
 alias hlg='hg log'
+alias hlgg='hg log --graph'
 alias hds='hg heads'
+alias hcmamd='hg commit --amend'
+alias hds='hg log -r . --template "{latesttag}-{latesttagdistance}-{node|short}\n"'
 
 function hcmep { hg commit -m "$@" ; hg push; }
 
@@ -246,7 +249,6 @@ function gcme { git add -A; git commit -a -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; git push; }
 function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
 
-# alias gswf="gsw | grep '\-\-\- a/' | cut -b 6-"
 
 function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
