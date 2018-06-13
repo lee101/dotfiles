@@ -62,6 +62,8 @@ npm install -g bower
 brew install links
 brew install coreutils
 
+defaults write com.google.Chrome.plist AppleEnableSwipeNavigateWithScrolls -bool FALSE
+
 ln -s /Applications/PyCharm.app/bin/inspect.sh /usr/bin/charm
 
 # nokogiri

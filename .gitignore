@@ -10,3 +10,4 @@
 # Subversion server credentials.
 /subversion/auth/svn.*
 
+npmrc
