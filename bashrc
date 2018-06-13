@@ -123,7 +123,9 @@ fi
 
 alias u='cd ..'
 
-
+alias hcl='hg clone'
+alias hout='hg out'
+alias hin='hg in'
 alias hst='hg summary;hg st'
 alias hdf='hg diff'
 alias hrv='hg revert -r'
@@ -134,9 +136,11 @@ alias hpsh='hg push'
 alias hpl='hg pull'
 alias hlg='hg log'
 alias hlgg='hg log --graph'
+alias hcp='hg graft -r '
 alias hds='hg heads'
 alias hcmamd='hg commit --amend'
 alias hds='hg log -r . --template "{latesttag}-{latesttagdistance}-{node|short}\n"'
+alias hrmt='hg paths'
 
 function hcmep { hg commit -m "$@" ; hg push; }
 

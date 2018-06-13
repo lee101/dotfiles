@@ -1,3 +1,6 @@
 [ui]
 username = Lee Penkman <leepenkman@gmail.com>
 ignore = ~/.hgignore
+
+[extensions]
+purge =
