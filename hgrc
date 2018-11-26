@@ -26,12 +26,12 @@ keepBackup = false
 cmd = /usr/local/bin/charm merge "$LOCAL" "$REMOTE" "$BASE" "$MERGED"
 
 [ui]
-merge = charm
+merge = sourcetree
 
 [merge-tools]
-charm.priority = 1
-charm.premerge = False
-charm.args = merge $local $other $base
+sourcetree.priority = 1
+sourcetree.premerge = False
+sourcetree.args =
 
 [merge-patterns]
-** = charm
+** = sourcetree
