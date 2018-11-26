@@ -19,3 +19,9 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 # The orginal version is saved in .bash_profile.pysave
 PATH="/Library/Frameworks/Python.framework/Versions/3.4/bin:${PATH}"
 export PATH
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/lee.penkman/Downloads/google-cloud-sdk/path.bash.inc' ]; then source '/Users/lee.penkman/Downloads/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/lee.penkman/Downloads/google-cloud-sdk/completion.bash.inc' ]; then source '/Users/lee.penkman/Downloads/google-cloud-sdk/completion.bash.inc'; fi

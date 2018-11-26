@@ -129,6 +129,9 @@ alias hin='hg in'
 alias hst='hg summary;hg st'
 alias hdf='hg diff'
 alias hrv='hg revert -r'
+alias hrvd='hg revert -r default'
+alias hco=hrvd
+alias hrva='hg revert --all'
 alias hup='hg update'
 alias hbr='hg branch'
 alias hbrs='hg branches'
@@ -139,8 +142,11 @@ alias hlgg='hg log --graph'
 alias hcp='hg graft -r '
 alias hds='hg heads'
 alias hcmamd='hg commit --amend'
+alias hcm='hg commit -m'
+alias hcmt='hg commit -m'
 alias hds='hg log -r . --template "{latesttag}-{latesttagdistance}-{node|short}\n"'
 alias hrmt='hg paths'
+alias had='hg add'
 
 function hcmep { hg commit -m "$@" ; hg push; }
 
@@ -148,7 +154,7 @@ alias gst='git status'
 alias gco='git checkout'
 alias gcob='git checkout -b'
 alias gcom='git checkout master'
-alias gcl='git clone'
+alias gcl='git clone --recurse-submodules'
 alias gclo='git clone'
 alias gcm='git commit -m'
 alias gcmt='git commit'
@@ -450,3 +456,9 @@ source '/usr/home/lpenkman/google-cloud-sdk/completion.bash.inc'
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+eval "$(pyenv init -)"
+
+alias awsecrlogin="aws ecr get-login --no-include-email --region ap-southeast-2 | sh"
+export IS_LOCAL_DEV=true
+##export PYTHONPATH="$PYTHONPATH:/Users/lee.penkman/Downloads/google-cloud-sdk/lib:/Users/lee.penkman/Downloads/google-cloud-sdk/platform/google_appengine:/Users/lee.penkman/Downloads/google-cloud-sdk/platform/google_appengine/lib/yaml/lib"

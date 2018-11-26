@@ -4,3 +4,34 @@ ignore = ~/.hgignore
 
 [extensions]
 purge =
+
+[difftool "sourcetree"]
+cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+path =
+[mergetool "sourcetree"]
+cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+trustExitCode = true
+
+[diff]
+tool = pycharm
+
+[difftool "pycharm"]
+cmd = /usr/local/bin/charm diff "$LOCAL" "$REMOTE" && echo "Press enter to continue..." && read
+
+[merge]
+tool = pycharm
+keepBackup = false
+
+[mergetool "pycharm"]
+cmd = /usr/local/bin/charm merge "$LOCAL" "$REMOTE" "$BASE" "$MERGED"
+
+[ui]
+merge = charm
+
+[merge-tools]
+charm.priority = 1
+charm.premerge = False
+charm.args = merge $local $other $base
+
+[merge-patterns]
+** = charm
