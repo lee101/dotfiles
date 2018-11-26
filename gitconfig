@@ -26,12 +26,14 @@
 [credential]
 	helper = cache --timeout=360000000
 [difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	cmd = charm merge $LOCAL $REMOTE $BASE
 	path = 
 [mergetool "sourcetree"]
-	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	cmd = charm merge $LOCAL $REMOTE $BASE
 	trustExitCode = true
 [filter "lfs"]
 	clean = git-lfs clean %f
 	smudge = git-lfs smudge %f
 	required = true
+[commit]
+	template = /Users/lee.penkman/.stCommitMsg
