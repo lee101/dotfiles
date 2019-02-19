@@ -25,3 +25,5 @@ if [ -f '/Users/lee.penkman/Downloads/google-cloud-sdk/path.bash.inc' ]; then so
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/lee.penkman/Downloads/google-cloud-sdk/completion.bash.inc' ]; then source '/Users/lee.penkman/Downloads/google-cloud-sdk/completion.bash.inc'; fi
+
+export PATH="$HOME/.poetry/bin:$PATH"
