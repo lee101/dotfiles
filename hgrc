@@ -4,6 +4,8 @@ ignore = ~/.hgignore
 
 [extensions]
 purge =
+shelve =
+strip =
 
 [difftool "sourcetree"]
 cmd = opendiff \"$LOCAL\" \"$REMOTE\"

@@ -16,8 +16,8 @@ HISTCONTROL=ignoreboth
 shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+HISTSIZE=9999
+HISTFILESIZE=999999
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -462,3 +462,6 @@ eval "$(pyenv init -)"
 alias awsecrlogin="aws ecr get-login --no-include-email --region ap-southeast-2 | sh"
 export IS_LOCAL_DEV=true
 ##export PYTHONPATH="$PYTHONPATH:/Users/lee.penkman/Downloads/google-cloud-sdk/lib:/Users/lee.penkman/Downloads/google-cloud-sdk/platform/google_appengine:/Users/lee.penkman/Downloads/google-cloud-sdk/platform/google_appengine/lib/yaml/lib"
+
+export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
+
