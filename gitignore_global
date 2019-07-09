@@ -17,4 +17,7 @@ CVS
 /.vimrc
 .idea
 npm-debug.log
+*tfstate.lock.info
+.terraform
 
+bazel-*

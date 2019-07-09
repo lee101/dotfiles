@@ -18,7 +18,7 @@ pbcopy < ~/.ssh/id_rsa.pub
 # put on github
 
 # test out ssh -T git@github.com
-
+brew install git-lfs
 
 mkdir ~/code
 cd ~/code
@@ -35,6 +35,8 @@ sudo pip install django
 brew update
 brew install bash-completion ssh-copy-id wget
 sudo ln -s /Library/Python/2.7/site-packages/django/bin/django-admin.py /usr/bin/django-admin
+
+brew install htop
 
 sudo pip install virtualenv virtualenvwrapper
 

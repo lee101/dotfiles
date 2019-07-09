@@ -15,9 +15,20 @@ HISTCONTROL=ignoreboth
 # append to the history file, don't overwrite it
 shopt -s histappend
 
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=9999
-HISTFILESIZE=999999
+# Eternal bash history.
+# ---------------------
+# Undocumented feature which sets the size to "unlimited".
+# http://stackoverflow.com/questions/9457233/unlimited-bash-history
+export HISTFILESIZE=
+export HISTSIZE=
+export HISTTIMEFORMAT="[%F %T] "
+# Change the file location because certain bash sessions truncate .bash_history file upon close.
+# http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
+export HISTFILE=~/.bash_eternal_history
+# Force prompt to write history after every command.
+# http://superuser.com/questions/20900/bash-history-loss
+PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
+
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -149,6 +160,9 @@ alias hrmt='hg paths'
 alias had='hg add'
 
 function hcmep { hg commit -m "$@" ; hg push; }
+
+alias gpr='hub pull-request'
+
 
 alias gst='git status'
 alias gco='git checkout'
@@ -376,6 +390,17 @@ function my_ip() # Get IP adress on wireless.
     echo ${MY_IP:-"Not connected"}
 }
 
+# Retrieves the acc id for the target profile
+# Arguments:
+# $1: profile
+function acc() {
+  local profile=$1
+  local acc_id=$(aws sts get-caller-identity --profile "${profile}" --query "Account" --output text)
+  echo "The account id for ${profile} is: ${acc_id} -- this value is now on the clipboard"
+  echo "${acc_id}" | pbcopy
+}
+
+
 
 export GIT_EDITOR=vim
 export VISUAL=vim
@@ -439,11 +464,11 @@ fi
 export AWS_REGION=ap-southeast-2
 
 
-export PATH="$HOME/programs/go_appengine:$PATH"
-export GOPATH="$HOME/programs/go_appengine/gopath"
-export GOROOT="$HOME/programs/go_appengine/goroot"
-export PATH="$GOROOT/bin:$PATH"
-export PATH=$PATH:$GOPATH/bin
+#export PATH="$HOME/programs/go_appengine:$PATH"
+#export GOPATH="$HOME/programs/go_appengine/gopath"
+#export GOROOT="$HOME/programs/go_appengine/goroot"
+#export PATH="$GOROOT/bin:$PATH"
+#export PATH=$PATH:$GOPATH/bin
 
 source ~/.secretbashrc
 
@@ -465,3 +490,5 @@ export IS_LOCAL_DEV=true
 
 export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
 
+
+export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
