@@ -463,7 +463,6 @@ vg() {
      vim $file +$line
   fi
 }
-Changing directory
 # fd - cd to selected directory
 fd() {
   local dir
