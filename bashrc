@@ -162,7 +162,9 @@ alias had='hg add'
 function hcmep { hg commit -m "$@" ; hg push; }
 
 alias gpr='hub pull-request'
-
+alias hpr='gpr'
+alias hprs='hub pr show'
+alias gprs='hub pr show'
 
 alias gst='git status'
 alias gco='git checkout'
