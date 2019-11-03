@@ -102,6 +102,9 @@ alias la='ls -A'
 alias l='ls -CF'
 
 alias d='cd'
+alias c='cd ~/code'
+
+alias tli='terraform console'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -249,11 +252,16 @@ alias gclf='git clean -f'
 alias grv='git revert'
 alias gds='git describe'
 alias gw='git whatchanged'
-
+alias gdfb='git diff master...'
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
     git branch --set-upstream-to=origin/$current_branch $current_branch
+}
+
+function gcof {
+   branch_name=`gbr | fzf`
+   git checkout $branch_name
 }
 
 function gusco { git reset HEAD "$@" ; git checkout -- "$@" ; }
@@ -332,32 +340,54 @@ alias findn='find . -name '
 alias o='xdg-open'
 
 
-if [ ! $(uname -s) = "Darwin" ]; then
+if [[ ! $(uname -s) = "Darwin" ]]; then
   alias pbcopy='xclip -selection clipboard'
   alias pbpaste='xclip -selection clipboard -o'
   alias open='xdg-open'
+  extract () {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+  }
+else
+  # Easy extract mac
+  extract () {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7za x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+  }
 fi
-# Easy extract
-extract () {
-  if [ -f $1 ] ; then
-      case $1 in
-          *.tar.bz2)   tar xvjf $1    ;;
-          *.tar.gz)    tar xvzf $1    ;;
-          *.bz2)       bunzip2 $1     ;;
-          *.rar)       rar x $1       ;;
-          *.gz)        gunzip $1      ;;
-          *.tar)       tar xvf $1     ;;
-          *.tbz2)      tar xvjf $1    ;;
-          *.tgz)       tar xvzf $1    ;;
-          *.zip)       unzip $1       ;;
-          *.Z)         uncompress $1  ;;
-          *.7z)        7z x $1        ;;
-          *)           echo "don't know how to extract '$1'..." ;;
-      esac
-  else
-      echo "'$1' is not a valid file!"
-  fi
-}
+
 
 # Creates an archive from given directory
 mktar() { tar cvf  "${1%%/}.tar"     "${1%%/}/"; }
@@ -552,12 +582,9 @@ source /usr/local/bin/virtualenvwrapper.sh
 
 export LESS="-eirMX"
 
-# The next line enables bash completion for gcloud.
-source '/Users/lee/google-cloud-sdk/completion.bash.inc'
-
 export RAILS_ENV=development
 
-export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
+export PYTHONPATH=$PYTHONPATH:~/Downloads/google-cloud-sdk/platform/google_appengine/
 
 ## Get rid of the default anaconda install
 #export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
@@ -592,11 +619,6 @@ export AWS_REGION=ap-southeast-2
 
 source ~/.secretbashrc
 
-# The next line updates PATH for the Google Cloud SDK.
-source '/usr/home/lpenkman/google-cloud-sdk/path.bash.inc'
-
-# The next line enables shell command completion for gcloud.
-source '/usr/home/lpenkman/google-cloud-sdk/completion.bash.inc'
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
