@@ -20,11 +20,11 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 PATH="/Library/Frameworks/Python.framework/Versions/3.4/bin:${PATH}"
 export PATH
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/lee.penkman/Downloads/google-cloud-sdk/path.bash.inc' ]; then source '/Users/lee.penkman/Downloads/google-cloud-sdk/path.bash.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/lee.penkman/Downloads/google-cloud-sdk/completion.bash.inc' ]; then source '/Users/lee.penkman/Downloads/google-cloud-sdk/completion.bash.inc'; fi
-
 export PATH="$HOME/.poetry/bin:$PATH"
 if [ -e /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh ]; then . /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk/path.bash.inc' ]; then . '/Users/leepenkman/Downloads/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk/completion.bash.inc' ]; then . '/Users/leepenkman/Downloads/google-cloud-sdk/completion.bash.inc'; fi
