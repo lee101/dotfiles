@@ -2,7 +2,7 @@
 	name = Lee Penkman
 	email = leepenkman@gmail.com
 [push]
-	default = current
+	default = upstream
 [color]
 	ui = auto
 [alias]
