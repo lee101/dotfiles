@@ -1,4 +1,4 @@
-source $HOME/.bashrc
+#source $HOME/.bashrc
 
 
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
@@ -27,3 +27,6 @@ if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk2/path.bash.inc' ]; then . 
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc' ]; then . '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc'; fi
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
