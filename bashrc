@@ -639,7 +639,9 @@ export AWS_REGION=ap-southeast-2
 #export PATH="$GOROOT/bin:$PATH"
 #export PATH=$PATH:$GOPATH/bin
 
-source ~/.secretbashrc
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 
 export NVM_DIR="$HOME/.nvm"
@@ -656,3 +658,10 @@ export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
 
 
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+source ~/.secretbashrc
+# The next line updates PATH for the Google Cloud SDK.
+source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
+
+# The next line enables shell command completion for gcloud.
+source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
+source ~/.bash_profile
