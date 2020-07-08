@@ -1,10 +1,13 @@
 [user]
 	name = Lee Penkman
-	email = leepenkman@gmail.com
+	email = lee.p@canva.com
 [push]
 	default = upstream
+	default = simple
+	default = current
+	default = upstream
 [color]
-	ui = auto
+	ui = true
 [alias]
     st = status
     ci = commit
@@ -23,6 +26,7 @@
 [core]
     whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
 	excludesfile = /Users/leepenkman/.gitignore_global
+	pager = diff-so-fancy | less --tabs=4 -RFX
 [credential]
 	helper = gcloud.sh
 [difftool "sourcetree"]
@@ -42,3 +46,18 @@
 	cookiefile = /Users/lee.penkman/.gitcookies
 [protocol]
 	version = 2
+[rerere]
+	enabled = true
+	autoupdate = true
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
+[color "diff"]
+	meta = yellow
+	frag = magenta bold
+	commit = yellow bold
+	old = red bold
+	new = green bold
+	whitespace = red reverse

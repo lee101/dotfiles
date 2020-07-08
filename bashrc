@@ -203,14 +203,17 @@ alias gadi='git add -i'
 alias gada='git add -A'
 alias gaa='git add -A'
 alias gph='git push; git push --tags'
-alias gpsh='git push; git push --tags'
+#alias gpsh='git push; git push --tags'
 alias gphf='git push -f; git push -f --tags'
 alias gpshf='git push -f; git push -f --tags'
 alias gpl='git pull'
 alias gplrb='git pull --rebase'
 alias gpm='git checkout master;git pull;git checkout -;'
 alias gplm='git checkout master;git pull;git checkout -;'
+alias gpgr='git checkout green;git pull;git checkout -;'
 
+alias gplh='git pull origin $(git rev-parse --abbrev-ref HEAD);'
+alias gpshh='git push origin $(git rev-parse --abbrev-ref HEAD);'
 alias gct='git checkout --track'
 alias gexport='git archive --format zip --output'
 alias gdel='git branch -D'
@@ -234,6 +237,7 @@ alias gcpa='git cherry-pick --abort'
 alias gus='git reset HEAD' # git unstage
 alias gsm='git submodule'
 alias gsmu='git submodule update --init'
+alias grpo='git remote prune origin'
 alias grmt='git remote -v'
 alias grmte='git remote -v'
 alias grmta='git remote add'
@@ -259,6 +263,11 @@ function gbsu {
     git branch --set-upstream-to=origin/$current_branch $current_branch
 }
 
+function gpsh {
+    current_branch=`git rev-parse --abbrev-ref HEAD`
+    git push --set-upstream origin $current_branch
+}
+
 function gcof {
    branch_name=`gbr | fzf`
    git checkout $branch_name
@@ -276,12 +285,12 @@ function gsp1 { git stash pop -p stash@{0}; }
 function gsp2 { git stash pop -p stash@{1}; }
 function gsp3 { git stash pop -p stash@{2}; }
 
-function gcmp { git commit -m "$@" ; git push; }
+function gcmp { git commit -m "$@" ; gpsh; }
 function gcmpf { git commit -m "$@" ; git push -f; }
 function gcmap { git commit -a -m "$@" ; git push; }
 function gcmapf { git commit -a -m "$@" ; git push -f; }
 function gcme { git add -A; git commit -a -m "$@" ; }
-function gcmep { git add -A; git commit -a -m "$@" ; git push; }
+function gcmep { git add -A; git commit -a -m "$@" ; gpsh; }
 function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
 
 
@@ -433,6 +442,19 @@ function acc() {
   echo "${acc_id}" | pbcopy
 }
 
+function assume() {
+  local profile=$1
+  local role_arn=$(aws configure get role_arn --profile "${profile}")
+  local source_profile=$(aws configure get source_profile --profile "${profile}")
+  local temp_role=$(aws sts assume-role \
+                        --role-arn "${role_arn}" \
+                        --role-session-name "$(whoami)" \
+                        --profile "${source_profile}")
+  export AWS_ACCESS_KEY_ID=$(echo $temp_role | jq .Credentials.AccessKeyId | xargs)
+  export AWS_SECRET_ACCESS_KEY=$(echo $temp_role | jq .Credentials.SecretAccessKey | xargs)
+  export AWS_SESSION_TOKEN=$(echo $temp_role | jq .Credentials.SessionToken | xargs)
+  env | grep -i AWS_
+}
 
 ################ fzf stuff
 

@@ -24,3 +24,5 @@ bazel-*
 .settings
 .project
 .properties
+.idea
+Brewfile.lock.json
