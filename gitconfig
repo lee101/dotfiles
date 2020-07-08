@@ -25,13 +25,13 @@
     ign = ls-files -o -i --exclude-standard
 [core]
     whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
-	excludesfile = /Users/leepenkman/.gitignore_global
+   excludesfile = ~/.gitignore_global
 	pager = diff-so-fancy | less --tabs=4 -RFX
 [credential]
 	helper = gcloud.sh
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path = 
+	path =
 [mergetool "sourcetree"]
 	cmd = /private/var/folders/4g/73__36vj7c73vpsrt5c7b5y80000gn/T/AppTranslocation/5C6ED0EF-63E2-41EF-8876-4F5F13EC7566/d/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
@@ -41,9 +41,9 @@
 	required = true
 	process = git-lfs filter-process
 [commit]
-	template = /Users/lee.penkman/.stCommitMsg
+	template = ~/.stCommitMsg
 [http]
-	cookiefile = /Users/lee.penkman/.gitcookies
+	cookiefile = ~/.gitcookies
 [protocol]
 	version = 2
 [rerere]
