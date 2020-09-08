@@ -581,8 +581,10 @@ export EDITOR=vim
 export HISTSIZE=9999
 export HISTFILESIZE=999999
 
-export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
-export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+if [ -f "/usr/libexec/java_home" ]; then
+    export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+    export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+fi
 
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
