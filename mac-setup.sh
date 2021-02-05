@@ -31,10 +31,9 @@ sudo easy_install pip
 sudo pip install ipython
 sudo pip install django
 
-# django admin
 brew update
 brew install bash-completion ssh-copy-id wget
-sudo ln -s /Library/Python/2.7/site-packages/django/bin/django-admin.py /usr/bin/django-admin
+#sudo ln -s /Library/Python/2.7/site-packages/django/bin/django-admin.py /usr/bin/django-admin
 
 brew install htop
 
@@ -50,6 +49,7 @@ brew install postgresql
 # pg_ctl -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log start
 psql postgres -c 'CREATE EXTENSION "adminpack";'
 
+brew install diff-so-fancy
 
 brew install libyaml
 sudo pip install fabric==1.8.1

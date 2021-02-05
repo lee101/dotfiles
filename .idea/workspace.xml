@@ -2,53 +2,47 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4d0d6c50-77e8-42e2-807a-f1a2fcd6d039" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/linux-setup.sh" afterPath="$PROJECT_DIR$/linux-setup.sh" />
+      <change afterPath="$PROJECT_DIR$/zshrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.bashrc.swp" beforeDir="false" afterPath="$PROJECT_DIR$/.bashrc.swp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dotfiles.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dotfiles.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.markdown" beforeDir="false" afterPath="$PROJECT_DIR$/README.markdown" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bash_profile" beforeDir="false" afterPath="$PROJECT_DIR$/bash_profile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gitconfig" beforeDir="false" afterPath="$PROJECT_DIR$/gitconfig" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gitignore_global" beforeDir="false" afterPath="$PROJECT_DIR$/gitignore_global" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hgignore" beforeDir="false" afterPath="$PROJECT_DIR$/hgignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hgrc" beforeDir="false" afterPath="$PROJECT_DIR$/hgrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interns.sh" beforeDir="false" afterPath="$PROJECT_DIR$/interns.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/irbrc" beforeDir="false" afterPath="$PROJECT_DIR$/irbrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/iterm2profile" beforeDir="false" afterPath="$PROJECT_DIR$/iterm2profile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jshintrc" beforeDir="false" afterPath="$PROJECT_DIR$/jshintrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jslintrc" beforeDir="false" afterPath="$PROJECT_DIR$/jslintrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/linux-setup.sh" beforeDir="false" afterPath="$PROJECT_DIR$/linux-setup.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mac-setup.sh" beforeDir="false" afterPath="$PROJECT_DIR$/mac-setup.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/npmrc" beforeDir="false" afterPath="$PROJECT_DIR$/npmrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tidyconf" beforeDir="false" afterPath="$PROJECT_DIR$/tidyconf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vimrc" beforeDir="false" afterPath="$PROJECT_DIR$/vimrc" afterDir="false" />
     </list>
-    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
-    <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
-  <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="bash_profile" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bash_profile">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="640">
-              <caret line="32" column="0" lean-forward="false" selection-start-line="32" selection-start-column="0" selection-end-line="32" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="bashrc" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bashrc">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="349">
-              <caret line="645" column="0" lean-forward="false" selection-start-line="645" selection-start-column="0" selection-end-line="645" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="linux-setup.sh" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/linux-setup.sh">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="80">
-              <caret line="4" column="19" lean-forward="false" selection-start-line="4" selection-start-column="19" selection-end-line="4" selection-end-column="19" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
-  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
@@ -65,12 +59,16 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="sgw1tkny" />
+  </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="67" />
     <option name="y" value="25" />
     <option name="width" value="1853" />
     <option name="height" value="1055" />
   </component>
+  <component name="ProjectId" id="1mlluoGaNdJxQXlBevRlyHwahX6" />
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1">
       <flattenPackages />
@@ -104,29 +102,22 @@
       <pane id="Scope" />
     </panes>
   </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
   <component name="PropertiesComponent">
-    <property name="options.lastSelected" value="preferences.sourceCode" />
-    <property name="options.splitter.main.proportions" value="0.3" />
-    <property name="options.splitter.details.proportions" value="0.2" />
-    <property name="options.searchVisible" value="true" />
     <property name="JavaScriptLanguageLevel" value="ES5" />
     <property name="JavaScriptPreferStrict" value="true" />
     <property name="JavaScriptWeakerCompletionTypeGuess" value="true" />
-    <property name="settings.editor.selected.configurable" value="database.main" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-  </component>
-  <component name="RunDashboard">
-    <option name="ruleStates">
-      <list>
-        <RuleState>
-          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
-        </RuleState>
-        <RuleState>
-          <option name="name" value="StatusDashboardGroupingRule" />
-        </RuleState>
-      </list>
-    </option>
+    <property name="options.lastSelected" value="preferences.sourceCode" />
+    <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
+    <property name="options.splitter.main.proportions" value="0.3" />
+    <property name="settings.editor.selected.configurable" value="database.main" />
   </component>
   <component name="RunManager">
     <configuration default="true" type="BashConfigurationType" factoryName="Bash">
@@ -158,25 +149,6 @@
       <option name="CUSTOM_SETTINGS" value="false" />
       <option name="USE_OPTIONS" value="false" />
       <option name="OPTIONS" value="" />
-      <method />
-    </configuration>
-    <configuration default="true" type="JavaScriptTestRunnerJest" factoryName="Jest">
-      <node-interpreter value="project" />
-      <working-dir value="" />
-      <envs />
-      <scope-kind value="ALL" />
-      <method />
-    </configuration>
-    <configuration default="true" type="JavaScriptTestRunnerProtractor" factoryName="Protractor">
-      <config-file value="" />
-      <node-interpreter value="project" />
-      <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
-      <method />
-    </configuration>
-    <configuration default="true" type="NodeJSConfigurationType" factoryName="Node.js" path-to-node="project" working-dir="">
       <method />
     </configuration>
     <configuration default="true" type="PyBehaveRunConfigurationType" factoryName="Behave">
@@ -239,29 +211,6 @@
       <module name="dotfiles" />
       <method />
     </configuration>
-    <configuration default="true" type="js.build_tools.gulp" factoryName="Gulp.js">
-      <method />
-    </configuration>
-    <configuration default="true" type="js.build_tools.npm" factoryName="npm">
-      <command value="run" />
-      <scripts />
-      <node-interpreter value="project" />
-      <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="mocha-javascript-test-runner" factoryName="Mocha">
-      <node-interpreter>project</node-interpreter>
-      <node-options />
-      <working-directory />
-      <pass-parent-env>true</pass-parent-env>
-      <envs />
-      <ui />
-      <extra-mocha-options />
-      <test-kind>DIRECTORY</test-kind>
-      <test-directory />
-      <recursive>false</recursive>
-      <method />
-    </configuration>
     <configuration default="true" type="tests" factoryName="Doctests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -298,10 +247,17 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method />
     </configuration>
+    <configuration default="true" type="js.build_tools.gulp">
+      <node-interpreter>project</node-interpreter>
+      <node-options />
+      <gulpfile />
+      <tasks />
+      <arguments />
+      <envs />
+      <method v="2" />
+    </configuration>
   </component>
-  <component name="ShelveChangesManager" show_recycled="false">
-    <option name="remove_strategy" value="false" />
-  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="4d0d6c50-77e8-42e2-807a-f1a2fcd6d039" name="Default" comment="" />
@@ -309,6 +265,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1594182519209</updated>
+      <workItem from="1610076286911" duration="131000" />
+      <workItem from="1610076431083" duration="2866000" />
     </task>
     <servers />
   </component>
@@ -338,14 +296,7 @@
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
-    <option name="processedProjectFiles" value="true" />
-  </component>
-  <component name="VcsContentAnnotationSettings">
-    <option name="myLimit" value="2678400000" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager />
-    <watches-manager />
+    <option name="version" value="3" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/bash_profile">
