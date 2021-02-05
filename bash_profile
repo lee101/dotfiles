@@ -30,3 +30,6 @@ if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc' ]; t
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
+if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+
+export PATH="$HOME/.cargo/bin:$PATH"
