@@ -665,3 +665,4 @@ source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
 # The next line enables shell command completion for gcloud.
 source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
 source ~/.bash_profile
+eval "$(direnv hook $SHELL)"
