@@ -33,3 +33,4 @@ eval "$(pyenv init -)"
 if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 export PATH="$HOME/.cargo/bin:$PATH"
+. /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh

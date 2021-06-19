@@ -1,3 +1,5 @@
+#oh my zsh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
 # brew
 ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
@@ -100,4 +102,4 @@ sudo pip install --upgrade httpie
 brew install nvm
 
 npm install --global bump-tag
-
+brew tap heroku/brew && brew install heroku

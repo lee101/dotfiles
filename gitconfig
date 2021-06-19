@@ -25,7 +25,7 @@
     ign = ls-files -o -i --exclude-standard
 [core]
     whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
-   excludesfile = ~/.gitignore_global
+   excludesfile = /Users/leepenkman/.gitignore_global
 	pager = diff-so-fancy | less --tabs=4 -RFX
 	autocrlf = input
 [credential]
@@ -42,9 +42,9 @@
 	required = true
 	process = git-lfs filter-process
 [commit]
-	template = ~/.stCommitMsg
+	template = /Users/leepenkman/.stCommitMsg
 [http]
-	cookiefile = ~/.gitcookies
+	cookiefile = /Users/leepenkman/.gitcookies
 [protocol]
 	version = 2
 [rerere]

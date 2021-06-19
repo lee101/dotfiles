@@ -2,7 +2,7 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
 # Path to your oh-my-zsh installation.
-export ZSH="/Users/leepenkman/.oh-my-zsh"
+#export ZSH="/Users/leepenkman/.oh-my-zsh"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -739,3 +739,4 @@ export HISTFILESIZE=999999
 # source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
 # # source ~/.bash_profile
 
+. /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh

@@ -191,6 +191,7 @@ alias gmg='git merge'
 alias gmga='git merge --abort'
 alias gmgm='git merge master'
 alias gmm='git merge master'
+alias gmgg='git merge green'
 alias grb='git rebase'
 alias grbi='git rebase -i'
 alias grbim='git rebase -i master'
@@ -208,9 +209,9 @@ alias gphf='git push -f; git push -f --tags'
 alias gpshf='git push -f; git push -f --tags'
 alias gpl='git pull'
 alias gplrb='git pull --rebase'
-alias gpm='git checkout master;git pull;git checkout -;'
-alias gplm='git checkout master;git pull;git checkout -;'
-alias gpgr='git checkout green;git pull;git checkout -;'
+alias gpm='git checkout master;git pull;git merge origin/master;git checkout -;'
+alias gplm='git checkout master;git pull;git merge origin/master;git checkout -;'
+alias gpgr='git checkout green;git pull; git merge origin/green;git checkout -;'
 
 alias gplh='git pull origin $(git rev-parse --abbrev-ref HEAD);'
 alias gpshh='git push origin $(git rev-parse --abbrev-ref HEAD);'
@@ -257,6 +258,8 @@ alias grv='git revert'
 alias gds='git describe'
 alias gw='git whatchanged'
 alias gdfb='git diff master...'
+alias gdfgb='git diff green...'
+alias gplh='git pull origin $(git rev-parse --abbrev-ref HEAD)'
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
@@ -601,8 +604,8 @@ export ARCHFLAGS="-arch x86_64"
 chflags nohidden ~/Library/
 
 # virtualenv
-export WORKON_HOME=$HOME/.virtualenvs
-source /usr/local/bin/virtualenvwrapper.sh
+#export WORKON_HOME=$HOME/.virtualenvs
+#source /usr/local/bin/virtualenvwrapper.sh
 
 export LESS="-eirMX"
 
@@ -645,7 +648,6 @@ export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
-
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
@@ -661,9 +663,9 @@ export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
 
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 source ~/.secretbashrc
-# The next line updates PATH for the Google Cloud SDK.
-source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
 
-# The next line enables shell command completion for gcloud.
-source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
 source ~/.bash_profile
+
+ssh-add -K ~/.ssh/id_rsa
+pyenv shell 3.8.0
+
