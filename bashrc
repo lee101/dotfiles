@@ -316,6 +316,9 @@ alias dkillallunused='dkillunused'
 alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
+alias dprna='docker system prune -a --volumes'
+alias dprn='docker system prune'
+alias ddf='docker system df'
 
 function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
