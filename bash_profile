@@ -34,3 +34,6 @@ if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-pro
 
 export PATH="$HOME/.cargo/bin:$PATH"
 . /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh
+
+# Created by `pipx` on 2021-07-10 05:30:28
+export PATH="$PATH:/Users/leepenkman/.local/bin"
