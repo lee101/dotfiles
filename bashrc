@@ -672,3 +672,26 @@ source ~/.bash_profile
 ssh-add -K ~/.ssh/id_rsa
 pyenv shell 3.8.0
 
+
+# Created by `pipx` on 2021-07-10 05:30:28
+export PATH="$PATH:/Users/leepenkman/.local/bin"
+function assume() {
+  local profile=$1
+  local role_arn=$(aws configure get role_arn --profile "${profile}")
+  local source_profile=$(aws configure get source_profile --profile "${profile}")
+  local temp_role=$(aws sts assume-role \
+                        --role-arn "${role_arn}" \
+                        --role-session-name "$(whoami)" \
+                        --profile "${source_profile}")
+  export AWS_ACCESS_KEY_ID=$(echo $temp_role | jq .Credentials.AccessKeyId | xargs)
+  export AWS_SECRET_ACCESS_KEY=$(echo $temp_role | jq .Credentials.SecretAccessKey | xargs)
+  export AWS_SESSION_TOKEN=$(echo $temp_role | jq .Credentials.SessionToken | xargs)
+  env | grep -i AWS_
+}
+
+# todo need to
+# sudo mount -uw /
+# ssh-add -K ~/.ssh/id_rsa
+
+
+alias gplg='git checkout green;git pull; git checkout -'
