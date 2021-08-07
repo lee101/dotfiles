@@ -108,6 +108,9 @@ fi
 if ! shopt -oq posix; then
   if [ -f /usr/share/bash-completion/bash_completion ]; then
     . /usr/share/bash-completion/bash_completion
+  fi
+fi
+
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
@@ -393,7 +396,7 @@ export DOCKER_HOST=tcp://127.0.0.1:2376
 ### reload because colors are weird otherwise?
 if [ -z "$ASDF" ]; then
     export ASDF="asdf"
-    reload
+    source ~/.bashrc
 fi
 
 export AWS_REGION=ap-southeast-2
@@ -418,3 +421,5 @@ source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
 source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+source ~/.bash_profile
+eval "$(direnv hook $SHELL)"
