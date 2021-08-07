@@ -15,20 +15,6 @@ HISTCONTROL=ignoreboth
 # append to the history file, don't overwrite it
 shopt -s histappend
 
-# Eternal bash history.
-# ---------------------
-# Undocumented feature which sets the size to "unlimited".
-# http://stackoverflow.com/questions/9457233/unlimited-bash-history
-export HISTFILESIZE=
-export HISTSIZE=
-export HISTTIMEFORMAT="[%F %T] "
-# Change the file location because certain bash sessions truncate .bash_history file upon close.
-# http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
-export HISTFILE=~/.bash_eternal_history
-# Force prompt to write history after every command.
-# http://superuser.com/questions/20900/bash-history-loss
-PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
-
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -102,15 +88,26 @@ alias la='ls -A'
 alias l='ls -CF'
 
 alias d='cd'
-alias c='cd ~/code'
-
-alias tli='terraform console'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 
 # Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
@@ -338,241 +335,6 @@ pins() {
 
 eval "$(hub alias -s)"
 
-alias usage='du -sh .[!.]* * | sort -h'
-
-alias webserver='python -m SimpleHTTPServer 9090'
-
-alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
-
-alias findn='find . -name '
-
-alias o='xdg-open'
-
-
-if [[ ! $(uname -s) = "Darwin" ]]; then
-  alias pbcopy='xclip -selection clipboard'
-  alias pbpaste='xclip -selection clipboard -o'
-  alias open='xdg-open'
-  extract () {
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)   tar xvjf $1    ;;
-            *.tar.gz)    tar xvzf $1    ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       rar x $1       ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xvf $1     ;;
-            *.tbz2)      tar xvjf $1    ;;
-            *.tgz)       tar xvzf $1    ;;
-            *.zip)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1        ;;
-            *)           echo "don't know how to extract '$1'..." ;;
-        esac
-    else
-        echo "'$1' is not a valid file!"
-    fi
-  }
-else
-  # Easy extract mac
-  extract () {
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)   tar xvjf $1    ;;
-            *.tar.gz)    tar xvzf $1    ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       rar x $1       ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xvf $1     ;;
-            *.tbz2)      tar xvjf $1    ;;
-            *.tgz)       tar xvzf $1    ;;
-            *.zip)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7za x $1        ;;
-            *)           echo "don't know how to extract '$1'..." ;;
-        esac
-    else
-        echo "'$1' is not a valid file!"
-    fi
-  }
-fi
-
-
-# Creates an archive from given directory
-mktar() { tar cvf  "${1%%/}.tar"     "${1%%/}/"; }
-mktgz() { tar cvzf "${1%%/}.tar.gz"  "${1%%/}/"; }
-mktbz() { tar cvjf "${1%%/}.tar.bz2" "${1%%/}/"; }
-
-alias compress='mktgz'
-
-# Color prompt
-force_color_prompt=yes
-
-## Sudo fixes
-alias install='sudo apt-get install'
-alias pinstall='sudo pip install'
-alias ninstall='sudo npm install'
-
-alias refresh='source ~/.bashrc'
-alias reload='source ~/.bashrc'
-alias r='rm -rf'
-
-function my_ipe() # Get IP adress on ethernet.
-{
-    MY_IP=$(/sbin/ifconfig eth0 | awk '/inet/ { print $2 } ' |
-      sed -e s/addr://)
-    echo ${MY_IP:-"Not connected"}
-}
-
-function my_ip() # Get IP adress on wireless.
-{
-    MY_IP=$(/sbin/ifconfig wlan | awk '/inet/ { print $2 } ' |
-      sed -e s/addr://)
-    echo ${MY_IP:-"Not connected"}
-}
-
-################# AWS stuff
-# Retrieves the acc id for the target profile
-# Arguments:
-# $1: profile
-function acc() {
-  local profile=$1
-  local acc_id=$(aws sts get-caller-identity --profile "${profile}" --query "Account" --output text)
-  echo "The account id for ${profile} is: ${acc_id} -- this value is now on the clipboard"
-  echo "${acc_id}" | pbcopy
-}
-
-function assume() {
-  local profile=$1
-  local role_arn=$(aws configure get role_arn --profile "${profile}")
-  local source_profile=$(aws configure get source_profile --profile "${profile}")
-  local temp_role=$(aws sts assume-role \
-                        --role-arn "${role_arn}" \
-                        --role-session-name "$(whoami)" \
-                        --profile "${source_profile}")
-  export AWS_ACCESS_KEY_ID=$(echo $temp_role | jq .Credentials.AccessKeyId | xargs)
-  export AWS_SECRET_ACCESS_KEY=$(echo $temp_role | jq .Credentials.SecretAccessKey | xargs)
-  export AWS_SESSION_TOKEN=$(echo $temp_role | jq .Credentials.SessionToken | xargs)
-  env | grep -i AWS_
-}
-
-################ fzf stuff
-
-# fe [FUZZY PATTERN] - Open the selected file with the default editor
-#   - Bypass fuzzy finder if there's only one match (--select-1)
-#   - Exit if there's no match (--exit-0)
-fe() {
-  local files
-  IFS=$'\n' files=($(fzf-tmux --query="$1" --multi --select-1 --exit-0))
-  [[ -n "$files" ]] && ${EDITOR:-vim} "${files[@]}"
-}
-
-# Modified version where you can press
-#   - CTRL-O to open with `open` command,
-#   - CTRL-E or Enter key to open with the $EDITOR
-fo() {
-  local out file key
-  IFS=$'\n' out=("$(fzf-tmux --query="$1" --exit-0 --expect=ctrl-o,ctrl-e)")
-  key=$(head -1 <<< "$out")
-  file=$(head -2 <<< "$out" | tail -1)
-  if [ -n "$file" ]; then
-    [ "$key" = ctrl-o ] && open "$file" || ${EDITOR:-vim} "$file"
-  fi
-}
-# vf - fuzzy open with vim from anywhere
-# ex: vf word1 word2 ... (even part of a file name)
-# zsh autoload function
-vf() {
-  local files
-
-  files=(${(f)"$(locate -Ai -0 $@ | grep -z -vE '~$' | fzf --read0 -0 -1 -m)"})
-
-  if [[ -n $files ]]
-  then
-     vim -- $files
-     print -l $files[1]
-  fi
-}
-# fuzzy grep open via ag
-vg() {
-  local file
-
-  file="$(ag --nobreak --noheading $@ | fzf -0 -1 | awk -F: '{print $1}')"
-
-  if [[ -n $file ]]
-  then
-     vim $file
-  fi
-}
-
-# fuzzy grep open via ag with line number
-vg() {
-  local file
-  local line
-
-  read -r file line <<<"$(ag --nobreak --noheading $@ | fzf -0 -1 | awk -F: '{print $1, $2}')"
-
-  if [[ -n $file ]]
-  then
-     vim $file +$line
-  fi
-}
-# fd - cd to selected directory
-fd() {
-  local dir
-  dir=$(find ${1:-.} -path '*/\.*' -prune \
-                  -o -type d -print 2> /dev/null | fzf +m) &&
-  cd "$dir"
-}
-# Another fd - cd into the selected directory
-# This one differs from the above, by only showing the sub directories and not
-#  showing the directories within those.
-fd() {
-  DIR=`find * -maxdepth 0 -type d -print 2> /dev/null | fzf-tmux` \
-    && cd "$DIR"
-}
-# fda - including hidden directories
-fda() {
-  local dir
-  dir=$(find ${1:-.} -type d 2> /dev/null | fzf +m) && cd "$dir"
-}
-# fdr - cd to selected parent directory
-fdr() {
-  local declare dirs=()
-  get_parent_dirs() {
-    if [[ -d "${1}" ]]; then dirs+=("$1"); else return; fi
-    if [[ "${1}" == '/' ]]; then
-      for _dir in "${dirs[@]}"; do echo $_dir; done
-    else
-      get_parent_dirs $(dirname "$1")
-    fi
-  }
-  local DIR=$(get_parent_dirs $(realpath "${1:-$PWD}") | fzf-tmux --tac)
-  cd "$DIR"
-}
-# cf - fuzzy cd from anywhere
-# ex: cf word1 word2 ... (even part of a file name)
-# zsh autoload function
-cf() {
-  local file
-
-  file="$(locate -Ai -0 $@ | grep -z -vE '~$' | fzf --read0 -0 -1)"
-
-  if [[ -n $file ]]
-  then
-     if [[ -d $file ]]
-     then
-        cd -- $file
-     else
-        cd -- ${file:h}
-     fi
-  fi
-}
-############# end fzf stuff
-
-
-
-
 
 export GIT_EDITOR=vim
 export VISUAL=vim
@@ -581,10 +343,8 @@ export EDITOR=vim
 export HISTSIZE=9999
 export HISTFILESIZE=999999
 
-if [ -f "/usr/libexec/java_home" ]; then
-    export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
-    export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
-fi
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
@@ -606,9 +366,12 @@ source /usr/local/bin/virtualenvwrapper.sh
 
 export LESS="-eirMX"
 
+# The next line enables bash completion for gcloud.
+source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+
 export RAILS_ENV=development
 
-export PYTHONPATH=$PYTHONPATH:~/Downloads/google-cloud-sdk/platform/google_appengine/
+export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
 
 ## Get rid of the default anaconda install
 #export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
@@ -625,6 +388,7 @@ export PATH=$M2:$PATH
 export PATH="/usr/local/heroku/bin:$PATH"
 
 
+export DOCKER_HOST=tcp://127.0.0.1:2376
 
 ### reload because colors are weird otherwise?
 if [ -z "$ASDF" ]; then
@@ -635,35 +399,22 @@ fi
 export AWS_REGION=ap-southeast-2
 
 
-#export PATH="$HOME/programs/go_appengine:$PATH"
-#export GOPATH="$HOME/programs/go_appengine/gopath"
-#export GOROOT="$HOME/programs/go_appengine/goroot"
-#export PATH="$GOROOT/bin:$PATH"
-#export PATH=$PATH:$GOPATH/bin
+export PATH="$HOME/programs/go_appengine:$PATH"
+export GOPATH="$HOME/programs/go_appengine/gopath"
+export GOROOT="$HOME/programs/go_appengine/goroot"
+export PATH="$GOROOT/bin:$PATH"
+export PATH=$PATH:$GOPATH/bin
 
 export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-eval "$(pyenv init -)"
-
-alias awsecrlogin="aws ecr get-login --no-include-email --region ap-southeast-2 | sh"
-export IS_LOCAL_DEV=true
-##export PYTHONPATH="$PYTHONPATH:/Users/lee.penkman/Downloads/google-cloud-sdk/lib:/Users/lee.penkman/Downloads/google-cloud-sdk/platform/google_appengine:/Users/lee.penkman/Downloads/google-cloud-sdk/platform/google_appengine/lib/yaml/lib"
-
-export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
-
-
-export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 source ~/.secretbashrc
+
 # The next line updates PATH for the Google Cloud SDK.
 source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
 
 # The next line enables shell command completion for gcloud.
 source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
-source ~/.bash_profile
+
+# export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
