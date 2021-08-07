@@ -11,3 +11,4 @@
 /subversion/auth/svn.*
 
 npmrc
+*.swp
