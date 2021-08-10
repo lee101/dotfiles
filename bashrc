@@ -197,6 +197,7 @@ alias hrmt='hg paths'
 alias had='hg add'
 
 function hcmep { hg commit -m "$@" ; hg push; }
+function findn { find . -name "$@"; }
 
 alias gpr='hub pull-request'
 alias hpr='gpr'
@@ -455,9 +456,15 @@ source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
 source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-source ~/.bash_profile
+#source ~/.bash_profile
 eval "$(direnv hook $SHELL)"
 
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
+
+alias k=kubectl
+source <(kubectl completion bash)
+
+alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
+
