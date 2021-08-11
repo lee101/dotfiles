@@ -333,8 +333,10 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
+alias docker='sudo docker'
 
 alias dps='docker ps'
+alias dim='docker images'
 alias dlg='docker logs'
 alias drm='docker rm'
 alias drmi='docker rmi'
@@ -349,7 +351,7 @@ alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
 
-function dbash { sudo docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
+function dbash { docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
 
@@ -386,6 +388,9 @@ export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+
+alias pbcopy='xclip -selection clipboard'
+alias pbpaste='xclip -selection clipboard -o'
 
 command_exists () {
     type "$1" &> /dev/null ;
@@ -434,7 +439,8 @@ if [ -z "$ASDF" ]; then
     source ~/.bashrc
 fi
 
-export AWS_REGION=ap-southeast-2
+export AWS_REGION=us-east-1
+#ap-southeast-2
 
 
 export PATH="$HOME/programs/go_appengine:$PATH"
@@ -468,3 +474,7 @@ source <(kubectl completion bash)
 
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
+
+. <(flux completion bash)
+
+alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
