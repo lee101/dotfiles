@@ -26,7 +26,7 @@ files = os.listdir(cwd)
 
 for filename in files:
     if True in [fnmatch(filename, pattern) for pattern in skip_list]:
-        print 'Skipping %s' % filename
+        print('Skipping %s' % filename)
         continue
 
     source = os.path.join(cwd, filename)
@@ -34,21 +34,21 @@ for filename in files:
 
     if os.path.lexists(destination):
         if options.force:
-            print 'Deleting %s' % destination
+            print('Deleting %s' % destination)
             try:
                 os.remove(destination)
             except OSError:
                 try:
                     rmtree(destination)
-                except OSError, e:
-                    print 'Failed to delete %s' % destination
+                except OSError as e:
+                    print('Failed to delete %s' % destination)
                     continue
         else:
-            print 'Not overwriting %s since the file exists already and force (-f) is not in effect' % destination
+            print('Not overwriting %s since the file exists already and force (-f) is not in effect' % destination)
             continue
 
-    print 'Creating a link to %s at %s.' % (source, destination)
+    print('Creating a link to %s at %s.' % (source, destination))
     os.symlink(source, destination)
 
-print 'Done.'
+print('Done.')
 
