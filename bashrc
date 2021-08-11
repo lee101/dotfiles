@@ -15,6 +15,19 @@ HISTCONTROL=ignoreboth
 # append to the history file, don't overwrite it
 shopt -s histappend
 
+# Eternal bash history.
+# ---------------------
+# Undocumented feature which sets the size to "unlimited".
+# http://stackoverflow.com/questions/9457233/unlimited-bash-history
+export HISTFILESIZE=
+export HISTSIZE=
+export HISTTIMEFORMAT="[%F %T] "
+# Change the file location because certain bash sessions truncate .bash_history file upon close.
+# http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
+export HISTFILE=~/.bash_eternal_history
+# Force prompt to write history after every command.
+# http://superuser.com/questions/20900/bash-history-loss
+PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -122,6 +135,9 @@ alias la='ls -A'
 alias l='ls -CF'
 
 alias d='cd'
+alias c='cd ~/code'
+
+alias tli='terraform console'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -226,6 +242,7 @@ alias gmg='git merge'
 alias gmga='git merge --abort'
 alias gmgm='git merge master'
 alias gmm='git merge master'
+alias gmgmn='git merge main'
 alias grb='git rebase'
 alias grbi='git rebase -i'
 alias grbim='git rebase -i master'
@@ -351,6 +368,11 @@ alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
 
+
+alias dprna='docker system prune -a --volumes'
+alias dprn='docker system prune'
+alias ddf='docker system df'
+
 function dbash { docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
@@ -375,13 +397,223 @@ pins() {
 
 eval "$(hub alias -s)"
 
+alias usage='du -sh .[!.]* * | sort -h'
+
+alias webserver='python -m SimpleHTTPServer 9090'
+
+alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
+
+alias findn='find . -name '
+
+alias o='xdg-open'
+
+
+
+if [[ ! $(uname -s) = "Darwin" ]]; then
+  alias pbcopy='xclip -selection clipboard'
+  alias pbpaste='xclip -selection clipboard -o'
+  alias open='xdg-open'
+  extract () {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+  }
+else
+  # Easy extract mac
+  extract () {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7za x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+  }
+fi
+
+
+# Creates an archive from given directory
+mktar() { tar cvf  "${1%%/}.tar"     "${1%%/}/"; }
+mktgz() { tar cvzf "${1%%/}.tar.gz"  "${1%%/}/"; }
+mktbz() { tar cvjf "${1%%/}.tar.bz2" "${1%%/}/"; }
+
+alias compress='mktgz'
+
+# Color prompt
+force_color_prompt=yes
+
+## Sudo fixes
+alias install='sudo apt-get install'
+alias pinstall='sudo pip install'
+alias ninstall='sudo npm install'
+
+alias refresh='source ~/.bashrc'
+alias reload='source ~/.bashrc'
+alias r='rm -rf'
+
+function my_ipe() # Get IP adress on ethernet.
+{
+    MY_IP=$(/sbin/ifconfig eth0 | awk '/inet/ { print $2 } ' |
+      sed -e s/addr://)
+    echo ${MY_IP:-"Not connected"}
+}
+
+function my_ip() # Get IP adress on wireless.
+{
+    MY_IP=$(/sbin/ifconfig wlan | awk '/inet/ { print $2 } ' |
+      sed -e s/addr://)
+    echo ${MY_IP:-"Not connected"}
+}
+
+
+
+################ fzf stuff
+
+# fe [FUZZY PATTERN] - Open the selected file with the default editor
+#   - Bypass fuzzy finder if there's only one match (--select-1)
+#   - Exit if there's no match (--exit-0)
+fe() {
+  local files
+  IFS=$'\n' files=($(fzf-tmux --query="$1" --multi --select-1 --exit-0))
+  [[ -n "$files" ]] && ${EDITOR:-vim} "${files[@]}"
+}
+
+# Modified version where you can press
+#   - CTRL-O to open with `open` command,
+#   - CTRL-E or Enter key to open with the $EDITOR
+fo() {
+  local out file key
+  IFS=$'\n' out=("$(fzf-tmux --query="$1" --exit-0 --expect=ctrl-o,ctrl-e)")
+  key=$(head -1 <<< "$out")
+  file=$(head -2 <<< "$out" | tail -1)
+  if [ -n "$file" ]; then
+    [ "$key" = ctrl-o ] && open "$file" || ${EDITOR:-vim} "$file"
+  fi
+}
+# vf - fuzzy open with vim from anywhere
+# ex: vf word1 word2 ... (even part of a file name)
+# zsh autoload function
+vf() {
+  local files
+
+  files=(${(f)"$(locate -Ai -0 $@ | grep -z -vE '~$' | fzf --read0 -0 -1 -m)"})
+
+  if [[ -n $files ]]
+  then
+     vim -- $files
+     print -l $files[1]
+  fi
+}
+# fuzzy grep open via ag
+vg() {
+  local file
+
+  file="$(ag --nobreak --noheading $@ | fzf -0 -1 | awk -F: '{print $1}')"
+
+  if [[ -n $file ]]
+  then
+     vim $file
+  fi
+}
+
+# fuzzy grep open via ag with line number
+vg() {
+  local file
+  local line
+
+  read -r file line <<<"$(ag --nobreak --noheading $@ | fzf -0 -1 | awk -F: '{print $1, $2}')"
+
+  if [[ -n $file ]]
+  then
+     vim $file +$line
+  fi
+}
+# fd - cd to selected directory
+fd() {
+  local dir
+  dir=$(find ${1:-.} -path '*/\.*' -prune \
+                  -o -type d -print 2> /dev/null | fzf +m) &&
+  cd "$dir"
+}
+# Another fd - cd into the selected directory
+# This one differs from the above, by only showing the sub directories and not
+#  showing the directories within those.
+fd() {
+  DIR=`find * -maxdepth 0 -type d -print 2> /dev/null | fzf-tmux` \
+    && cd "$DIR"
+}
+# fda - including hidden directories
+fda() {
+  local dir
+  dir=$(find ${1:-.} -type d 2> /dev/null | fzf +m) && cd "$dir"
+}
+# fdr - cd to selected parent directory
+fdr() {
+  local declare dirs=()
+  get_parent_dirs() {
+    if [[ -d "${1}" ]]; then dirs+=("$1"); else return; fi
+    if [[ "${1}" == '/' ]]; then
+      for _dir in "${dirs[@]}"; do echo $_dir; done
+    else
+      get_parent_dirs $(dirname "$1")
+    fi
+  }
+  local DIR=$(get_parent_dirs $(realpath "${1:-$PWD}") | fzf-tmux --tac)
+  cd "$DIR"
+}
+# cf - fuzzy cd from anywhere
+# ex: cf word1 word2 ... (even part of a file name)
+# zsh autoload function
+cf() {
+  local file
+
+  file="$(locate -Ai -0 $@ | grep -z -vE '~$' | fzf --read0 -0 -1)"
+
+  if [[ -n $file ]]
+  then
+     if [[ -d $file ]]
+     then
+        cd -- $file
+     else
+        cd -- ${file:h}
+     fi
+  fi
+}
+############# end fzf stuff
+
 
 export GIT_EDITOR=vim
 export VISUAL=vim
 export EDITOR=vim
 
-export HISTSIZE=9999
-export HISTFILESIZE=999999
+#export HISTSIZE=9999
+#export HISTFILESIZE=999999
 
 export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
