@@ -102,7 +102,6 @@ plugins=(
   gcloud
   nmap
   heroku
-  kubernetes
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -134,8 +133,8 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 
-if [ -e /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh ]; then . /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
-. /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh
+# if [ -e /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh ]; then . /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+# . /Users/leepenkman/.nix-profile/etc/profile.d/nix.sh
 
  # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
@@ -151,12 +150,14 @@ esac
 # ---------------------
 # Undocumented feature which sets the size to "unlimited".
 # http://stackoverflow.com/questions/9457233/unlimited-bash-history
-export HISTFILESIZE=
-export HISTSIZE=
+export HISTFILESIZE=9999999
+export HISTSIZE=9999999
+export SAVEHIST=9999999
 export HISTTIMEFORMAT="[%F %T] "
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
 export HISTFILE=~/.zsh_eternal_history
+setopt INC_APPEND_HISTORY_TIME
 # Force prompt to write history after every command.
 # http://superuser.com/questions/20900/bash-history-loss
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
