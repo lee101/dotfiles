@@ -700,6 +700,7 @@ eval "$(direnv hook $SHELL)"
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
 
 alias k=kubectl
 source <(kubectl completion bash)
@@ -710,3 +711,7 @@ alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 . <(flux completion bash)
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
