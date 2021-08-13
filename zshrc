@@ -204,3 +204,9 @@ echo "[[ $commands[kubectl] ]] && source <(kubectl completion zsh)" >> ~/.zshrc 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 [[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
+
+
+# aliases again
+alias k=kubectl
+alias refresh='source ~/.zsh'
+alias reload='source ~/.zsh'
