@@ -228,7 +228,9 @@ alias gcl='git clone --recurse-submodules'
 alias gclo='git clone'
 alias gcm='git commit -m'
 alias gcmt='git commit'
+alias gcmts='git commit -n '
 alias gcma='git commit -a -m'
+alias gcms='git commit -n -m'
 alias gcmamd='git commit --amend -C HEAD'
 alias gbr='git branch'
 alias gdf='git diff'
@@ -309,6 +311,7 @@ alias grv='git revert'
 alias gds='git describe'
 alias gw='git whatchanged'
 alias gdfb='git diff master...'
+alias gdfbm='git diff main...'
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
@@ -338,11 +341,13 @@ function gsp2 { git stash pop -p stash@{1}; }
 function gsp3 { git stash pop -p stash@{2}; }
 
 function gcmp { git commit -m "$@" ; gpsh; }
+function gcmps { git commit -n -m "$@" ; gpsh; }
 function gcmpf { git commit -m "$@" ; git push -f; }
 function gcmap { git commit -a -m "$@" ; git push; }
 function gcmapf { git commit -a -m "$@" ; git push -f; }
 function gcme { git add -A; git commit -a -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; gpsh; }
+function gcmeps { git add -A; git commit -a -n -m "$@" ; gpsh; }
 function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
 
 
@@ -374,6 +379,7 @@ alias dprn='docker system prune'
 alias ddf='docker system df'
 
 function dbash { docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
+function dbashg { docker run -i -t --entrypoint=/bin/bash --gpus all "$@" -c /bin/bash; }
 function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
 
@@ -398,6 +404,7 @@ pins() {
 eval "$(hub alias -s)"
 
 alias usage='du -sh .[!.]* * | sort -h'
+alias usager='du -sh * *  | sort -h'
 
 alias webserver='python -m SimpleHTTPServer 9090'
 
@@ -413,6 +420,8 @@ if [[ ! $(uname -s) = "Darwin" ]]; then
   alias pbcopy='xclip -selection clipboard'
   alias pbpaste='xclip -selection clipboard -o'
   alias open='xdg-open'
+  alias say='echo "$1" | espeak -s 120'
+
   extract () {
     if [ -f $1 ] ; then
         case $1 in
@@ -462,6 +471,7 @@ fi
 mktar() { tar cvf  "${1%%/}.tar"     "${1%%/}/"; }
 mktgz() { tar cvzf "${1%%/}.tar.gz"  "${1%%/}/"; }
 mktbz() { tar cvjf "${1%%/}.tar.bz2" "${1%%/}/"; }
+mkgz() { gzip -v -c $1 > $1.gz; }
 
 alias compress='mktgz'
 
@@ -630,6 +640,7 @@ command_exists () {
 
 
 export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+export PATH="$PATH:$HOME/.local/bin" # Add stuff like glances to path
 
 # Set architecture flags
 export ARCHFLAGS="-arch x86_64"
@@ -687,12 +698,6 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 source ~/.secretbashrc
 
-# The next line updates PATH for the Google Cloud SDK.
-source '/home/lee/programs/google-cloud-sdk/path.bash.inc'
-
-# The next line enables shell command completion for gcloud.
-source '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
-
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
 eval "$(direnv hook $SHELL)"
@@ -715,3 +720,9 @@ alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/lee/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/lee/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/google-cloud-sdk/completion.bash.inc'; fi

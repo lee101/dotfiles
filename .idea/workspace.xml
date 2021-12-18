@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="4d0d6c50-77e8-42e2-807a-f1a2fcd6d039" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bashrc" beforeDir="false" afterPath="$PROJECT_DIR$/bashrc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/zshrc" beforeDir="false" afterPath="$PROJECT_DIR$/zshrc" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -123,17 +124,6 @@
       <option name="ADDITIONAL_ARGS" value="" />
       <method />
     </configuration>
-    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
-      <option name="arquillianRunConfiguration">
-        <value>
-          <option name="containerStateName" value="" />
-        </value>
-      </option>
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <configuration default="true" type="PyBehaveRunConfigurationType" factoryName="Behave">
       <module name="dotfiles" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -180,7 +170,9 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1594182519209</updated>
-      <workItem from="1628559021081" duration="5331000" />
+      <workItem from="1628559021081" duration="14970000" />
+      <workItem from="1629065507932" duration="1667000" />
+      <workItem from="1629531676584" duration="1447000" />
     </task>
     <servers />
   </component>

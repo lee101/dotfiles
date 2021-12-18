@@ -26,3 +26,4 @@ bazel-*
 .properties
 .idea
 Brewfile.lock.json
+*.pclprof

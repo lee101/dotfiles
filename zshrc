@@ -157,7 +157,8 @@ export HISTTIMEFORMAT="[%F %T] "
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
 export HISTFILE=~/.zsh_eternal_history
-setopt INC_APPEND_HISTORY_TIME
+#setopt INC_APPEND_HISTORY_TIME
+setopt SHARE_HISTORY
 # Force prompt to write history after every command.
 # http://superuser.com/questions/20900/bash-history-loss
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
@@ -192,21 +193,117 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # Alias definitions.
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
-source <(kubectl completion zsh)  # setup autocomplete in zsh into the current shell
-echo "[[ $commands[kubectl] ]] && source <(kubectl completion zsh)" >> ~/.zshrc # add autocomplete permanently to your zsh shell
 
 [[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
-[[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-[[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
 
-
+alias gpr='hub pull-request' #'gh pr create'
+alias gcm='git commit -m'
+alias gsw='git show'
 # aliases again
 alias k=kubectl
-alias refresh='source ~/.zsh'
-alias reload='source ~/.zsh'
+alias refresh='source ~/.zshrc'
+alias reload='source ~/.zshrc'
+source ~/.secretbashrc
+alias klg='k logs -n'
+alias kdlp='k delete pod -n'
+alias kdsp='k describe pod -n'
+alias kdsn='k describe node '
+
+alias kdlpn='k delete pod --all -n'
+alias kdlap='kdlpn'
+
+
+alias gss='git stash'
+alias reswap='sudo swapoff -a && sudo swapon -a'
+export NODE_OPTIONS="--experimental-repl-await"
+
+
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+
+alias usag='du -sh * * | sort -h'
+
+
+
+
+alias o='xdg-open'
+
+
+
+if [[ ! $(uname -s) = "Darwin" ]]; then
+  alias pbcopy='xclip -selection clipboard'
+  alias pbpaste='xclip -selection clipboard -o'
+  alias open='xdg-open'
+  alias say='echo "$1" | espeak -s 120'
+
+  extract () {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+  }
+else
+  # Easy extract mac
+  extract () {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7za x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+  }
+fi
+
+aa () {
+	local alias_name
+	local alias_command
+	local new_alias
+	[[ $1 == "alias" ]] && shift
+	if (($# == 1))
+	then
+		IFS='=' read -r alias_name alias_command <<< $1
+	else
+		alias_name=$1
+		alias_command="$@[2, -1]"
+	fi
+	local cmd=alias
+	eval "$cmd $alias_name='$alias_command'"
+	local alias_line="$cmd $alias_name='$alias_command'"
+	echo $alias_line >> ~/.dotfiles/zsh/aliases.zsh
+	echo "Added $alias_line to ~/.dotfiles/zsh/aliases.zsh"
+}
