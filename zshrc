@@ -307,3 +307,6 @@ aa () {
 	echo $alias_line >> ~/.dotfiles/zsh/aliases.zsh
 	echo "Added $alias_line to ~/.dotfiles/zsh/aliases.zsh"
 }
+alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
+
+
