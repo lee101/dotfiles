@@ -726,3 +726,9 @@ if [ -f '/home/lee/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee/google-c
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/google-cloud-sdk/completion.bash.inc'; fi
+
+
+
+alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
+
+
