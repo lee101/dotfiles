@@ -309,4 +309,4 @@ aa () {
 }
 alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
 
-
+alias k='kubectl'
