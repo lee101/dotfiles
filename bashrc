@@ -312,6 +312,7 @@ alias gds='git describe'
 alias gw='git whatchanged'
 alias gdfb='git diff master...'
 alias gdfbm='git diff main...'
+alias gdfbd='git diff develop...'
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
@@ -381,6 +382,12 @@ alias ddf='docker system df'
 function dbash { docker run -i -t -u root --entrypoint=/bin/bash "$@" -c /bin/bash; }
 function dbashg { docker run -i -t --entrypoint=/bin/bash --gpus all "$@" -c /bin/bash; }
 function dbashu { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
+function dbashe { docker exec -it "$@" /bin/bash; }
+
+function kbash() { k exec -it -n "$@" -- /bin/bash; }
+function ksh() { k exec -it -n "$@" -- /bin/sh; }
+
+
 function dbind { sudo mount --bind -o uid=1000,gid=1000 /var/lib/docker/aufs/mnt/`docker ps -l -q --no-trunc`/app/ .;cd .; }
 
 alias dmount='dbind'
@@ -721,14 +728,14 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/home/lee/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee/google-cloud-sdk/path.bash.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/lee/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/google-cloud-sdk/completion.bash.inc'; fi
-
 
 
 alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
 
+alias k='kubectl'
 
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
