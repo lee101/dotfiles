@@ -20,6 +20,8 @@ sudo npm install -g yarn grunt gulp
 
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.35.2/install.sh | bash
 
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 nvm install 14
 
 curl https://pyenv.run | bash
