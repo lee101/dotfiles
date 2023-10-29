@@ -730,7 +730,7 @@ export NVM_DIR="$HOME/.nvm"
 
 
 
-alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
+alias charm='/mnt/fast/programs/pycharm-2023.1.3/bin/pycharm.sh'
 
 alias k='kubectl'
 
@@ -739,3 +739,11 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
+
+
+alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+alias monoff='sleep 1; xset dpms force off'
