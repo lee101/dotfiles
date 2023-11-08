@@ -339,3 +339,7 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.zsh.inc' ]; then . '/home/lee/
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.zsh.inc'; fi
+
+
+alias monoff='sleep 1; xset dpms force off'
+
