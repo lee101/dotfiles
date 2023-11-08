@@ -13,4 +13,4 @@
 npmrc
 *.swp
 .idea
-
+.idea/
