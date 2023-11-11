@@ -307,9 +307,14 @@ aa () {
 	echo $alias_line >> ~/.dotfiles/zsh/aliases.zsh
 	echo "Added $alias_line to ~/.dotfiles/zsh/aliases.zsh"
 }
-alias charm='/home/lee/programs/pycharm-2022.2.1/bin/pycharm.sh'
+
+alias charm='/home/lee/programs/pycharm-2023.1.3/bin/pycharm.sh'
 
 alias k='kubectl'
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
@@ -336,6 +341,5 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.zsh.inc' ]; then . '/home/lee/
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.zsh.inc'; fi
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+alias monoff='sleep 1; xset dpms force off'
+
