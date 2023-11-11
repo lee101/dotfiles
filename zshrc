@@ -307,6 +307,35 @@ aa () {
 	echo $alias_line >> ~/.dotfiles/zsh/aliases.zsh
 	echo "Added $alias_line to ~/.dotfiles/zsh/aliases.zsh"
 }
-alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
+alias charm='/home/lee/programs/pycharm-2022.2.1/bin/pycharm.sh'
 
 alias k='kubectl'
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path)"
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/lee/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/lee/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/lee/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/lee/programs/google-cloud-sdk/path.zsh.inc' ]; then . '/home/lee/programs/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/lee/programs/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.zsh.inc'; fi
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
