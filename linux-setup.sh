@@ -61,3 +61,7 @@ echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudf
 # install cloudflared
 sudo apt-get update && sudo apt-get install cloudflared
 
+# setup nvim
+sudo apt-get install neovim
+
+cp ~/.vimrc ~/.config/nvim/init.vim
