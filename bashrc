@@ -115,6 +115,15 @@ extract () {
       echo "'$1' is not a valid file!"
   fi
 }
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=Linux;;
+    Darwin*)    machine=Mac;;
+    CYGWIN*)    machine=Cygwin;;
+    MINGW*)     machine=MinGw;;
+    MSYS_NT*)   machine=Git;;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
 
 # Creates an archive from given directory
 mktar() { tar cvf  "${1%%/}.tar"     "${1%%/}/"; }
@@ -356,7 +365,11 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
-alias docker='sudo docker'
+
+if [ "$machine" -ne "Cygwin" ]; then
+   export DOCKER_HOST=tcp://127.0.0.1:2376
+   alias docker='sudo docker'
+fi
 
 alias dps='docker ps'
 alias dim='docker images'
@@ -680,9 +693,6 @@ export PATH=$M2:$PATH
 ### Added by the Heroku Toolbelt
 export PATH="/usr/local/heroku/bin:$PATH"
 
-
-export DOCKER_HOST=tcp://127.0.0.1:2376
-
 ### reload because colors are weird otherwise?
 if [ -z "$ASDF" ]; then
     export ASDF="asdf"
@@ -753,6 +763,8 @@ export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}
 alias y="yarn"
 
 function ali { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
+function alis { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
+
 
 
 
@@ -761,3 +773,4 @@ alias smi="nvidia-smi"
 export MODULAR_HOME="$HOME/.modular"
 export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
+alias explorer="explorer.exe ."
