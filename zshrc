@@ -363,3 +363,4 @@ if [ -f '/home/lee/programs/google-cloud-sdk/completion.zsh.inc' ]; then . '/hom
 
 alias monoff='sleep 1; xset dpms force off'
 
+source ~/powerlevel10k/powerlevel10k.zsh-theme
