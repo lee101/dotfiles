@@ -761,3 +761,4 @@ alias smi="nvidia-smi"
 export MODULAR_HOME="$HOME/.modular"
 export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
+alias explorer="explorer.exe ."
