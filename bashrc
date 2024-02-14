@@ -742,6 +742,7 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
+<<<<<<< HEAD
 export PATH="/usr/local/cuda-11.4/bin:$PATH"
 export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
@@ -755,6 +756,47 @@ else
         . "/home/lee/miniconda3/etc/profile.d/conda.sh"
     else
         export PATH="/home/lee/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
+
+
+alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+. "$HOME/.cargo/env"
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+
+
+alias y="yarn"
+
+function ali { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
+function alis { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
+
+alias reswap='sudo swapoff -a && sudo swapon -a'
+
+
+alias yi="yarn install"
+alias smi="nvidia-smi"
+export MODULAR_HOME="$HOME/.modular"
+export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
+alias monoff='sleep 1; xset dpms force off'
+alias explorer="explorer.exe ."
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/lee/anaconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup
