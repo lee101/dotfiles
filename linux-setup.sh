@@ -64,4 +64,5 @@ sudo apt-get update && sudo apt-get install cloudflared
 # setup nvim
 sudo apt-get install neovim
 
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 cp ~/.vimrc ~/.config/nvim/init.vim
