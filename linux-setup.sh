@@ -12,7 +12,7 @@ sudo snap install hub --classic
 
 sudo apt  install jq
 
-sudo apt install hub vim -y
+sudo apt install hub vim build-essential -y
 
 sudo apt-get install libbz2-dev -y
 sudo npm install -g yarn grunt gulp
@@ -52,3 +52,16 @@ sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 #sudo apt-mark hold kubelet kubeadm kubectl
 # configure kubectl
+sudo mkdir -p --mode=0755 /usr/share/keyrings
+curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+
+# Add this repo to your apt repositories
+echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared jammy main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
+
+# install cloudflared
+sudo apt-get update && sudo apt-get install cloudflared
+
+# setup nvim
+sudo apt-get install neovim
+
+cp ~/.vimrc ~/.config/nvim/init.vim
