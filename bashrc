@@ -755,7 +755,7 @@ alias y="yarn"
 function ali { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
 function alis { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
 
-
+alias reswap='sudo swapoff -a && sudo swapon -a'
 
 
 alias yi="yarn install"
