@@ -753,6 +753,8 @@ export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}
 alias y="yarn"
 
 function ali { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
+function alis { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
+
 
 
 
@@ -762,3 +764,19 @@ export MODULAR_HOME="$HOME/.modular"
 export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
 alias explorer="explorer.exe ."
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/lee/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
