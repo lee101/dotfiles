@@ -356,6 +356,9 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
+alias smi='nvidia-smi'
+alias wsmi='watch -n 1 nvidia-smi'
+
 alias docker='sudo docker'
 
 alias dps='docker ps'
@@ -373,7 +376,7 @@ alias dkillallunused='dkillunused'
 alias dklalli='dklall;docker rmi $(docker images -a -q)'
 alias dkillalli='dklall;docker rmi $(docker images -a -q)'
 alias dis='docker inspect'
-
+alias drmiunused='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 
 alias dprna='docker system prune -a --volumes'
 alias dprn='docker system prune'
@@ -730,7 +733,7 @@ export NVM_DIR="$HOME/.nvm"
 
 
 
-alias charm='/mnt/fast/programs/pycharm-2023.1.3/bin/pycharm.sh'
+alias charm='/home/lee/programs/pycharm-2022.1.3/bin/pycharm.sh'
 
 alias k='kubectl'
 
@@ -739,6 +742,25 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
+<<<<<<< HEAD
+export PATH="/usr/local/cuda-11.4/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/lee/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/lee/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/lee/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
 
 
 alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
