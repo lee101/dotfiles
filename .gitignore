@@ -14,3 +14,4 @@ npmrc
 *.swp
 .idea
 .idea/
+idea/*
