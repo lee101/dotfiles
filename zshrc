@@ -307,6 +307,27 @@ aa () {
 	echo $alias_line >> ~/.dotfiles/zsh/aliases.zsh
 	echo "Added $alias_line to ~/.dotfiles/zsh/aliases.zsh"
 }
-alias charm='/home/lee/programs/pycharm-2021.3/bin/pycharm.sh'
+alias charm='/home/lee/programs/pycharm-2022.1.3/bin/pycharm.sh'
 
 alias k='kubectl'
+
+export PATH="/usr/local/cuda-12.0/bin:$PATH"
+#export LD_LIBRARY_PATH="/usr/local/cuda-12.0/lib64:$LD_LIBRARY_PATH"
+export CUDA_HOME='/usr/local/cuda-12.0'
+
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/lee/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/lee/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/lee/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
