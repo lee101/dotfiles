@@ -22,6 +22,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # a theme from this variable instead of looking in $ZSH/themes/
 # If set to an empty array, this variable will have no effect.
 # ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+DISABLE_AUTO_UPDATE="true"
 
 # Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
@@ -77,15 +78,15 @@ COMPLETION_WAITING_DOTS="true"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
-  bundler
+  #bundler
   dotenv
-  osx
-  rake
-  rbenv
-  ruby
-  grunt
-  gulp
-  golang
+ # osx
+ # rake
+  #rbenv
+ # ruby
+#  grunt
+#  gulp
+#  golang
   python
   node
   pyenv
@@ -94,14 +95,14 @@ plugins=(
   terraform
   yarn
   aws
-  brew
+#  brew
   cp
   direnv
   docker
   fd
   gcloud
   nmap
-  heroku
+ # heroku
 )
 
 source $ZSH/oh-my-zsh.sh
