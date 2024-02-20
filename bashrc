@@ -663,8 +663,11 @@ export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
 export PATH="$PATH:$HOME/.local/bin" # Add stuff like glances to path
 
 # Set architecture flags
-export ARCHFLAGS="-arch x86_64"
-chflags nohidden ~/Library/
+# if mac
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    export ARCHFLAGS="-arch x86_64"
+    chflags nohidden ~/Library/
+fi
 
 # virtualenv
 export WORKON_HOME=$HOME/.virtualenvs
@@ -677,7 +680,7 @@ source '/Users/lee/google-cloud-sdk/completion.bash.inc'
 
 export RAILS_ENV=development
 
-export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
+#export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
 
 ## Get rid of the default anaconda install
 #export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
