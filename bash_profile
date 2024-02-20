@@ -32,3 +32,11 @@ if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
     source $HOME/.bashrc
 fi
 . "$HOME/.cargo/env"
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+if [ -f '/d/condar/Scripts/conda.exe' ]; then
+    eval "$('/d/condar/Scripts/conda.exe' 'shell.bash' 'hook')"
+fi
+# <<< conda initialize <<<
+
