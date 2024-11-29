@@ -412,6 +412,8 @@ alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
+alias pi='pip install --cache-dir /media/lee/pipcache'
+
 
 pins() {
     package_name=$1
@@ -653,8 +655,16 @@ export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
 
-alias pbcopy='xclip -selection clipboard'
+alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
+
 alias pbpaste='xclip -selection clipboard -o'
+alias goo='go mod tidy && go run .'
+export GO111MODULE=on
+export GOPROXY=https://proxy.golang.org,direct
+export GOSUMDB=sum.golang.org
+alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
+
+
 
 command_exists () {
     type "$1" &> /dev/null ;
@@ -751,8 +761,9 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
-export PATH="/usr/local/cuda-11.4/bin:$PATH"
-export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
+
+export PATH="/usr/local/cuda-12.0/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-12.0/lib64:$LD_LIBRARY_PATH"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -810,3 +821,5 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+
+[[ -s "/home/lee/.gvm/scripts/gvm" ]] && source "/home/lee/.gvm/scripts/gvm"
