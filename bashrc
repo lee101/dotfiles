@@ -365,6 +365,7 @@ function gswf {
 }
 
 if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+  
    export GOROOT="/c/Program Files/Go"
 else
    export DOCKER_HOST=tcp://127.0.0.1:2376
@@ -435,10 +436,6 @@ alias webserver='python -m SimpleHTTPServer 9090'
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
 
 alias findn='find . -name '
-
-alias o='xdg-open'
-
-
 
 if [[ ! $(uname -s) = "Darwin" ]]; then
   alias pbcopy='xclip -selection clipboard'
@@ -825,3 +822,13 @@ case ":$PATH:" in
 esac
 # pnpm end
 alias ni=nvim
+
+
+# Find the existing 'o' alias and replace/add this instead
+if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" ]]; then
+    alias o='explorer.exe .'
+    alias oo='explorer.exe'
+else
+    alias o='xdg-open .'
+    alias oo='xdg-open'
+fi 
