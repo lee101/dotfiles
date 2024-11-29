@@ -1,4 +1,10 @@
 
+sudo apt-get install tk-dev
+sudo apt-get install libreadline-dev
+sudo apt-get install -y cmake
+sudo apt-get install -y libarrow-dev libparquet-dev
+
+
 ## GIT
 
 sudo npm install -g diff-so-fancy

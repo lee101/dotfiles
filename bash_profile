@@ -32,3 +32,5 @@ if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
     source $HOME/.bashrc
 fi
 . "$HOME/.cargo/env"
+export MODULAR_HOME="/home/lee/.modular"
+export PATH="/home/lee/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
