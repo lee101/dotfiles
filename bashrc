@@ -228,6 +228,7 @@ alias hprs='hub pr show'
 alias gprs='hub pr show'
 
 alias gst='git status'
+alias gsto='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
 alias gcom='git checkout master'
@@ -363,8 +364,10 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
-
-if [ "$machine" -ne "Cygwin" ]; then
+if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+  
+   export GOROOT="/c/Program Files/Go"
+else
    export DOCKER_HOST=tcp://127.0.0.1:2376
    alias docker='sudo docker'
 fi
@@ -435,10 +438,6 @@ alias webserver='python -m SimpleHTTPServer 9090'
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
 
 alias findn='find . -name '
-
-alias o='xdg-open'
-
-
 
 if [[ ! $(uname -s) = "Darwin" ]]; then
   alias pbcopy='xclip -selection clipboard'
@@ -675,8 +674,11 @@ export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
 export PATH="$PATH:$HOME/.local/bin" # Add stuff like glances to path
 
 # Set architecture flags
-export ARCHFLAGS="-arch x86_64"
-chflags nohidden ~/Library/
+# if mac
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    export ARCHFLAGS="-arch x86_64"
+    chflags nohidden ~/Library/
+fi
 
 # virtualenv
 export WORKON_HOME=$HOME/.virtualenvs
@@ -689,7 +691,7 @@ source '/Users/lee/google-cloud-sdk/completion.bash.inc'
 
 export RAILS_ENV=development
 
-export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
+#export PYTHONPATH=$PYTHONPATH:~/google-cloud-sdk/platform/google_appengine/
 
 ## Get rid of the default anaconda install
 #export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:$PATH"
@@ -762,19 +764,26 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
 
+#export PATH="/usr/local/cuda-12.2/$PATH"
+export PATH="/usr/local/cuda-12/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-12.2/lib64:$LD_LIBRARY_PATH"
 export PATH="/usr/local/cuda-12.0/bin:$PATH"
 export LD_LIBRARY_PATH="/usr/local/cuda-12.0/lib64:$LD_LIBRARY_PATH"
 
+export PATH="/usr/local/cuda-11.4/bin:$PATH"
+
+export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
+
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
-    if [ -f "/home/lee/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/miniconda3/etc/profile.d/conda.sh"
+    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
     else
-        export PATH="/home/lee/miniconda3/bin:$PATH"
+        export PATH="/home/lee/anaconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup
@@ -823,3 +832,24 @@ unset __conda_setup
 
 
 [[ -s "/home/lee/.gvm/scripts/gvm" ]] && source "/home/lee/.gvm/scripts/gvm"
+
+[[ -s "/home/lee/.gvm/scripts/gvm" ]] && source "/home/lee/.gvm/scripts/gvm"
+
+# pnpm
+export PNPM_HOME="/home/lee/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+alias ni=nvim
+
+
+# Find the existing 'o' alias and replace/add this instead
+if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" ]]; then
+    alias o='explorer.exe .'
+    alias oo='explorer.exe'
+else
+    alias o='xdg-open .'
+    alias oo='xdg-open'
+fi 
