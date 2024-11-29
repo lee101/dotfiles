@@ -285,3 +285,7 @@ function usage {
         $_.Name + " " + [math]::Round((Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum / 1MB, 2) + " MB"
     } | Sort-Object
 }
+
+function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function o { explorer.exe . }
+function oo { explorer.exe $args }
