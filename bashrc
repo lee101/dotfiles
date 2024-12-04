@@ -365,7 +365,7 @@ function gswf {
 }
 
 if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-  
+
    export GOROOT="/c/Program Files/Go"
 else
    export DOCKER_HOST=tcp://127.0.0.1:2376
@@ -663,6 +663,7 @@ export GOPROXY=https://proxy.golang.org,direct
 export GOSUMDB=sum.golang.org
 alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
 
+alias dlg='echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
 
 
 command_exists () {
@@ -852,4 +853,4 @@ if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$O
 else
     alias o='xdg-open .'
     alias oo='xdg-open'
-fi 
+fi
