@@ -64,3 +64,6 @@
 	whitespace = red reverse
 [merge]
 	conflictstyle = diff3
+[safe]
+	directory = /media/lee/crucial/code/excalidraw
+	directory = /media/lee/crucial/code/stock
