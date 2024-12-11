@@ -187,10 +187,6 @@ if [ -n "$BASH_VERSION" ]; then
       . ~/.bash_aliases
   fi
 fi
-## =============           My things        =================
-## =============           My things        =================
-## =============           My things        =================
-## =============           My things        =================
 
 alias u='cd ..'
 
@@ -364,8 +360,10 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
+if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
 
-if [ "$machine" -ne "Cygwin" ]; then
+   export GOROOT="/c/Program Files/Go"
+else
    export DOCKER_HOST=tcp://127.0.0.1:2376
    alias docker='sudo docker'
 fi
@@ -414,6 +412,8 @@ alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='pip install'
 alias pinu='pip install -U'
+alias pi='pip install --cache-dir /media/lee/pipcache'
+
 
 pins() {
     package_name=$1
@@ -435,10 +435,6 @@ alias webserver='python -m SimpleHTTPServer 9090'
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
 
 alias findn='find . -name '
-
-alias o='xdg-open'
-
-
 
 if [[ ! $(uname -s) = "Darwin" ]]; then
   alias pbcopy='xclip -selection clipboard'
@@ -655,8 +651,17 @@ export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 # Cntrl+] to copy current command to clipboard
 bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
 
-alias pbcopy='xclip -selection clipboard'
+alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
+
 alias pbpaste='xclip -selection clipboard -o'
+alias goo='go mod tidy && go run .'
+export GO111MODULE=on
+export GOPROXY=https://proxy.golang.org,direct
+export GOSUMDB=sum.golang.org
+alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
+
+alias dlg='echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
+
 
 command_exists () {
     type "$1" &> /dev/null ;
@@ -756,19 +761,26 @@ if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
+
+#export PATH="/usr/local/cuda-12.2/$PATH"
+export PATH="/usr/local/cuda-12/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-12.2/lib64:$LD_LIBRARY_PATH"
+export PATH="/usr/local/cuda-12.0/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-12.0/lib64:$LD_LIBRARY_PATH"
+
 export PATH="/usr/local/cuda-11.4/bin:$PATH"
+
 export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
-# >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
-    if [ -f "/home/lee/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/miniconda3/etc/profile.d/conda.sh"
+    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
     else
-        export PATH="/home/lee/miniconda3/bin:$PATH"
+        export PATH="/home/lee/anaconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup
@@ -815,4 +827,3 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-export PATH="$PATH:$HOME/protoc/bin"
