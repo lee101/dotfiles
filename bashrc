@@ -261,6 +261,7 @@ alias grbc='git rebase --continue'
 alias grba='git rebase --abort'
 alias grl='git reflog'
 alias gad='git add'
+alias gadu='git add -u'
 alias gadi='git add -i'
 alias gada='git add -A'
 alias gaa='git add -A'
@@ -365,7 +366,7 @@ function gswf {
 }
 
 if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-  
+
    export GOROOT="/c/Program Files/Go"
 else
    export DOCKER_HOST=tcp://127.0.0.1:2376
@@ -831,4 +832,7 @@ if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$O
 else
     alias o='xdg-open .'
     alias oo='xdg-open'
-fi 
+fi
+
+
+export PATH="$PATH:/opt/nvim-linux64/bin"
