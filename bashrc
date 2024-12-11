@@ -228,6 +228,7 @@ alias hprs='hub pr show'
 alias gprs='hub pr show'
 
 alias gst='git status'
+alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
 alias gcom='git checkout master'
@@ -381,6 +382,7 @@ alias drmi='docker rmi'
 alias dkl='docker kill'
 alias dstt='docker start'
 alias dstp='docker stop'
+alias sdtpa='docker stop $(docker ps -q)'
 alias dklall='docker stop $(docker ps -a -q); docker rm `docker ps --no-trunc -a -q`'
 alias dkillall='docker stop $(docker ps -a -q);docker rm `docker ps --no-trunc -a -q`'
 alias dkillunused='docker rm `docker ps --no-trunc -a -q`;docker rmi $(docker images -a -q)'
@@ -813,3 +815,4 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+export PATH="$PATH:$HOME/protoc/bin"

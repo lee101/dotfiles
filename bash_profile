@@ -35,8 +35,8 @@ fi
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-if [ -f '/d/condar/Scripts/conda.exe' ]; then
-    eval "$('/d/condar/Scripts/conda.exe' 'shell.bash' 'hook')"
+if [ -f '/c/ProgramData/miniconda3/Scripts/conda.exe' ]; then
+    eval "$('/c/ProgramData/miniconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
 fi
 # <<< conda initialize <<<
 
