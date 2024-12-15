@@ -19,7 +19,7 @@ parser.add_option("-f", "--force", dest="force", default=False, action="store_tr
 (options, args) = parser.parse_args()
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown']
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1']
 cwd = os.path.realpath(os.getcwd())
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)
@@ -30,6 +30,10 @@ for filename in files:
         continue
 
     source = os.path.join(cwd, filename)
+    if os.path.isdir(source):
+        print('Skipping directory %s' % filename)
+        continue
+
     destination = os.path.join(homedir, '.' + filename)
 
     if os.path.lexists(destination):
@@ -51,4 +55,3 @@ for filename in files:
     os.symlink(source, destination)
 
 print('Done.')
-
