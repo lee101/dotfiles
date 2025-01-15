@@ -848,3 +848,8 @@ fi
 
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
+
+
+#if [ -t 1 ]; then
+#  exec zsh
+#fi
