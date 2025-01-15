@@ -15,20 +15,21 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 export PATH="$HOME/.poetry/bin:$PATH"
 
 # The next line enables shell command completion for gcloud.
-if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc' ]; then . '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc'; fi
+#if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc' ]; then . '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc'; fi
 
-if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+#if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
-if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
-    source $HOME/.bashrc
-fi
+#if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
+source $HOME/.bashrc
+#fi
 
 . "$HOME/.cargo/env"
 
 # !! Contents within this block are managed by 'conda init' !!
-if [ -f '/d/condar/Scripts/conda.exe' ]; then
-    eval "$('/d/condar/Scripts/conda.exe' 'shell.bash' 'hook')"
-fi
+#if [ -f '/d/condar/Scripts/conda.exe' ]; then
+#    eval "$('/d/condar/Scripts/conda.exe' 'shell.bash' 'hook')"
+#fi
 
 export MODULAR_HOME="/home/lee/.modular"
 export PATH="/home/lee/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
+
