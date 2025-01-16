@@ -20,8 +20,9 @@ export PATH="$HOME/.poetry/bin:$PATH"
 #if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 #if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
-source $HOME/.bashrc
-#fi
+if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ]; then
+    . $HOME/.bashrc
+fi
 
 . "$HOME/.cargo/env"
 
