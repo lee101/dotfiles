@@ -190,3 +190,5 @@ cp ~/.vimrc ~/.config/nvim/init.vim
 
 gh auth login
 gh extension install github/gh-copilot
+
+sudo apt install -y ripgrep
