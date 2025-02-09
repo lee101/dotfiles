@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
@@ -646,7 +646,9 @@ export EDITOR=vim
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
 
-export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+fi
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
@@ -681,12 +683,12 @@ fi
 
 # virtualenv
 export WORKON_HOME=$HOME/.virtualenvs
-source /usr/local/bin/virtualenvwrapper.sh
+[ -f /usr/local/bin/virtualenvwrapper.sh ] && source /usr/local/bin/virtualenvwrapper.sh
 
 export LESS="-eirMX"
 
 # The next line enables bash completion for gcloud.
-source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+[ -f '/Users/lee/google-cloud-sdk/completion.bash.inc' ] && source '/Users/lee/google-cloud-sdk/completion.bash.inc'
 
 export RAILS_ENV=development
 
@@ -737,8 +739,11 @@ export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
-alias k=kubectl
-source <(kubectl completion bash)
+# Guard kubectl completion
+if command -v kubectl >/dev/null 2>&1; then
+    alias k=kubectl
+    source <(kubectl completion bash)
+fi
 
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
