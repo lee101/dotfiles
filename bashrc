@@ -23,8 +23,8 @@ fi
 # ---------------------
 # Undocumented feature which sets the size to "unlimited".
 # http://stackoverflow.com/questions/9457233/unlimited-bash-history
-export HISTFILESIZE=
-export HISTSIZE=
+export HISTFILESIZE=99999999
+export HISTSIZE=9999999
 export HISTTIMEFORMAT="[%F %T] "
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
@@ -257,6 +257,7 @@ alias grbc='git rebase --continue'
 alias grba='git rebase --abort'
 alias grl='git reflog'
 alias gad='git add'
+alias gadu='git add -u'
 alias gadi='git add -i'
 alias gada='git add -A'
 alias gaa='git add -A'
@@ -812,7 +813,6 @@ export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
 alias explorer="explorer.exe ."
 
-# >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
@@ -825,7 +825,6 @@ else
     fi
 fi
 unset __conda_setup
-# <<< conda initialize <<<
 
 # fzf configuration for better shell experience
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
@@ -833,3 +832,30 @@ export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'bat -
 export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
+
+# pnpm
+export PNPM_HOME="/home/lee/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+alias ni=nvim
+
+
+# Find the existing 'o' alias and replace/add this instead
+if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
+    alias o='explorer.exe .'
+    alias oo='explorer.exe'
+else
+    alias o='xdg-open .'
+    alias oo='xdg-open'
+fi
+
+
+export PATH="$PATH:/opt/nvim-linux64/bin"
+
+
+#if [ -t 1 ]; then
+#  exec zsh
+#fi
