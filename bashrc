@@ -430,7 +430,7 @@ eval "$(hub alias -s)"
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
-
+alias pn=pnpm
 alias webserver='python -m SimpleHTTPServer 9090'
 
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
@@ -831,6 +831,12 @@ else
 fi
 unset __conda_setup
 
+# fzf configuration for better shell experience
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'bat --style=numbers --color=always --line-range :500 {}'"
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
 
 # pnpm
 export PNPM_HOME="/home/lee/.local/share/pnpm"

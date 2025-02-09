@@ -1,4 +1,4 @@
-
+sudo apt install fzf
 sudo apt-get install tk-dev
 sudo apt-get install libreadline-dev
 sudo apt-get install -y cmake
