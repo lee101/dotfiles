@@ -429,7 +429,7 @@ eval "$(hub alias -s)"
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
-
+alias pn=pnpm
 alias webserver='python -m SimpleHTTPServer 9090'
 
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'

@@ -2,7 +2,7 @@
 # Ctrl-f: Open fuzzy file finder for selecting files
 bind -x '"\C-f": "fzf-file-widget"'
 # Ctrl-r: Search command history interactively
-bind -x '"\C-r": "fdf"'
+bind '"\C-r": " \$(__fzf_history__)\e\C-e\er"'
 # Ctrl-j: Fuzzy directory navigation
 bind -x '"\C-j": "fzf-cd-widget"'
 
