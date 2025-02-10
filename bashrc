@@ -832,7 +832,7 @@ fi
 unset __conda_setup
 
 # fzf configuration for better shell experience
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'bat --style=numbers --color=always --line-range :500 {}'"
 export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -864,3 +864,4 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
+alias zle=zile
