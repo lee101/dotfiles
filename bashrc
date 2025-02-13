@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
@@ -795,8 +795,11 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 . "$HOME/.cargo/env"
-export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
 
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    . ~/.wslbashrc.sh
+fi
 
 alias y="yarn"
 
@@ -854,7 +857,7 @@ fi
 
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
-
+alias vim='nvim'
 
 #if [ -t 1 ]; then
 #  exec zsh
