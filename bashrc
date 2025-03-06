@@ -662,6 +662,9 @@ export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org,direct
 export GOSUMDB=sum.golang.org
 alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
+alias pcw='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/Scripts/python.exe'
+
+
 
 alias dlg='echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
 
@@ -740,10 +743,10 @@ eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
 # Guard kubectl completion
-if command -v kubectl >/dev/null 2>&1; then
-    alias k=kubectl
-    source <(kubectl completion bash)
-fi
+# if command -v kubectl >/dev/null 2>&1; then
+#     alias k=kubectl
+#     source <(kubectl completion bash)
+# fi
 
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
@@ -778,19 +781,7 @@ export PATH="/usr/local/cuda-11.4/bin:$PATH"
 
 export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+
 
 
 
@@ -800,8 +791,11 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 . "$HOME/.cargo/env"
-export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
 
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    . ~/.wslbashrc.sh
+fi
 
 alias y="yarn"
 
@@ -818,21 +812,9 @@ export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
 alias explorer="explorer.exe ."
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
 
 # fzf configuration for better shell experience
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'bat --style=numbers --color=always --line-range :500 {}'"
 export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -859,12 +841,11 @@ fi
 
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
-
+alias vim='nvim'
 
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-
 # Set display for X11 forwarding if in WSL
 if grep -q "microsoft" /proc/version 2>/dev/null; then
   export DISPLAY=:0.0
@@ -878,3 +859,4 @@ fi
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+alias zle=zile
