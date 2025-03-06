@@ -864,8 +864,16 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-export DISPLAY=:0.0
-nvm use node
+
+# Set display for X11 forwarding if in WSL
+if grep -q "microsoft" /proc/version 2>/dev/null; then
+  export DISPLAY=:0.0
+fi
+
+# Use node version manager if available
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  nvm use node >/dev/null 2>&1
+fi
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
