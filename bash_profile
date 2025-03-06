@@ -24,7 +24,6 @@ if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ]; then
     . $HOME/.bashrc
 fi
 
-. "$HOME/.cargo/env"
 
 # !! Contents within this block are managed by 'conda init' !!
 #if [ -f '/d/condar/Scripts/conda.exe' ]; then
@@ -33,4 +32,5 @@ fi
 
 export MODULAR_HOME="/home/lee/.modular"
 export PATH="/home/lee/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
+
 
