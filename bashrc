@@ -718,15 +718,15 @@ export AWS_REGION=us-east-1
 #ap-southeast-2
 
 
-export PATH="$HOME/programs/go_appengine:$PATH"
-export GOPATH="$HOME/programs/go_appengine/gopath"
-export GOROOT="$HOME/programs/go_appengine/goroot"
-export PATH="$GOROOT/bin:$PATH"
-export PATH=$PATH:$GOPATH/bin
+# export PATH="$HOME/programs/go_appengine:$PATH"
+# export GOPATH="$HOME/programs/go_appengine/gopath"
+# export GOROOT="$HOME/programs/go_appengine/goroot"
+# export PATH="$GOROOT/bin:$PATH"
+# export PATH=$PATH:$GOPATH/bin
 
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+#export GOROOT=/usr/local/go
+#export GOPATH=$HOME/go
+#export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 source ~/.secretbashrc
 
@@ -864,3 +864,9 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
+export DISPLAY=:0.0
+nvm use node
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
