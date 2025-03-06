@@ -662,6 +662,9 @@ export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org,direct
 export GOSUMDB=sum.golang.org
 alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
+alias pcw='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/Scripts/python.exe'
+
+
 
 alias dlg='echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
 
@@ -740,10 +743,10 @@ eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
 # Guard kubectl completion
-if command -v kubectl >/dev/null 2>&1; then
-    alias k=kubectl
-    source <(kubectl completion bash)
-fi
+# if command -v kubectl >/dev/null 2>&1; then
+#     alias k=kubectl
+#     source <(kubectl completion bash)
+# fi
 
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
@@ -778,19 +781,7 @@ export PATH="/usr/local/cuda-11.4/bin:$PATH"
 
 export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+
 
 
 
@@ -821,18 +812,6 @@ export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
 alias explorer="explorer.exe ."
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
 
 # fzf configuration for better shell experience
 # [ -f ~/.fzf.bash ] && source ~/.fzf.bash
