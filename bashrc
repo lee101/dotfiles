@@ -646,7 +646,10 @@ export EDITOR=vim
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
 
-export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+#export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+#export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
+
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
@@ -848,3 +851,8 @@ fi
 
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
+
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
