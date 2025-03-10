@@ -1,10 +1,13 @@
-
+sudo apt install fzf
 sudo apt-get install tk-dev
 sudo apt-get install libreadline-dev
 sudo apt-get install -y cmake
 sudo apt-get install -y libarrow-dev libparquet-dev
 
 sudo apt install nasm
+
+sudo apt install zile plocate hstr
+
 
 
 # ffmpeg
@@ -178,3 +181,17 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
 echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 
 cp ~/.vimrc ~/.config/nvim/init.vim
+
+(type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+	&& sudo mkdir -p -m 755 /etc/apt/keyrings \
+        && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+	&& sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+	&& sudo apt update \
+	&& sudo apt install gh -y
+
+gh auth login
+gh extension install github/gh-copilot
+
+sudo apt install -y ripgrep
