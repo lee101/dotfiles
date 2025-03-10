@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
@@ -23,8 +23,8 @@ fi
 # ---------------------
 # Undocumented feature which sets the size to "unlimited".
 # http://stackoverflow.com/questions/9457233/unlimited-bash-history
-export HISTFILESIZE=
-export HISTSIZE=
+export HISTFILESIZE=99999999
+export HISTSIZE=9999999
 export HISTTIMEFORMAT="[%F %T] "
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
@@ -430,7 +430,7 @@ eval "$(hub alias -s)"
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
-
+alias pn=pnpm
 alias webserver='python -m SimpleHTTPServer 9090'
 
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
@@ -650,6 +650,9 @@ export EDITOR=vim
 #export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
 
+if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+fi
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
 # Cntrl+] to copy current command to clipboard
@@ -663,6 +666,9 @@ export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org,direct
 export GOSUMDB=sum.golang.org
 alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
+alias pcw='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/Scripts/python.exe'
+
+
 
 alias dlg='echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
 
@@ -684,12 +690,12 @@ fi
 
 # virtualenv
 export WORKON_HOME=$HOME/.virtualenvs
-source /usr/local/bin/virtualenvwrapper.sh
+[ -f /usr/local/bin/virtualenvwrapper.sh ] && source /usr/local/bin/virtualenvwrapper.sh
 
 export LESS="-eirMX"
 
 # The next line enables bash completion for gcloud.
-source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+[ -f '/Users/lee/google-cloud-sdk/completion.bash.inc' ] && source '/Users/lee/google-cloud-sdk/completion.bash.inc'
 
 export RAILS_ENV=development
 
@@ -719,15 +725,15 @@ export AWS_REGION=us-east-1
 #ap-southeast-2
 
 
-export PATH="$HOME/programs/go_appengine:$PATH"
-export GOPATH="$HOME/programs/go_appengine/gopath"
-export GOROOT="$HOME/programs/go_appengine/goroot"
-export PATH="$GOROOT/bin:$PATH"
-export PATH=$PATH:$GOPATH/bin
+# export PATH="$HOME/programs/go_appengine:$PATH"
+# export GOPATH="$HOME/programs/go_appengine/gopath"
+# export GOROOT="$HOME/programs/go_appengine/goroot"
+# export PATH="$GOROOT/bin:$PATH"
+# export PATH=$PATH:$GOPATH/bin
 
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+#export GOROOT=/usr/local/go
+#export GOPATH=$HOME/go
+#export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 source ~/.secretbashrc
 
@@ -740,8 +746,11 @@ export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
-alias k=kubectl
-source <(kubectl completion bash)
+# Guard kubectl completion
+# if command -v kubectl >/dev/null 2>&1; then
+#     alias k=kubectl
+#     source <(kubectl completion bash)
+# fi
 
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
@@ -776,19 +785,7 @@ export PATH="/usr/local/cuda-11.4/bin:$PATH"
 
 export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+
 
 
 
@@ -798,8 +795,11 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 . "$HOME/.cargo/env"
-export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
 
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    . ~/.wslbashrc.sh
+fi
 
 alias y="yarn"
 
@@ -816,19 +816,13 @@ export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
 alias explorer="explorer.exe ."
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
 
+# fzf configuration for better shell experience
+# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'bat --style=numbers --color=always --line-range :500 {}'"
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
 
 # pnpm
 export PNPM_HOME="/home/lee/.local/share/pnpm"
@@ -841,7 +835,7 @@ alias ni=nvim
 
 
 # Find the existing 'o' alias and replace/add this instead
-if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" ]]; then
+if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
     alias o='explorer.exe .'
     alias oo='explorer.exe'
 else
@@ -852,7 +846,3 @@ fi
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
 
-
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
