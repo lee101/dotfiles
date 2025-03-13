@@ -34,3 +34,5 @@ fi
 export MODULAR_HOME="/home/lee/.modular"
 export PATH="/home/lee/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
 
+
+export PATH="$PATH:/home/lee/.modular/bin"

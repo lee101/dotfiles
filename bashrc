@@ -858,10 +858,19 @@ else
 fi
 
 
-export PATH="$PATH:/opt/nvim-linux64/bin"
+export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
 
 
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
 alias zle=zile
+# Only use nvm on non-Windows systems or if there's a UI available
+if [[ "$machine" != "Cygwin" && "$machine" != "MinGw" && "$OSTYPE" != "msys" && "$OSTYPE" != "win32" && ! -f /proc/sys/fs/binfmt_misc/WSLInterop ]] || [[ -n "$DISPLAY" ]]; then
+  nvm use node
+fi
+
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
