@@ -411,9 +411,10 @@ alias dmount='dbind'
 alias pfr='pip freeze'
 alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
-alias pin='pip install'
-alias pinu='pip install -U'
-alias pi='pip install --cache-dir /media/lee/pipcache'
+alias pin='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+alias pi='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+alias pinu='uv pip install -U --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+# alias pi='pip install --cache-dir /media/lee/pipcache'
 
 
 pins() {
@@ -423,7 +424,7 @@ pins() {
     then
         requirements_file='./requirements.txt'
     fi
-    pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
+    uv pip install $package_name --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i $package_name >> $requirements_file
 }
 
 eval "$(hub alias -s)"
@@ -751,7 +752,10 @@ eval "$(pyenv init -)"
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
 
-. <(flux completion bash)
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    . ~/wslbashrc
+fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
@@ -847,3 +851,7 @@ alias vim='nvim'
 #  exec zsh
 #fi
 alias zle=zile
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
