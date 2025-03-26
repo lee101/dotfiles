@@ -647,6 +647,10 @@ export EDITOR=vim
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
 
+#export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+#export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
+
 if command -v /usr/libexec/java_home >/dev/null 2>&1; then
     export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
 fi
@@ -722,15 +726,15 @@ export AWS_REGION=us-east-1
 #ap-southeast-2
 
 
-export PATH="$HOME/programs/go_appengine:$PATH"
-export GOPATH="$HOME/programs/go_appengine/gopath"
-export GOROOT="$HOME/programs/go_appengine/goroot"
-export PATH="$GOROOT/bin:$PATH"
-export PATH=$PATH:$GOPATH/bin
+# export PATH="$HOME/programs/go_appengine:$PATH"
+# export GOPATH="$HOME/programs/go_appengine/gopath"
+# export GOROOT="$HOME/programs/go_appengine/goroot"
+# export PATH="$GOROOT/bin:$PATH"
+# export PATH=$PATH:$GOPATH/bin
 
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+#export GOROOT=/usr/local/go
+#export GOPATH=$HOME/go
+#export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 source ~/.secretbashrc
 
@@ -845,7 +849,6 @@ fi
 
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
-alias vim='nvim'
 
 #if [ -t 1 ]; then
 #  exec zsh
