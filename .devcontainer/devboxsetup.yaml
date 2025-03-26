@@ -1,0 +1,137 @@
+$schema: "1.0"
+name: "Python 3"
+image: microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2
+description: "Python 3 development environment with various tools and features"
+
+tasks:
+  - name: ~/winget
+    parameters:
+      downloadUrl: 'https://raw.githubusercontent.com/contoso-co/common-eng-sys/msft-git/dsc-configurations/common-config.dsc.yaml'
+
+  - name: ~/winget
+    description: Install AZD
+    parameters:
+      package: Microsoft.Azd
+
+  - name: ~/winget
+    description: Install Visual Studio Code
+    parameters:
+      package: Microsoft.VisualStudioCode
+
+  - name: ~/winget
+    description: Install Python
+    parameters:
+      package: Python.Python.3.12
+
+  - name: ~/winget
+    description: Install Azure CLI
+    parameters:
+      package: Microsoft.AzureCLI
+
+  - name: ~/winget
+    description: Install Git
+    parameters:
+      package: Git.Git
+
+  - name: ~/winget
+    description: Install Node.js
+    parameters:
+      package: OpenJS.NodeJS
+
+  - name: ~/winget
+    description: Install Docker Desktop
+    parameters:
+      package: Docker.DockerDesktop
+
+  - name: ~/winget
+    description: Install Go
+    parameters:
+      package: GoLang.Go
+
+  - name: ~/winget
+    description: Install Terraform
+    parameters:
+      package: Hashicorp.Terraform
+
+  - name: ~/winget
+    description: Install Google Cloud CLI
+    parameters:
+      package: Google.CloudSDK
+
+  - name: ~/winget
+    description: Install GitHub CLI
+    parameters:
+      package: GitHub.cli
+
+  - name: ~/winget
+    description: Install PowerShell
+    parameters:
+      package: Microsoft.PowerShell
+
+  - name: ~/winget
+    description: Install Rust
+    parameters:
+      package: Rustlang.Rust.MSVC
+
+  - name: ~/winget
+    description: Install Ruby
+    parameters:
+      package: RubyInstallerTeam.Ruby
+
+  - name: ~/winget
+    description: Install CMake
+    parameters:
+      package: Kitware.CMake
+
+  - name: ~/powershell
+    description: Install Conda
+    parameters:
+      command: |
+        Invoke-WebRequest -Uri "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe" -OutFile "$env:TEMP\Miniconda3.exe"
+        Start-Process -FilePath "$env:TEMP\Miniconda3.exe" -ArgumentList "/S /RegisterPython=1 /AddToPath=1" -Wait
+
+  - name: ~/powershell
+    description: Install Bun
+    parameters:
+      command: |
+        Invoke-WebRequest -Uri "https://bun.sh/install.ps1" -OutFile "$env:TEMP\install-bun.ps1"
+        powershell -ExecutionPolicy Bypass -File "$env:TEMP\install-bun.ps1"
+
+  - name: ~/powershell
+    description: Install Bazel
+    parameters:
+      command: |
+        Invoke-WebRequest -Uri "https://github.com/bazelbuild/bazel/releases/latest/download/bazel-windows-x86_64.exe" -OutFile "$env:USERPROFILE\bazel.exe"
+        $env:Path += ";$env:USERPROFILE"
+        [Environment]::SetEnvironmentVariable("Path", $env:Path, "User")
+
+  - name: ~/powershell
+    description: Install Direnv
+    parameters:
+      command: |
+        Invoke-WebRequest -Uri "https://github.com/direnv/direnv/releases/latest/download/direnv.windows-amd64.exe" -OutFile "$env:USERPROFILE\direnv.exe"
+        $env:Path += ";$env:USERPROFILE"
+        [Environment]::SetEnvironmentVariable("Path", $env:Path, "User")
+
+  - name: ~/powershell
+    description: Clone dotfiles
+    parameters:
+      command: |
+        git clone https://github.com/lee101/dotfiles.git $env:USERPROFILE\dotfiles
+        cd $env:USERPROFILE\dotfiles
+        python .\linkdotfiles.py
+
+  - name: ~/powershell
+    description: Run setup scripts
+    parameters:
+      command: |
+        cd $env:USERPROFILE\dotfiles\scripts
+        .\newwindowssetup.ps1
+        .\windowsprogramSetup.ps1
+        .\newwindowssetup.sh
+        .\windows-setup.sh
+
+  - name: ~/powershell
+    parameters:
+      command: |
+        $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User') 
