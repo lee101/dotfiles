@@ -220,3 +220,20 @@ else {
 Write-Host "`nPlease restart your computer to complete the WSL installation." -ForegroundColor Green
 Write-Host "After restart, Ubuntu will continue its setup when you first launch it." -ForegroundColor Green 
 
+# Check if fzf is available
+if (!(Get-Command fzf -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing fzf..." -ForegroundColor Cyan
+    Invoke-WebRequest -Uri https://github.com/junegunn/fzf/releases/download/0.42.0/fzf-0.42.0-windows_amd64.zip -OutFile fzf.zip
+    Expand-Archive -Path fzf.zip -DestinationPath $env:USERPROFILE\fzf -Force
+    $env:PATH += ";$env:USERPROFILE\fzf"
+    [Environment]::SetEnvironmentVariable('PATH', $env:PATH, 'User')
+    Write-Host "fzf installed successfully" -ForegroundColor Green
+    # Clean up the downloaded zip file
+    if (Test-Path fzf.zip) {
+        Remove-Item fzf.zip -Force
+        Write-Host "Removed fzf.zip" -ForegroundColor Green
+    }
+}
+else {
+    Write-Host "fzf is already installed" -ForegroundColor Green
+}
