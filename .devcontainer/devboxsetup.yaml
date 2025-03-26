@@ -106,6 +106,14 @@ tasks:
         [Environment]::SetEnvironmentVariable("Path", $env:Path, "User")
 
   - name: ~/powershell
+    description: Install Windows Package Manager (winget)
+    parameters:
+      command: |
+        Invoke-WebRequest -Uri "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle" -OutFile "$env:TEMP\winget.msixbundle"
+        Add-AppxPackage -Path "$env:TEMP\winget.msixbundle"
+
+
+  - name: ~/powershell
     description: Install Direnv
     parameters:
       command: |
@@ -130,8 +138,14 @@ tasks:
         .\windowsprogramSetup.ps1
         .\newwindowssetup.sh
         .\windows-setup.sh
+        ..\startup.ps1
 
   - name: ~/powershell
     parameters:
       command: |
         $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User') 
+
+        # Enable long paths in Windows registry
+        Write-Host "Enabling long paths in Windows registry..."
+        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Type DWord
+        Write-Host "Long paths enabled successfully."
