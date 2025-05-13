@@ -413,9 +413,10 @@ alias dmount='dbind'
 alias pfr='pip freeze'
 alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
-alias pin='pip install'
-alias pinu='pip install -U'
-alias pi='pip install --cache-dir /media/lee/pipcache'
+alias pin='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+alias pi='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+alias pinu='uv pip install -U --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+# alias pi='pip install --cache-dir /media/lee/pipcache'
 
 
 pins() {
@@ -425,7 +426,7 @@ pins() {
     then
         requirements_file='./requirements.txt'
     fi
-    pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
+    uv pip install $package_name --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i $package_name >> $requirements_file
 }
 
 eval "$(hub alias -s)" 2>/dev/null || true
@@ -648,6 +649,10 @@ export EDITOR=vim
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
 
+#export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+#export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
+
 if command -v /usr/libexec/java_home >/dev/null 2>&1; then
     export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
 fi
@@ -756,7 +761,10 @@ eval "$(pyenv init -)"
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
 
-. <(flux completion bash)
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    . ~/wslbashrc
+fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
@@ -846,25 +854,16 @@ fi
 
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
-alias vim='nvim'
 
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-# Set display for X11 forwarding if in WSL
-if grep -q "microsoft" /proc/version 2>/dev/null; then
-  export DISPLAY=:0.0
-fi
-
-# Use node version manager if available
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-  nvm use node >/dev/null 2>&1
-fi
+alias zle=zile
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-# alias zle=zile
 
 # Add dotfiles tools to PATH
 export PATH="$PATH:$HOME/code/dotfiles/tools"
+alias zle=zile
