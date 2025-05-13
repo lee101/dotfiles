@@ -7,11 +7,11 @@ Python script that symlinks all the dotfiles here to your homedir.
 
 To use these dotfiles (or customise the set up for your own use):
 
-1. `git clone git://github.com/mikl/dotfiles.git` - you might want to
+1. `git clone https://github.com/lee101/dotfiles.git` - you might want to
    rename the resulting dotfiles folder to something else. I keep mine
    in ~/.dotfiles.git but anywhere should work.
 2. Customise the RC-files to your own liking and add your own.
-3. Run `python linkdotfiles` in the folder you checked it out.
+3. Run `python linkdotfiles.py` in the folder you checked it out.
    Use the -f option if you want your old dotfiles to be overwritten
    (otherwise, linkdotfiles will only link those that do not exist).
 4. Optionally, set up a central git repository so you can share your

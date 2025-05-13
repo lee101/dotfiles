@@ -1,0 +1,34 @@
+#!/bin/bash
+# WSL-specific configurations
+
+# Set DISPLAY using the nameserver in /etc/resolv.conf for X11 forwarding
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+
+# Windows integration aliases
+alias explorer="explorer.exe ."
+alias o='explorer.exe .'
+alias oo='explorer.exe'
+
+# Prevent verbose output for missing commands
+# Only source command completions if the command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Only source flux completion if flux exists
+if command_exists flux; then
+    . <(flux completion bash 2>/dev/null)
+fi
+
+# Only run kubectl completion if kubectl exists
+if command_exists kubectl; then
+    . <(kubectl completion bash 2>/dev/null)
+fi
+
+# Prevent errors from other missing commands
+for cmd in flux kubectl direnv pyenv nvm hub; do
+    if ! command_exists $cmd; then
+        # Create dummy functions to prevent errors
+        eval "$cmd() { echo \"$cmd is not installed\"; }"
+    fi
+done 

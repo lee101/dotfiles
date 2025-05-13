@@ -64,3 +64,4 @@ function Initialize-PowerShellEnvironment {
 # Run the setup
 Initialize-PowerShellEnvironment 
 
+
