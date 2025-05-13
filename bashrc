@@ -241,6 +241,8 @@ alias gdf='git diff'
 alias gdfc='git diff --cached'
 alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
+alias gdfa='git --no-pager diff -p'
+alias gdfac='git --no-pager diff -p --cached'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -426,7 +428,7 @@ pins() {
     pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
 }
 
-eval "$(hub alias -s)"
+eval "$(hub alias -s)" 2>/dev/null || true
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
@@ -651,8 +653,11 @@ if command -v /usr/libexec/java_home >/dev/null 2>&1; then
 fi
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
-# Cntrl+] to copy current command to clipboard
-bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+# Only use bind if we're in bash
+if [ -n "$BASH_VERSION" ]; then
+  # Cntrl+] to copy current command to clipboard
+  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
+fi
 
 alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
 
@@ -859,4 +864,7 @@ fi
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-alias zle=zile
+# alias zle=zile
+
+# Add dotfiles tools to PATH
+export PATH="$PATH:$HOME/code/dotfiles/tools"
