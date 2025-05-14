@@ -858,7 +858,6 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-alias zle=zile
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
@@ -866,4 +865,3 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # Add dotfiles tools to PATH
 export PATH="$PATH:$HOME/code/dotfiles/tools"
-alias zle=zile
