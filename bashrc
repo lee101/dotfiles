@@ -53,13 +53,14 @@ if [ -n "$BASH_VERSION" ]; then
 
   # set a fancy prompt (non-color, unless we know we "want" color)
   case "$TERM" in
-      xterm-color) color_prompt=yes;;
+      xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
   esac
 
   # uncomment for a colored prompt, if the terminal has the capability; turned
   # off by default to not distract the user: the focus in a terminal window
   # should be on the output of commands, not on the prompt
-  #force_color_prompt=yes
+  # Enable colored prompt
+  force_color_prompt=yes
 
   if [ -n "$force_color_prompt" ]; then
       if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
@@ -91,14 +92,15 @@ esac
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
 fi
+
+# Always use colors for common commands
+alias ls='ls --color=auto'
+alias dir='dir --color=auto'
+alias vdir='vdir --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 
 # Easy extract
 extract () {
@@ -721,10 +723,10 @@ export PATH=$M2:$PATH
 ### Added by the Heroku Toolbelt
 export PATH="/usr/local/heroku/bin:$PATH"
 
-### reload because colors are weird otherwise?
+### Set ASDF variable but don't reload to avoid infinite recursion
 if [ -z "$ASDF" ]; then
     export ASDF="asdf"
-    source ~/.bashrc
+    # Don't source ~/.bashrc again to prevent infinite recursion
 fi
 
 export AWS_REGION=us-east-1
@@ -745,7 +747,10 @@ source ~/.secretbashrc
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
-eval "$(direnv hook $SHELL)"
+# Check if direnv is installed before hooking
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook bash 2>/dev/null)" || true
+fi
 
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
@@ -762,8 +767,8 @@ alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
 
 # Source WSL-specific configuration if running in WSL
-if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
-    . ~/wslbashrc
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] && [ -f ~/wslbashrc ]; then
+    . ~/wslbashrc 2>/dev/null || true
 fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
@@ -807,7 +812,9 @@ export SDKMAN_DIR="$HOME/.sdkman"
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
-    . ~/.wslbashrc.sh
+    if [ -f ~/wslbashrc ]; then
+        . ~/wslbashrc 2>/dev/null || true
+    fi
 fi
 
 alias y="yarn"
