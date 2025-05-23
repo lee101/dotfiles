@@ -507,6 +507,7 @@ alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 
+alias cl='claude'
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
