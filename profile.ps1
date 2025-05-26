@@ -1,13 +1,3 @@
-# Import modules
-Import-Module posh-git
-Import-Module Terminal-Icons
-Import-Module PSFzf
-
-# FZF config
-Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
-
-# Better tab completion
-Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
 
 # Git aliases
 function gst { git status }
@@ -289,3 +279,15 @@ function usage {
 function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function o { explorer.exe . }
 function oo { explorer.exe $args }
+
+
+# Import modules
+Import-Module posh-git
+Import-Module Terminal-Icons
+Import-Module PSFzf
+
+# FZF config
+Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
+
+# Better tab completion
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete

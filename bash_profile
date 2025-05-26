@@ -24,7 +24,6 @@ if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ]; then
     . $HOME/.bashrc
 fi
 
-. "$HOME/.cargo/env"
 
 # !! Contents within this block are managed by 'conda init' !!
 #if [ -f '/d/condar/Scripts/conda.exe' ]; then

@@ -53,13 +53,14 @@ if [ -n "$BASH_VERSION" ]; then
 
   # set a fancy prompt (non-color, unless we know we "want" color)
   case "$TERM" in
-      xterm-color) color_prompt=yes;;
+      xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
   esac
 
   # uncomment for a colored prompt, if the terminal has the capability; turned
   # off by default to not distract the user: the focus in a terminal window
   # should be on the output of commands, not on the prompt
-  #force_color_prompt=yes
+  # Enable colored prompt
+  force_color_prompt=yes
 
   if [ -n "$force_color_prompt" ]; then
       if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
@@ -91,14 +92,15 @@ esac
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
 fi
+
+# Always use colors for common commands
+alias ls='ls --color=auto'
+alias dir='dir --color=auto'
+alias vdir='vdir --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 
 # Easy extract
 extract () {
@@ -241,6 +243,8 @@ alias gdf='git diff'
 alias gdfc='git diff --cached'
 alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
+alias gdfa='git --no-pager diff -p'
+alias gdfac='git --no-pager diff -p --cached'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -411,9 +415,10 @@ alias dmount='dbind'
 alias pfr='pip freeze'
 alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
-alias pin='pip install'
-alias pinu='pip install -U'
-alias pi='pip install --cache-dir /media/lee/pipcache'
+alias pin='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+alias pi='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+alias pinu='uv pip install -U --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+# alias pi='pip install --cache-dir /media/lee/pipcache'
 
 
 pins() {
@@ -423,10 +428,10 @@ pins() {
     then
         requirements_file='./requirements.txt'
     fi
-    pip install $package_name && pip freeze | grep -i $package_name >> $requirements_file
+    uv pip install $package_name --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i $package_name >> $requirements_file
 }
 
-eval "$(hub alias -s)"
+eval "$(hub alias -s)" 2>/dev/null || true
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
@@ -504,6 +509,7 @@ alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 
+alias cl='claude'
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
@@ -646,13 +652,20 @@ export EDITOR=vim
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
 
+#export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+#export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
+
 if command -v /usr/libexec/java_home >/dev/null 2>&1; then
     export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
 fi
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
-# Cntrl+] to copy current command to clipboard
-bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+# Only use bind if we're in bash
+if [ -n "$BASH_VERSION" ]; then
+  # Cntrl+] to copy current command to clipboard
+  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
+fi
 
 alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
 
@@ -662,6 +675,9 @@ export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org,direct
 export GOSUMDB=sum.golang.org
 alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/bin/python'
+alias pcw='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt  --python .venv/Scripts/python.exe'
+
+
 
 alias dlg='echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
 
@@ -708,31 +724,34 @@ export PATH=$M2:$PATH
 ### Added by the Heroku Toolbelt
 export PATH="/usr/local/heroku/bin:$PATH"
 
-### reload because colors are weird otherwise?
+### Set ASDF variable but don't reload to avoid infinite recursion
 if [ -z "$ASDF" ]; then
     export ASDF="asdf"
-    source ~/.bashrc
+    # Don't source ~/.bashrc again to prevent infinite recursion
 fi
 
 export AWS_REGION=us-east-1
 #ap-southeast-2
 
 
-export PATH="$HOME/programs/go_appengine:$PATH"
-export GOPATH="$HOME/programs/go_appengine/gopath"
-export GOROOT="$HOME/programs/go_appengine/goroot"
-export PATH="$GOROOT/bin:$PATH"
-export PATH=$PATH:$GOPATH/bin
+# export PATH="$HOME/programs/go_appengine:$PATH"
+# export GOPATH="$HOME/programs/go_appengine/gopath"
+# export GOROOT="$HOME/programs/go_appengine/goroot"
+# export PATH="$GOROOT/bin:$PATH"
+# export PATH=$PATH:$GOPATH/bin
 
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+#export GOROOT=/usr/local/go
+#export GOPATH=$HOME/go
+#export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 source ~/.secretbashrc
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
-eval "$(direnv hook $SHELL)"
+# Check if direnv is installed before hooking
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook bash 2>/dev/null)" || true
+fi
 
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
@@ -740,15 +759,18 @@ eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
 # Guard kubectl completion
-if command -v kubectl >/dev/null 2>&1; then
-    alias k=kubectl
-    source <(kubectl completion bash)
-fi
+# if command -v kubectl >/dev/null 2>&1; then
+#     alias k=kubectl
+#     source <(kubectl completion bash)
+# fi
 
 alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
 
-. <(flux completion bash)
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] && [ -f ~/wslbashrc ]; then
+    . ~/wslbashrc 2>/dev/null || true
+fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
@@ -778,19 +800,7 @@ export PATH="/usr/local/cuda-11.4/bin:$PATH"
 
 export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+
 
 
 
@@ -800,8 +810,13 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 . "$HOME/.cargo/env"
-export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
 
+# Source WSL-specific configuration if running in WSL
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    if [ -f ~/wslbashrc ]; then
+        . ~/wslbashrc 2>/dev/null || true
+    fi
+fi
 
 alias y="yarn"
 
@@ -818,18 +833,6 @@ export PATH="$MODULAR_HOME/pkg/packages.modular.com_mojo/bin:$PATH"
 alias monoff='sleep 1; xset dpms force off'
 alias explorer="explorer.exe ."
 
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/lee/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/lee/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/lee/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/lee/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
 
 # fzf configuration for better shell experience
 # [ -f ~/.fzf.bash ] && source ~/.fzf.bash
@@ -860,19 +863,14 @@ fi
 
 export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
 
-
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-alias zle=zile
-# Only use nvm on non-Windows systems or if there's a UI available
-if [[ "$machine" != "Cygwin" && "$machine" != "MinGw" && "$OSTYPE" != "msys" && "$OSTYPE" != "win32" && ! -f /proc/sys/fs/binfmt_misc/WSLInterop ]] || [[ -n "$DISPLAY" ]]; then
-  nvm use node
-fi
-
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
+# Add dotfiles tools to PATH
+export PATH="$PATH:$HOME/code/dotfiles/tools"
