@@ -1,4 +1,3 @@
-
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = "https://github.com/folke/lazy.nvim.git"
@@ -17,6 +16,11 @@ vim.opt.rtp:prepend(lazypath)
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
+
+require('user.options') -- Load custom options
+require('user.keymaps') -- Load custom keymaps
+require('user.autocommands') -- Load custom autocommands
+require('user.commands') -- Load custom commands
 
 require("lazy").setup({
   spec = {
@@ -58,7 +62,6 @@ require("lazy").setup({
     },
     {
       "nvim-lualine/lualine.nvim",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
         require("lualine").setup({
           options = {
@@ -71,7 +74,6 @@ require("lazy").setup({
     },
     {
       "nvim-tree/nvim-tree.lua",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
         require("nvim-tree").setup({
           sort_by = "case_sensitive",
