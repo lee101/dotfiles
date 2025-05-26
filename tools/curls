@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# curlz - A wrapper around curl with the same API
+# Usage: curlz [curl options] URL
+
+# Check if any arguments were provided
+if [ $# -eq 0 ]; then
+    echo "Usage: curlz [curl options] URL"
+    echo "This is a wrapper around curl with the same API"
+    exit 1
+fi
+
+# Simply pass all arguments to curl
+curl "$@"
