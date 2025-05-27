@@ -861,7 +861,7 @@ else
 fi
 
 
-export PATH="$PATH:/opt/nvim-linux64/bin"
+export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
 
 #if [ -t 1 ]; then
 #  exec zsh
@@ -871,5 +871,6 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
 # Add dotfiles tools to PATH
 export PATH="$PATH:$HOME/code/dotfiles/tools"
