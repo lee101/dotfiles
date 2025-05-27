@@ -122,7 +122,7 @@ git --version
 sudo snap install hub --classic
 
 
-sudo apt  install jq
+sudo apt install jq imagemagick luarocks -y
 
 sudo apt install hub vim build-essential -y
 
@@ -137,8 +137,8 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 nvm install 14
 
 curl https://pyenv.run | bash
-pyenv install 3.9.2
-pyenv shell 3.9.2
+pyenv install 3.12.2
+pyenv shell 3.12.2
 
 curl -s https://fluxcd.io/install.sh | sudo bash
 
