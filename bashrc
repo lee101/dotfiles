@@ -858,10 +858,22 @@ else
     alias o='xdg-open .'
     alias oo='xdg-open'
 fi
+# Simple function to run Claude and check exit code
+cld() {
+    local prompt="$1"
+    local output_format="${2:-text}"
 
+    if claude -p "$prompt" --output-format "$output_format"; then
+        echo "Success!"
+    else
+        echo "Error: Claude failed with exit code $?" >&2
+        return 1
+    fi
+}
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
-
+alias ains='sudo apt install'
+alias ainst='sudo apt install'
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
