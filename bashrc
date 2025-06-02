@@ -509,6 +509,7 @@ alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 
+alias cl='claude'
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
@@ -874,6 +875,9 @@ cld() {
 export PATH="$PATH:/opt/nvim-linux64/bin"
 alias ains='sudo apt install'
 alias ainst='sudo apt install'
+
+export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
+
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
@@ -882,5 +886,6 @@ alias ainst='sudo apt install'
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
 # Add dotfiles tools to PATH
 export PATH="$PATH:$HOME/code/dotfiles/tools"
