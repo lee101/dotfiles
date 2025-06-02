@@ -19,7 +19,7 @@ parser.add_option("-f", "--force", dest="force", default=False, action="store_tr
 (options, args) = parser.parse_args()
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1']
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua']
 cwd = os.path.realpath(os.getcwd())
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)
@@ -66,6 +66,9 @@ if os.path.exists(config_source):
         os.makedirs(config_dest)
         
     for root, dirs, files in os.walk(config_source):
+        # Remove 'lua' from dirs so os.walk does not descend into it
+        if 'lua' in dirs:
+            dirs.remove('lua')
         rel_path = os.path.relpath(root, config_source)
         dest_dir = os.path.join(config_dest, rel_path)
         
@@ -73,6 +76,10 @@ if os.path.exists(config_source):
             os.makedirs(dest_dir)
             
         for file in files:
+            # Skip .ps1 and .sh files in .config as well
+            if fnmatch(file, '*.ps1') or fnmatch(file, '*.sh'):
+                print('Skipping %s in .config' % file)
+                continue
             src = os.path.join(root, file)
             dst = os.path.join(dest_dir, file)
             

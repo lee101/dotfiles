@@ -17,6 +17,11 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+require('user.options') -- Load custom options
+require('user.keymaps') -- Load custom keymaps
+require('user.autocommands') -- Load custom autocommands
+require('user.commands') -- Load custom commands
+
 require("lazy").setup({
   spec = {
     {
@@ -31,7 +36,6 @@ require("lazy").setup({
         "nvim-lua/plenary.nvim",
         "MunifTanjim/nui.nvim",
         "hrsh7th/nvim-cmp",
-        "nvim-tree/nvim-web-devicons",
         "zbirenbaum/copilot.lua",
         {
           "HakonHarnes/img-clip.nvim",
@@ -58,7 +62,6 @@ require("lazy").setup({
     },
     {
       "nvim-lualine/lualine.nvim",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
         require("lualine").setup({
           options = {
@@ -71,7 +74,6 @@ require("lazy").setup({
     },
     {
       "nvim-tree/nvim-tree.lua",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
         require("nvim-tree").setup({
           sort_by = "case_sensitive",
@@ -116,8 +118,69 @@ require("lazy").setup({
       end
     },
     {
-      "nvim-tree/nvim-web-devicons",
-      dependencies = { "ryanoasis/nerd-fonts" }
+      "lewis6991/gitsigns.nvim",
+      config = function()
+        require("gitsigns").setup()
+      end
+    },
+    {
+      "mfussenegger/nvim-dap",
+      dependencies = {
+        "rcarriga/nvim-dap-ui",
+        "theHamsta/nvim-dap-virtual-text",
+      },
+      config = function()
+        local dap, dapui = require("dap"), require("dapui")
+        dapui.setup()
+        require("nvim-dap-virtual-text").setup()
+        
+        vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint)
+        vim.keymap.set("n", "<leader>dc", dap.continue)
+        
+        dap.listeners.after.event_initialized["dapui_config"] = function()
+          dapui.open()
+        end
+        dap.listeners.before.event_terminated["dapui_config"] = function()
+          dapui.close()
+        end
+      end
+    },
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy",
+      config = function()
+        require("which-key").setup()
+      end
+    },
+    {
+      "akinsho/toggleterm.nvim",
+      version = "*",
+      config = function()
+        require("toggleterm").setup({
+          open_mapping = [[<c-\>]],
+          direction = "float",
+        })
+      end
+    },
+    {
+      "windwp/nvim-autopairs",
+      event = "InsertEnter",
+      config = function()
+        require("nvim-autopairs").setup()
+      end
+    },
+    {
+      "ggandor/leap.nvim",
+      dependencies = { "tpope/vim-repeat" },
+      config = function()
+        require("leap").add_default_mappings()
+      end
+    },
+    {
+      "nacro90/numb.nvim",
+      config = function()
+        require("numb").setup()
+      end
     },
   },
   install = { colorscheme = { "tokyonight" } },
