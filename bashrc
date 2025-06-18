@@ -508,6 +508,7 @@ force_color_prompt=yes
 alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
+alias pip='uv pip'
 
 alias cl='claude'
 alias refresh='source ~/.bashrc'
