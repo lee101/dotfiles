@@ -1,4 +1,15 @@
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+-- Cross-platform detection
+local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1
+local is_wsl = vim.fn.has('wsl') == 1
+local is_linux = vim.fn.has('unix') == 1 and not is_wsl
+
+-- Ensure data directory exists and is writable
+local data_dir = vim.fn.stdpath("data")
+if vim.fn.isdirectory(data_dir) == 0 then
+  vim.fn.mkdir(data_dir, "p")
+end
+
+local lazypath = data_dir .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = "https://github.com/folke/lazy.nvim.git"
   local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
@@ -17,67 +28,251 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+-- Basic vim settings for cross-platform compatibility
+vim.opt.number = true
+vim.opt.relativenumber = true
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = true
+vim.opt.smartindent = true
+vim.opt.wrap = false
+vim.opt.swapfile = false
+vim.opt.backup = false
+vim.opt.undofile = true
+vim.opt.hlsearch = false
+vim.opt.incsearch = true
+vim.opt.termguicolors = true
+vim.opt.scrolloff = 8
+vim.opt.signcolumn = "yes"
+vim.opt.isfname:append("@-@")
+vim.opt.updatetime = 50
+vim.opt.colorcolumn = "80"
+
+-- Cross-platform clipboard setup
+if is_wsl then
+  vim.g.clipboard = {
+    name = 'WslClipboard',
+    copy = {
+      ['+'] = 'clip.exe',
+      ['*'] = 'clip.exe',
+    },
+    paste = {
+      ['+'] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+      ['*'] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+    },
+    cache_enabled = 0,
+  }
+elseif is_windows then
+  vim.opt.clipboard = "unnamedplus"
+else
+  vim.opt.clipboard = "unnamedplus"
+end
+
 require("lazy").setup({
   spec = {
+    -- Core plugins by priority
     {
-      "yetone/avante.nvim",
-      event = "VeryLazy",
+      "tpope/vim-sleuth", -- Auto-detect indentation
       lazy = false,
-      version = false,
-      opts = {},
-      build = "make",
-      dependencies = {
-        "stevearc/dressing.nvim",
-        "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim",
-        "hrsh7th/nvim-cmp",
-        "nvim-tree/nvim-web-devicons",
-        "zbirenbaum/copilot.lua",
-        {
-          "HakonHarnes/img-clip.nvim",
-          event = "VeryLazy",
-          opts = {
-            default = {
-              embed_image_as_base64 = false,
-              prompt_for_file_name = false,
-              drag_and_drop = {
-                insert_mode = true,
-              },
-              use_absolute_path = true,
-            },
-          },
-        },
-        {
-          'MeanderingProgrammer/render-markdown.nvim',
-          opts = {
-            file_types = { "markdown", "Avante" },
-          },
-          ft = { "markdown", "Avante" },
-        },
-      },
     },
     {
-      "nvim-lualine/lualine.nvim",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
+      "ibhagwan/fzf-lua", -- Fuzzy finding (removing telescope to avoid conflicts)
       config = function()
-        require("lualine").setup({
-          options = {
-            theme = "auto",
-            component_separators = { left = "", right = "" },
-            section_separators = { left = "", right = "" },
+        local fzf = require("fzf-lua")
+        vim.keymap.set("n", "<leader>ff", fzf.files)
+        vim.keymap.set("n", "<leader>fg", fzf.grep_project)
+        vim.keymap.set("n", "<leader>fb", fzf.buffers)
+        vim.keymap.set("n", "<leader>fr", fzf.live_grep_resume)
+        vim.keymap.set("n", "<C-p>", fzf.files) -- Git Bash friendly
+        vim.keymap.set("n", "<C-f>", fzf.live_grep) -- Git Bash friendly
+      end
+    },
+    {
+      "kylechui/nvim-surround", -- Surround text objects (removing mini.surround to avoid conflicts)
+      event = "VeryLazy",
+      config = function()
+        require("nvim-surround").setup()
+      end
+    },
+    {
+      "numToStr/Comment.nvim", -- Easy commenting
+      config = function()
+        require("Comment").setup()
+        -- Additional keymaps for Windows Git Bash compatibility
+        vim.keymap.set("n", "<leader>/", function() require("Comment.api").toggle.linewise.current() end)
+        vim.keymap.set("v", "<leader>/", "<ESC><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<CR>")
+      end
+    },
+    {
+      "phaazon/hop.nvim", -- Easy motion
+      config = function()
+        require("hop").setup()
+        vim.keymap.set("n", "<leader>j", ":HopLine<CR>", { silent = true })
+        vim.keymap.set("n", "<leader>w", ":HopWord<CR>", { silent = true })
+        vim.keymap.set("n", "<leader>s", ":HopChar1<CR>", { silent = true })
+      end
+    },
+    {
+      "tpope/vim-fugitive", -- Git integration
+      config = function()
+        vim.keymap.set("n", "<leader>gs", ":Git<CR>")
+        vim.keymap.set("n", "<leader>gc", ":Git commit<CR>")
+        vim.keymap.set("n", "<leader>gp", ":Git push<CR>")
+      end
+    },
+    {
+      "windwp/nvim-autopairs", -- Auto pairs
+      event = "InsertEnter",
+      config = function()
+        require("nvim-autopairs").setup()
+      end
+    },
+    {
+      "neovim/nvim-lspconfig", -- LSP configuration
+      tag = "v0.1.6", -- Stable tag compatible with nvim 0.9.4
+      event = "BufReadPre", -- Lazy load on file open
+      dependencies = {
+        { "williamboman/mason.nvim", tag = "v1.8.0" },
+        { "williamboman/mason-lspconfig.nvim", tag = "v1.24.0" },
+        { "hrsh7th/nvim-cmp", tag = "v0.0.1" },
+        { "hrsh7th/cmp-nvim-lsp", commit = "44b16d11215dce86f253ce0c30949813c0a90765" },
+        { "hrsh7th/cmp-buffer", commit = "3022dbc9166796b644a841a02de8dd1cc1d311fa" },
+        { "hrsh7th/cmp-path", commit = "91ff86cd9c29299a64f968ebb45846c485725f23" },
+        { "L3MON4D3/LuaSnip", tag = "v2.1.0" },
+        { "saadparwaiz1/cmp_luasnip", commit = "05a9ab28b53f71d1aece421ef32fee2cb857a843" },
+      },
+      config = function()
+        -- Simple mason setup
+        require("mason").setup({
+          ui = { border = "rounded" }
+        })
+        
+        -- Basic lspconfig setup without mason-lspconfig auto-setup
+        local lspconfig = require("lspconfig")
+        local cmp_nvim_lsp = require("cmp_nvim_lsp")
+        local capabilities = cmp_nvim_lsp.default_capabilities()
+        
+        -- Manual server setup - only if executables exist
+        if vim.fn.executable('lua-language-server') == 1 then
+          lspconfig.lua_ls.setup({
+            capabilities = capabilities,
+            settings = {
+              Lua = {
+                diagnostics = { globals = {'vim'} },
+                workspace = { checkThirdParty = false },
+              }
+            }
+          })
+        end
+        
+        if vim.fn.executable('pyright') == 1 then
+          lspconfig.pyright.setup({ capabilities = capabilities })
+        end
+        
+        -- LSP keymaps
+        vim.keymap.set("n", "gd", vim.lsp.buf.definition)
+        vim.keymap.set("n", "K", vim.lsp.buf.hover)
+        vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename)
+        vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action)
+        
+        -- Simple completion setup
+        local cmp = require("cmp")
+        local luasnip = require("luasnip")
+        
+        cmp.setup({
+          snippet = {
+            expand = function(args)
+              luasnip.lsp_expand(args.body)
+            end,
+          },
+          mapping = cmp.mapping.preset.insert({
+            ["<C-Space>"] = cmp.mapping.complete(),
+            ["<CR>"] = cmp.mapping.confirm({ select = true }),
+            ["<Tab>"] = cmp.mapping(function(fallback)
+              if cmp.visible() then
+                cmp.select_next_item()
+              else
+                fallback()
+              end
+            end, { "i", "s" }),
+            ["<S-Tab>"] = cmp.mapping(function(fallback)
+              if cmp.visible() then
+                cmp.select_prev_item()
+              else
+                fallback()
+              end
+            end, { "i", "s" }),
+          }),
+          sources = {
+            { name = "nvim_lsp" },
+            { name = "luasnip" },
+            { name = "buffer" },
+            { name = "path" },
           },
         })
       end
     },
     {
-      "nvim-tree/nvim-tree.lua",
-      dependencies = { "nvim-tree/nvim-web-devicons" },
+      "github/copilot.vim", -- Original vim copilot (more compatible than copilot.lua)
       config = function()
+        -- Basic copilot setup
+        vim.g.copilot_no_tab_map = true
+        vim.g.copilot_assume_mapped = true
+        vim.g.copilot_tab_fallback = ""
+        
+        -- Simple keymaps
+        vim.keymap.set("i", "<C-j>", 'copilot#Accept("\\<CR>")', { expr = true, replace_keycodes = false })
+        vim.keymap.set("i", "<C-]>", "<Plug>(copilot-next)")
+        vim.keymap.set("i", "<C-[>", "<Plug>(copilot-previous)")
+        vim.keymap.set("i", "<C-\\>", "<Plug>(copilot-dismiss)")
+      end
+    },
+    {
+      "tpope/vim-repeat", -- Repeat plugin commands
+    },
+    {
+      "kevinhwang91/nvim-bqf", -- Better quickfix
+      ft = "qf",
+    },
+    {
+      "echasnovski/mini.nvim", -- Mini plugins collection (excluding surround to avoid conflicts)
+      config = function()
+        require("mini.ai").setup()
+        require("mini.cursorword").setup()
+        require("mini.indentscope").setup()
+        require("mini.starter").setup()
+      end
+    },
+    {
+      "mattn/emmet-vim", -- Emmet for HTML/CSS
+    },
+    {
+      "tommcdo/vim-lion", -- Alignment
+      config = function()
+        vim.g.lion_squeeze_spaces = 1
+      end
+    },
+    -- Simplified file tree without icons to avoid nerd font issues
+    {
+      "nvim-tree/nvim-tree.lua",
+      config = function()
+        vim.g.loaded_netrw = 1
+        vim.g.loaded_netrwPlugin = 1
         require("nvim-tree").setup({
           sort_by = "case_sensitive",
           view = { width = 30 },
-          renderer = { group_empty = true },
-          filters = { dotfiles = true },
+          renderer = { 
+            group_empty = true,
+            icons = {
+              show = {
+                file = false,  -- Disable file icons
+                folder = false, -- Disable folder icons
+                folder_arrow = true,
+                git = false,
+              },
+            },
+          },
+          filters = { dotfiles = false },
         })
         vim.keymap.set("n", "<leader>e", ":NvimTreeToggle<CR>", { silent = true })
       end
@@ -92,34 +287,142 @@ require("lazy").setup({
     },
     {
       "nvim-treesitter/nvim-treesitter",
-      build = ":TSUpdate",
+      build = function()
+        -- Cross-platform TSUpdate
+        if is_windows then
+          vim.cmd('TSUpdate')
+        else
+          require("nvim-treesitter.install").update({ with_sync = true })
+        end
+      end,
       config = function()
         require("nvim-treesitter.configs").setup({
-          ensure_installed = { "lua", "vim", "javascript", "python" },
+          ensure_installed = { "lua", "vim", "javascript", "python", "bash" },
           highlight = { enable = true },
+          indent = { enable = true },
         })
       end
     },
+    -- Simplified statusline without icons
     {
-      "nvim-telescope/telescope.nvim",
-      dependencies = { "nvim-lua/plenary.nvim" },
+      "nvim-lualine/lualine.nvim",
       config = function()
-        local builtin = require("telescope.builtin")
-        vim.keymap.set("n", "<leader>ff", builtin.find_files)
-        vim.keymap.set("n", "<leader>fg", builtin.live_grep)
+        require("lualine").setup({
+          options = {
+            theme = "tokyonight",
+            component_separators = { left = "|", right = "|" },
+            section_separators = { left = "", right = "" },
+            icons_enabled = false, -- Disable icons to avoid font issues
+          },
+          sections = {
+            lualine_a = {'mode'},
+            lualine_b = {'branch', 'diff'},
+            lualine_c = {'filename'},
+            lualine_x = {'encoding', 'fileformat', 'filetype'},
+            lualine_y = {'progress'},
+            lualine_z = {'location'}
+          },
+        })
       end
     },
+    -- Oil for file management (simpler than nvim-tree for some use cases)
     {
-      "3rd/image.nvim",
+      'stevearc/oil.nvim',
       config = function()
-        require("image").setup()
+        require("oil").setup({
+          default_file_explorer = false, -- Keep nvim-tree as primary
+          view_options = {
+            show_hidden = true,
+          },
+        })
+        vim.keymap.set("n", "<leader>o", ":Oil<CR>", { silent = true })
       end
-    },
-    {
-      "nvim-tree/nvim-web-devicons",
-      dependencies = { "ryanoasis/nerd-fonts" }
     },
   },
-  install = { colorscheme = { "tokyonight" } },
-  checker = { enabled = true },
+  install = { 
+    colorscheme = { "tokyonight" },
+    missing = true, -- Install missing plugins on startup
+  },
+  checker = { 
+    enabled = false, -- Disable automatic update checking
+    notify = false,  -- Don't notify about updates
+  },
+  change_detection = {
+    enabled = false, -- Disable config change detection
+    notify = false,  -- Don't notify about config changes
+  },
+  performance = {
+    cache = {
+      enabled = true,
+    },
+    reset_packpath = true,
+    rtp = {
+      disabled_plugins = {
+        "gzip",
+        "tarPlugin",
+        "tohtml",
+        "tutor",
+        "zipPlugin",
+        "netrw",
+        "netrwPlugin",
+        "netrwSettings",
+        "netrwFileHandlers",
+      },
+    },
+  },
 })
+
+-- Additional keymaps for better Git Bash compatibility
+vim.keymap.set("n", "<leader>h", ":nohlsearch<CR>", { silent = true })
+
+-- Window navigation (using Alt instead of Ctrl to avoid conflicts)
+vim.keymap.set("n", "<A-h>", "<C-w>h")
+vim.keymap.set("n", "<A-j>", "<C-w>j")
+vim.keymap.set("n", "<A-k>", "<C-w>k")
+vim.keymap.set("n", "<A-l>", "<C-w>l")
+
+-- Quick save and quit
+vim.keymap.set("n", "<leader>w", ":w<CR>")
+vim.keymap.set("n", "<leader>q", ":q<CR>")
+vim.keymap.set("n", "<leader>x", ":x<CR>")
+
+-- Buffer navigation
+vim.keymap.set("n", "<leader>bn", ":bnext<CR>")
+vim.keymap.set("n", "<leader>bp", ":bprev<CR>")
+vim.keymap.set("n", "<leader>bd", ":bdelete<CR>")
+
+-- Common vim shortcuts
+vim.keymap.set("n", "Y", "y$") -- Yank to end of line
+vim.keymap.set("n", "n", "nzzzv") -- Keep search centered
+vim.keymap.set("n", "N", "Nzzzv") -- Keep search centered
+vim.keymap.set("n", "J", "mzJ`z") -- Keep cursor position when joining lines
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv") -- Move selected lines down
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv") -- Move selected lines up
+
+-- Fix colon/semicolon swap
+vim.keymap.set("n", ";", ":")
+vim.keymap.set("n", ":", ";")
+
+-- Insert mode escape with jj
+vim.keymap.set("i", "jj", "<Esc>")
+
+-- Better search and replace
+vim.keymap.set("n", "<leader>sr", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>") -- Replace word under cursor
+vim.keymap.set("n", "<leader>S", ":%s/") -- Quick substitute
+
+-- Better navigation
+vim.keymap.set("n", "<C-d>", "<C-d>zz") -- Keep cursor centered when jumping
+vim.keymap.set("n", "<C-u>", "<C-u>zz") -- Keep cursor centered when jumping
+vim.keymap.set("n", "*", "*zz") -- Keep cursor centered when searching
+vim.keymap.set("n", "#", "#zz") -- Keep cursor centered when searching
+
+-- Git Bash friendly shortcuts
+vim.keymap.set("n", "<C-s>", ":w<CR>") -- Save with Ctrl+S
+vim.keymap.set("i", "<C-s>", "<Esc>:w<CR>a") -- Save in insert mode
+vim.keymap.set("n", "<C-z>", "u") -- Undo with Ctrl+Z
+vim.keymap.set("i", "<C-z>", "<Esc>ua") -- Undo in insert mode
+vim.keymap.set("n", "<C-y>", "<C-r>") -- Redo with Ctrl+Y
+vim.keymap.set("i", "<C-y>", "<Esc><C-r>a") -- Redo in insert mode
+
+-- Terminal mode escape
+vim.keymap.set("t", "<Esc>", "<C-\\><C-n>")
