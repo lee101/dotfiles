@@ -369,6 +369,76 @@ else
    alias docker='sudo docker'
 fi
 
+# Clipboard setup with Git Bash detection
+if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+  # Windows Git Bash clipboard setup
+  alias pbcopy="clip"
+  alias pbpaste="powershell.exe -command 'Get-Clipboard'"
+  # Cntrl+] to copy current command to clipboard for Git Bash
+  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  
+  # Windows Git Bash open setup
+  alias open="explorer.exe"
+  
+  # Windows Git Bash nvim setup
+  export EDITOR="nvim"
+  export VISUAL="nvim"
+  alias vi="nvim"
+  alias vim="nvim"
+  alias n="nvim"
+  alias ni="nvim"
+  
+  # Add common Windows nvim paths to PATH
+  if [ -d "/c/Program Files/Neovim/bin" ]; then
+    export PATH="/c/Program Files/Neovim/bin:$PATH"
+  fi
+  if [ -d "/c/tools/neovim/Neovim/bin" ]; then
+    export PATH="/c/tools/neovim/Neovim/bin:$PATH"
+  fi
+  if [ -d "/c/Users/$USER/AppData/Local/nvim-data" ]; then
+    export NVIM_APPNAME="nvim"
+  fi
+  if [ -d "/c/Users/$USER/scoop/apps/neovim/current/bin" ]; then
+    export PATH="/c/Users/$USER/scoop/apps/neovim/current/bin:$PATH"
+  fi
+  # Chocolatey installation path
+  if [ -d "/c/ProgramData/chocolatey/lib/neovim/tools/Neovim/bin" ]; then
+    export PATH="/c/ProgramData/chocolatey/lib/neovim/tools/Neovim/bin:$PATH"
+  fi
+  # Winget installation path
+  if [ -d "/c/Users/$USER/AppData/Local/Microsoft/WinGet/Packages/Neovim.Neovim_Microsoft.Winget.Source_8wekyb3d8bbwe/bin" ]; then
+    export PATH="/c/Users/$USER/AppData/Local/Microsoft/WinGet/Packages/Neovim.Neovim_Microsoft.Winget.Source_8wekyb3d8bbwe/bin:$PATH"
+  fi
+  
+  # Debug function for nvim on Windows
+  nvim-debug() {
+    echo "Current environment: $machine / $OSTYPE"
+    echo "EDITOR: $EDITOR"
+    echo "VISUAL: $VISUAL"
+    echo "nvim location: $(which nvim 2>/dev/null || echo 'nvim not found in PATH')"
+    echo "PATH contains:"
+    echo "$PATH" | tr ':' '\n' | grep -i nvim || echo "No nvim paths found in PATH"
+  }
+  
+elif [[ ! $(uname -s) = "Darwin" ]]; then
+  # Linux clipboard setup
+  alias pbcopy='xclip -selection clipboard'
+  alias pbpaste='xclip -selection clipboard -o'
+  alias open='xdg-open'
+  alias say='echo "$1" | espeak -s 120'
+
+  # Cntrl+] to copy current command to clipboard for Linux
+  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  
+  # Linux nvim setup
+  export EDITOR="nvim"
+  export VISUAL="nvim"
+  alias vi="nvim"
+  alias vim="nvim"
+  alias n="nvim"
+  alias ni="nvim"
+fi
+
 alias smi='nvidia-smi'
 alias wsmi='watch -n 1 nvidia-smi'
 
@@ -429,6 +499,10 @@ pins() {
 
 eval "$(hub alias -s)"
 
+alias cx='codex'
+alias cxa='codex --auto-edit'
+alias cxf='codex --full-auto'
+
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
 alias pn=pnpm
@@ -441,7 +515,6 @@ alias findn='find . -name '
 if [[ ! $(uname -s) = "Darwin" ]]; then
   alias pbcopy='xclip -selection clipboard'
   alias pbpaste='xclip -selection clipboard -o'
-  alias open='xdg-open'
   alias say='echo "$1" | espeak -s 120'
 
   extract () {
@@ -640,9 +713,8 @@ cf() {
 ############# end fzf stuff
 
 
-export GIT_EDITOR=vim
-export VISUAL=vim
-export EDITOR=vim
+export GIT_EDITOR=nvim
+# EDITOR and VISUAL now set in conditional platform setup above
 
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
@@ -853,7 +925,7 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-alias zle=zile
+# alias zle=zile
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
