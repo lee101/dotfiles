@@ -47,6 +47,11 @@ vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 vim.opt.updatetime = 50
 vim.opt.colorcolumn = "80"
+vim.opt.mouse = "a"
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.hidden = false
+vim.opt.laststatus = 2
 
 -- Cross-platform clipboard setup
 if is_wsl then
@@ -76,7 +81,7 @@ require("lazy").setup({
       lazy = false,
     },
     {
-      "ibhagwan/fzf-lua", -- Fuzzy finding (removing telescope to avoid conflicts)
+      "ibhagwan/fzf-lua", -- Fuzzy finding
       config = function()
         local fzf = require("fzf-lua")
         vim.keymap.set("n", "<leader>ff", fzf.files)
@@ -88,7 +93,7 @@ require("lazy").setup({
       end
     },
     {
-      "kylechui/nvim-surround", -- Surround text objects (removing mini.surround to avoid conflicts)
+      "kylechui/nvim-surround", -- Surround text objects
       event = "VeryLazy",
       config = function()
         require("nvim-surround").setup()
@@ -191,6 +196,8 @@ require("lazy").setup({
             ["<Tab>"] = cmp.mapping(function(fallback)
               if cmp.visible() then
                 cmp.select_next_item()
+              elseif vim.fn["copilot#GetDisplayedSuggestion"]().text ~= "" then
+                vim.fn.feedkeys(vim.api.nvim_replace_termcodes(vim.fn["copilot#Accept"](), true, true, true), "")
               else
                 fallback()
               end
@@ -213,19 +220,32 @@ require("lazy").setup({
       end
     },
     {
-      "github/copilot.vim", -- Original vim copilot (more compatible than copilot.lua)
+      "github/copilot.vim", -- GitHub Copilot
+      event = "InsertEnter",
       config = function()
-        -- Basic copilot setup
+        -- Disable default tab mapping to avoid conflicts
         vim.g.copilot_no_tab_map = true
         vim.g.copilot_assume_mapped = true
         vim.g.copilot_tab_fallback = ""
         
-        -- Simple keymaps
-        vim.keymap.set("i", "<C-j>", 'copilot#Accept("\\<CR>")', { expr = true, replace_keycodes = false })
-        vim.keymap.set("i", "<C-]>", "<Plug>(copilot-next)")
-        vim.keymap.set("i", "<C-[>", "<Plug>(copilot-previous)")
-        vim.keymap.set("i", "<C-\\>", "<Plug>(copilot-dismiss)")
-      end
+        -- Set up Copilot keymaps after VimEnter to ensure they work
+        vim.api.nvim_create_autocmd("VimEnter", {
+          callback = function()
+            -- Accept suggestion with Ctrl+J (Git Bash friendly)
+            vim.keymap.set("i", "<C-j>", 'copilot#Accept("\\<CR>")', {
+              expr = true,
+              replace_keycodes = false,
+              silent = true,
+              desc = "Accept Copilot suggestion"
+            })
+            
+            -- Navigate suggestions
+            vim.keymap.set("i", "<C-]>", "<Plug>(copilot-next)", { silent = true, desc = "Next Copilot suggestion" })
+            vim.keymap.set("i", "<C-[>", "<Plug>(copilot-previous)", { silent = true, desc = "Previous Copilot suggestion" })
+            vim.keymap.set("i", "<C-\\>", "<Plug>(copilot-dismiss)", { silent = true, desc = "Dismiss Copilot suggestion" })
+          end,
+        })
+      end,
     },
     {
       "tpope/vim-repeat", -- Repeat plugin commands
@@ -235,7 +255,7 @@ require("lazy").setup({
       ft = "qf",
     },
     {
-      "echasnovski/mini.nvim", -- Mini plugins collection (excluding surround to avoid conflicts)
+      "echasnovski/mini.nvim", -- Mini plugins collection
       config = function()
         require("mini.ai").setup()
         require("mini.cursorword").setup()
@@ -338,6 +358,42 @@ require("lazy").setup({
         vim.keymap.set("n", "<leader>o", ":Oil<CR>", { silent = true })
       end
     },
+    {
+      "lewis6991/gitsigns.nvim",
+      config = function()
+        require("gitsigns").setup()
+      end
+    },
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy",
+      config = function()
+        require("which-key").setup()
+      end
+    },
+    {
+      "akinsho/toggleterm.nvim",
+      version = "*",
+      config = function()
+        require("toggleterm").setup({
+          open_mapping = [[<c-\>]],
+          direction = "float",
+        })
+      end
+    },
+    {
+      "ggandor/leap.nvim",
+      dependencies = { "tpope/vim-repeat" },
+      config = function()
+        require("leap").add_default_mappings()
+      end
+    },
+    {
+      "nacro90/numb.nvim",
+      config = function()
+        require("numb").setup()
+      end
+    },
   },
   install = { 
     colorscheme = { "tokyonight" },
@@ -372,6 +428,11 @@ require("lazy").setup({
   },
 })
 
+-- Key mappings from vimrc (set after plugins to avoid conflicts)
+vim.keymap.set("i", "jj", "<Esc>", { desc = "Exit insert mode with jj" })
+vim.keymap.set("n", ";", ":", { desc = "Use semicolon for command mode" })
+vim.keymap.set("n", ":", ";", { desc = "Use colon for repeat find" })
+
 -- Additional keymaps for better Git Bash compatibility
 vim.keymap.set("n", "<leader>h", ":nohlsearch<CR>", { silent = true })
 
@@ -399,13 +460,6 @@ vim.keymap.set("n", "J", "mzJ`z") -- Keep cursor position when joining lines
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv") -- Move selected lines down
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv") -- Move selected lines up
 
--- Fix colon/semicolon swap
-vim.keymap.set("n", ";", ":")
-vim.keymap.set("n", ":", ";")
-
--- Insert mode escape with jj
-vim.keymap.set("i", "jj", "<Esc>")
-
 -- Better search and replace
 vim.keymap.set("n", "<leader>sr", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>") -- Replace word under cursor
 vim.keymap.set("n", "<leader>S", ":%s/") -- Quick substitute
@@ -415,6 +469,8 @@ vim.keymap.set("n", "<C-d>", "<C-d>zz") -- Keep cursor centered when jumping
 vim.keymap.set("n", "<C-u>", "<C-u>zz") -- Keep cursor centered when jumping
 vim.keymap.set("n", "*", "*zz") -- Keep cursor centered when searching
 vim.keymap.set("n", "#", "#zz") -- Keep cursor centered when searching
+vim.keymap.set("n", "k", "gk", { desc = "Move up by display line" })
+vim.keymap.set("n", "j", "gj", { desc = "Move down by display line" })
 
 -- Git Bash friendly shortcuts
 vim.keymap.set("n", "<C-s>", ":w<CR>") -- Save with Ctrl+S
@@ -423,6 +479,15 @@ vim.keymap.set("n", "<C-z>", "u") -- Undo with Ctrl+Z
 vim.keymap.set("i", "<C-z>", "<Esc>ua") -- Undo in insert mode
 vim.keymap.set("n", "<C-y>", "<C-r>") -- Redo with Ctrl+Y
 vim.keymap.set("i", "<C-y>", "<Esc><C-r>a") -- Redo in insert mode
+
+-- Tab navigation
+vim.keymap.set("n", "<C-Right>", ":tabnext<CR>", { desc = "Next tab" })
+vim.keymap.set("n", "<C-Left>", ":tabprevious<CR>", { desc = "Previous tab" })
+vim.keymap.set("n", "<C-t>", ":tabnew<CR>", { desc = "New tab" })
+
+-- Create blank lines
+vim.keymap.set("n", "zj", "o<Esc>", { desc = "Create blank line below" })
+vim.keymap.set("n", "zk", "O<Esc>", { desc = "Create blank line above" })
 
 -- Terminal mode escape
 vim.keymap.set("t", "<Esc>", "<C-\\><C-n>")
