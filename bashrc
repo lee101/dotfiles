@@ -53,13 +53,14 @@ if [ -n "$BASH_VERSION" ]; then
 
   # set a fancy prompt (non-color, unless we know we "want" color)
   case "$TERM" in
-      xterm-color) color_prompt=yes;;
+      xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
   esac
 
   # uncomment for a colored prompt, if the terminal has the capability; turned
   # off by default to not distract the user: the focus in a terminal window
   # should be on the output of commands, not on the prompt
-  #force_color_prompt=yes
+  # Enable colored prompt
+  force_color_prompt=yes
 
   if [ -n "$force_color_prompt" ]; then
       if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
@@ -91,14 +92,15 @@ esac
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
 fi
+
+# Always use colors for common commands
+alias ls='ls --color=auto'
+alias dir='dir --color=auto'
+alias vdir='vdir --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 
 # Easy extract
 extract () {
@@ -241,6 +243,8 @@ alias gdf='git diff'
 alias gdfc='git diff --cached'
 alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
+alias gdfa='git --no-pager diff -p'
+alias gdfac='git --no-pager diff -p --cached'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -497,7 +501,7 @@ pins() {
     uv pip install $package_name --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i $package_name >> $requirements_file
 }
 
-eval "$(hub alias -s)"
+eval "$(hub alias -s)" 2>/dev/null || true
 
 alias cx='codex'
 alias cxa='codex --auto-edit'
@@ -578,6 +582,7 @@ alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 
+alias cl='claude'
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
@@ -728,8 +733,11 @@ if command -v /usr/libexec/java_home >/dev/null 2>&1; then
 fi
 export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 
-# Cntrl+] to copy current command to clipboard
-bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+# Only use bind if we're in bash
+if [ -n "$BASH_VERSION" ]; then
+  # Cntrl+] to copy current command to clipboard
+  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
+fi
 
 alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
 
@@ -788,10 +796,10 @@ export PATH=$M2:$PATH
 ### Added by the Heroku Toolbelt
 export PATH="/usr/local/heroku/bin:$PATH"
 
-### reload because colors are weird otherwise?
+### Set ASDF variable but don't reload to avoid infinite recursion
 if [ -z "$ASDF" ]; then
     export ASDF="asdf"
-    source ~/.bashrc
+    # Don't source ~/.bashrc again to prevent infinite recursion
 fi
 
 export AWS_REGION=us-east-1
@@ -812,7 +820,10 @@ source ~/.secretbashrc
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
-eval "$(direnv hook $SHELL)"
+# Check if direnv is installed before hooking
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook bash 2>/dev/null)" || true
+fi
 
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
@@ -829,8 +840,8 @@ alias idea='~/programs/idea-IU-211.7442.40/bin/idea.sh'
 
 
 # Source WSL-specific configuration if running in WSL
-if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
-    . ~/wslbashrc
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] && [ -f ~/wslbashrc ]; then
+    . ~/wslbashrc 2>/dev/null || true
 fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
@@ -874,7 +885,9 @@ export SDKMAN_DIR="$HOME/.sdkman"
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
-    . ~/.wslbashrc.sh
+    if [ -f ~/wslbashrc ]; then
+        . ~/wslbashrc 2>/dev/null || true
+    fi
 fi
 
 alias y="yarn"
@@ -918,15 +931,33 @@ else
     alias o='xdg-open .'
     alias oo='xdg-open'
 fi
+# Simple function to run Claude and check exit code
+cld() {
+    local prompt="$1"
+    local output_format="${2:-text}"
 
+    if claude -p "$prompt" --output-format "$output_format"; then
+        echo "Success!"
+    else
+        echo "Error: Claude failed with exit code $?" >&2
+        return 1
+    fi
+}
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
+alias ains='sudo apt install'
+alias ainst='sudo apt install'
+
+export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
 
 #if [ -t 1 ]; then
 #  exec zsh
 #fi
-# alias zle=zile
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
+# Add dotfiles tools to PATH
+export PATH="$PATH:$HOME/code/dotfiles/tools"

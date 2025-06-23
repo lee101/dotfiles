@@ -79,7 +79,7 @@ COMPLETION_WAITING_DOTS="true"
 plugins=(
   git
   #bundler
-  dotenv
+  #dotenv
  # osx
  # rake
   #rbenv
@@ -343,6 +343,7 @@ eval "$(pyenv init --path)"
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/lee/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+unsetopt correct_all
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
@@ -367,3 +368,10 @@ alias monoff='sleep 1; xset dpms force off'
 source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 [[ -s "/home/lee/.gvm/scripts/gvm" ]] && source "/home/lee/.gvm/scripts/gvm"
+
+# bun completions
+[ -s "/home/lee/.bun/_bun" ] && source "/home/lee/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
