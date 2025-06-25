@@ -81,15 +81,108 @@ require("lazy").setup({
       lazy = false,
     },
     {
-      "ibhagwan/fzf-lua", -- Fuzzy finding
+      "nvim-tree/nvim-web-devicons", -- File icons
+      config = function()
+        require("nvim-web-devicons").setup({
+          override = {},
+          default = true,
+          strict = true,
+          override_by_filename = {
+            [".gitignore"] = {
+              icon = "",
+              color = "#f1502f",
+              name = "Gitignore"
+            }
+          },
+          override_by_extension = {
+            ["log"] = {
+              icon = "",
+              color = "#81e043",
+              name = "Log"
+            }
+          },
+        })
+      end
+    },
+    {
+      "ibhagwan/fzf-lua", -- Fuzzy finding - excellent telescope replacement
+      dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
         local fzf = require("fzf-lua")
-        vim.keymap.set("n", "<leader>ff", fzf.files)
-        vim.keymap.set("n", "<leader>fg", fzf.grep_project)
-        vim.keymap.set("n", "<leader>fb", fzf.buffers)
-        vim.keymap.set("n", "<leader>fr", fzf.live_grep_resume)
-        vim.keymap.set("n", "<C-p>", fzf.files) -- Git Bash friendly
-        vim.keymap.set("n", "<C-f>", fzf.live_grep) -- Git Bash friendly
+        
+        -- Setup fzf-lua with good defaults
+        fzf.setup({
+          "telescope", -- Use telescope-like profile for familiar behavior
+          winopts = {
+            height = 0.85,
+            width = 0.80,
+            preview = {
+              default = "bat",
+              border = "border",
+              wrap = "nowrap",
+              hidden = "nohidden",
+              vertical = "down:45%",
+              horizontal = "right:60%",
+              layout = "flex",
+              flip_columns = 120,
+            },
+          },
+          files = {
+            prompt = "Files❯ ",
+            multiprocess = true,
+            git_icons = true,
+            file_icons = true,
+            color_icons = true,
+          },
+          grep = {
+            prompt = "Rg❯ ",
+            input_prompt = "Grep For❯ ",
+            multiprocess = true,
+            git_icons = true,
+            file_icons = true,
+            color_icons = true,
+          },
+        })
+        
+        -- File search keymaps
+        vim.keymap.set("n", "<leader>ff", fzf.files, { desc = "Find files" })
+        vim.keymap.set("n", "<leader>fa", function() fzf.files({ cwd = vim.fn.expand("%:p:h") }) end, { desc = "Find files in current dir" })
+        vim.keymap.set("n", "<leader>fh", fzf.oldfiles, { desc = "Find recent files" })
+        vim.keymap.set("n", "<C-p>", fzf.files, { desc = "Find files (Ctrl+P)" })
+        
+        -- Text search keymaps
+        vim.keymap.set("n", "<leader>fg", fzf.live_grep, { desc = "Live grep" })
+        vim.keymap.set("n", "<leader>fw", fzf.grep_cword, { desc = "Grep word under cursor" })
+        vim.keymap.set("n", "<leader>fW", fzf.grep_cWORD, { desc = "Grep WORD under cursor" })
+        vim.keymap.set("n", "<leader>fr", fzf.live_grep_resume, { desc = "Resume last grep" })
+        vim.keymap.set("n", "<C-f>", fzf.live_grep, { desc = "Live grep (Ctrl+F)" })
+        
+        -- Buffer and navigation
+        vim.keymap.set("n", "<leader>fb", fzf.buffers, { desc = "Find buffers" })
+        vim.keymap.set("n", "<leader>fj", fzf.jumps, { desc = "Find jumps" })
+        vim.keymap.set("n", "<leader>fm", fzf.marks, { desc = "Find marks" })
+        vim.keymap.set("n", "<leader>fq", fzf.quickfix, { desc = "Find quickfix" })
+        vim.keymap.set("n", "<leader>fl", fzf.loclist, { desc = "Find location list" })
+        
+        -- Git integration
+        vim.keymap.set("n", "<leader>gc", fzf.git_commits, { desc = "Git commits" })
+        vim.keymap.set("n", "<leader>gb", fzf.git_branches, { desc = "Git branches" })
+        vim.keymap.set("n", "<leader>gf", fzf.git_files, { desc = "Git files" })
+        vim.keymap.set("n", "<leader>gs", fzf.git_status, { desc = "Git status" })
+        
+        -- Help and commands
+        vim.keymap.set("n", "<leader>fh", fzf.help_tags, { desc = "Find help" })
+        vim.keymap.set("n", "<leader>fc", fzf.commands, { desc = "Find commands" })
+        vim.keymap.set("n", "<leader>fk", fzf.keymaps, { desc = "Find keymaps" })
+        
+        -- LSP integration
+        vim.keymap.set("n", "<leader>fs", fzf.lsp_document_symbols, { desc = "Document symbols" })
+        vim.keymap.set("n", "<leader>fS", fzf.lsp_workspace_symbols, { desc = "Workspace symbols" })
+        vim.keymap.set("n", "<leader>fd", fzf.lsp_definitions, { desc = "LSP definitions" })
+        vim.keymap.set("n", "<leader>fD", fzf.lsp_declarations, { desc = "LSP declarations" })
+        vim.keymap.set("n", "<leader>fi", fzf.lsp_implementations, { desc = "LSP implementations" })
+        vim.keymap.set("n", "<leader>ft", fzf.lsp_typedefs, { desc = "LSP type definitions" })
+        vim.keymap.set("n", "<leader>fR", fzf.lsp_references, { desc = "LSP references" })
       end
     },
     {
@@ -272,29 +365,124 @@ require("lazy").setup({
         vim.g.lion_squeeze_spaces = 1
       end
     },
-    -- Simplified file tree without icons to avoid nerd font issues
+    -- File tree with improved configuration
     {
       "nvim-tree/nvim-tree.lua",
+      dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
         vim.g.loaded_netrw = 1
         vim.g.loaded_netrwPlugin = 1
+        
         require("nvim-tree").setup({
           sort_by = "case_sensitive",
-          view = { width = 30 },
+          view = { 
+            width = 35,
+            relativenumber = true,
+            number = true,
+          },
           renderer = { 
             group_empty = true,
+            root_folder_label = ":~:s?$?/..?",
+            indent_width = 2,
+            indent_markers = {
+              enable = true,
+              inline_arrows = true,
+              icons = {
+                corner = "└",
+                edge = "│",
+                item = "│",
+                bottom = "─",
+                none = " ",
+              },
+            },
             icons = {
+              webdev_colors = true,
+              git_placement = "before",
+              padding = " ",
+              symlink_arrow = " ➛ ",
               show = {
-                file = false,  -- Disable file icons
-                folder = false, -- Disable folder icons
+                file = true,
+                folder = true,
                 folder_arrow = true,
-                git = false,
+                git = true,
+                modified = true,
+              },
+              glyphs = {
+                default = "",
+                symlink = "",
+                bookmark = "",
+                modified = "●",
+                folder = {
+                  arrow_closed = "",
+                  arrow_open = "",
+                  default = "",
+                  open = "",
+                  empty = "",
+                  empty_open = "",
+                  symlink = "",
+                  symlink_open = "",
+                },
+                git = {
+                  unstaged = "✗",
+                  staged = "✓",
+                  unmerged = "",
+                  renamed = "➜",
+                  untracked = "★",
+                  deleted = "",
+                  ignored = "◌",
+                },
               },
             },
           },
-          filters = { dotfiles = false },
+          filters = { 
+            dotfiles = false,
+            git_clean = false,
+            no_buffer = false,
+            custom = { "^.git$" },
+          },
+          git = {
+            enable = true,
+            ignore = false,
+            show_on_dirs = true,
+            show_on_open_dirs = true,
+            timeout = 400,
+          },
+          actions = {
+            use_system_clipboard = true,
+            change_dir = {
+              enable = true,
+              global = false,
+              restrict_above_cwd = false,
+            },
+            expand_all = {
+              max_folder_discovery = 300,
+              exclude = { ".git", "target", "build" },
+            },
+            open_file = {
+              quit_on_open = false,
+              resize_window = true,
+              window_picker = {
+                enable = true,
+                picker = "default",
+                chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890",
+                exclude = {
+                  filetype = { "notify", "packer", "qf", "diff", "fugitive", "fugitiveblame" },
+                  buftype = { "nofile", "terminal", "help" },
+                },
+              },
+            },
+          },
+          live_filter = {
+            prefix = "[FILTER]: ",
+            always_show_folders = true,
+          },
         })
-        vim.keymap.set("n", "<leader>e", ":NvimTreeToggle<CR>", { silent = true })
+        
+        -- File tree keymaps
+        vim.keymap.set("n", "<leader>e", ":NvimTreeToggle<CR>", { silent = true, desc = "Toggle file tree" })
+        vim.keymap.set("n", "<leader>E", ":NvimTreeFocus<CR>", { silent = true, desc = "Focus file tree" })
+        vim.keymap.set("n", "<leader>tf", ":NvimTreeFindFile<CR>", { silent = true, desc = "Find current file in tree" })
+        vim.keymap.set("n", "<leader>tc", ":NvimTreeCollapse<CR>", { silent = true, desc = "Collapse file tree" })
       end
     },
     {
@@ -316,10 +504,44 @@ require("lazy").setup({
         end
       end,
       config = function()
-        require("nvim-treesitter.configs").setup({
-          ensure_installed = { "lua", "vim", "javascript", "python", "bash" },
-          highlight = { enable = true },
-          indent = { enable = true },
+        local status_ok, configs = pcall(require, "nvim-treesitter.configs")
+        if not status_ok then
+          vim.notify("Failed to load nvim-treesitter.configs", vim.log.levels.ERROR)
+          return
+        end
+        
+        configs.setup({
+          ensure_installed = { "lua", "vim", "vimdoc", "javascript", "python", "bash", "query" },
+          sync_install = false,
+          auto_install = false,
+          highlight = { 
+            enable = true,
+            additional_vim_regex_highlighting = false,
+            disable = function(lang, buf)
+              local max_filesize = 100 * 1024 -- 100 KB
+              local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
+              if ok and stats and stats.size > max_filesize then
+                return true
+              end
+              -- Disable for help files if there are issues
+              if vim.bo[buf].filetype == "help" then
+                return false -- Let treesitter handle help files
+              end
+            end,
+          },
+          indent = { 
+            enable = true,
+            disable = { "python" } -- Python indentation can be problematic
+          },
+          incremental_selection = {
+            enable = true,
+            keymaps = {
+              init_selection = "gnn",
+              node_incremental = "grn",
+              scope_incremental = "grc",
+              node_decremental = "grm",
+            },
+          },
         })
       end
     },
