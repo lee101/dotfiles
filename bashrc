@@ -319,6 +319,12 @@ alias gclf='git clean -f'
 alias grv='git revert'
 alias gds='git describe'
 alias gw='git whatchanged'
+
+# Modern Git tools
+alias lg='lazygit'
+alias gti='tig status'
+alias gdiff='git difftool --no-symlinks --dir-diff'
+alias gmerge='git mergetool'
 alias gdfb='git diff master...'
 alias gdfbm='git diff main...'
 alias gdfbd='git diff develop...'
