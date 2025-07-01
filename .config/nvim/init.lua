@@ -253,7 +253,7 @@ require("lazy").setup({
         -- Manual server setup - only if executables exist
         if vim.fn.executable('lua-language-server') == 1 then
           lspconfig.lua_ls.setup({
-            capabilities = capabilities,
+          capabilities = capabilities,
             settings = {
               Lua = {
                 diagnostics = { globals = {'vim'} },

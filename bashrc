@@ -424,6 +424,20 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
     echo "$PATH" | tr ':' '\n' | grep -i nvim || echo "No nvim paths found in PATH"
   }
   
+  # WSL2 integration for Git Bash
+  alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
+  alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
+  alias w='wsl'
+  alias wsl2='wsl'
+  # Function to cd into WSL2 directory from Git Bash
+  cdw() {
+    if [ -z "$1" ]; then
+      cd "//wsl$/Ubuntu/home/lee"
+    else
+      cd "//wsl$/Ubuntu/home/lee/$1"
+    fi
+  }
+  
 elif [[ ! $(uname -s) = "Darwin" ]]; then
   # Linux clipboard setup
   alias pbcopy='xclip -selection clipboard'
