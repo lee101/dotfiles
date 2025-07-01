@@ -177,7 +177,137 @@ require("lazy").setup({
     {
       "lewis6991/gitsigns.nvim",
       config = function()
-        require("gitsigns").setup()
+        require("gitsigns").setup({
+          signs = {
+            add = { text = "+" },
+            change = { text = "~" },
+            delete = { text = "_" },
+            topdelete = { text = "‾" },
+            changedelete = { text = "~" },
+          },
+          current_line_blame = true,
+          current_line_blame_opts = {
+            virt_text = true,
+            virt_text_pos = "eol",
+            delay = 1000,
+          },
+          on_attach = function(bufnr)
+            local gs = package.loaded.gitsigns
+            local function map(mode, l, r, opts)
+              opts = opts or {}
+              opts.buffer = bufnr
+              vim.keymap.set(mode, l, r, opts)
+            end
+            -- Navigation
+            map('n', ']c', function()
+              if vim.wo.diff then return ']c' end
+              vim.schedule(function() gs.next_hunk() end)
+              return '<Ignore>'
+            end, {expr=true})
+            map('n', '[c', function()
+              if vim.wo.diff then return '[c' end
+              vim.schedule(function() gs.prev_hunk() end)
+              return '<Ignore>'
+            end, {expr=true})
+            -- Actions
+            map('n', '<leader>hs', gs.stage_hunk)
+            map('n', '<leader>hr', gs.reset_hunk)
+            map('v', '<leader>hs', function() gs.stage_hunk {vim.fn.line('.'), vim.fn.line('v')} end)
+            map('v', '<leader>hr', function() gs.reset_hunk {vim.fn.line('.'), vim.fn.line('v')} end)
+            map('n', '<leader>hS', gs.stage_buffer)
+            map('n', '<leader>hu', gs.undo_stage_hunk)
+            map('n', '<leader>hR', gs.reset_buffer)
+            map('n', '<leader>hp', gs.preview_hunk)
+            map('n', '<leader>hb', function() gs.blame_line{full=true} end)
+            map('n', '<leader>tb', gs.toggle_current_line_blame)
+            map('n', '<leader>hd', gs.diffthis)
+            map('n', '<leader>hD', function() gs.diffthis('~') end)
+            map('n', '<leader>td', gs.toggle_deleted)
+          end
+        })
+      end
+    },
+    {
+      "tpope/vim-fugitive",
+      event = "VeryLazy",
+      config = function()
+        vim.keymap.set("n", "<leader>gs", ":Git<CR>", { desc = "Git status" })
+        vim.keymap.set("n", "<leader>gd", ":Gdiffsplit<CR>", { desc = "Git diff" })
+        vim.keymap.set("n", "<leader>gb", ":Git blame<CR>", { desc = "Git blame" })
+        vim.keymap.set("n", "<leader>gw", ":Gwrite<CR>", { desc = "Git write (stage)" })
+        vim.keymap.set("n", "<leader>gc", ":Git commit<CR>", { desc = "Git commit" })
+        vim.keymap.set("n", "<leader>gp", ":Git push<CR>", { desc = "Git push" })
+        vim.keymap.set("n", "<leader>gl", ":Git pull<CR>", { desc = "Git pull" })
+      end
+    },
+    {
+      "NeogitOrg/neogit",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "sindrets/diffview.nvim",
+        "nvim-telescope/telescope.nvim",
+      },
+      config = function()
+        local neogit = require("neogit")
+        neogit.setup({
+          integrations = {
+            telescope = true,
+            diffview = true,
+          },
+        })
+        vim.keymap.set("n", "<leader>gg", neogit.open, { desc = "Neogit" })
+        vim.keymap.set("n", "<leader>gc", function() neogit.open({ "commit" }) end, { desc = "Neogit commit" })
+      end
+    },
+    {
+      "sindrets/diffview.nvim",
+      config = function()
+        require("diffview").setup({
+          use_icons = true,
+          enhanced_diff_hl = true,
+          key_bindings = {
+            disable_defaults = false,
+            view = {
+              ["<tab>"] = "select_next_entry",
+              ["<s-tab>"] = "select_prev_entry",
+              ["gf"] = "goto_file",
+              ["<C-w><C-f>"] = "goto_file_split",
+              ["<C-w>gf"] = "goto_file_tab",
+              ["<leader>e"] = "focus_files",
+              ["<leader>b"] = "toggle_files",
+            },
+            file_panel = {
+              ["j"] = "next_entry",
+              ["<down>"] = "next_entry",
+              ["k"] = "prev_entry",
+              ["<up>"] = "prev_entry",
+              ["<cr>"] = "select_entry",
+              ["o"] = "select_entry",
+              ["<2-LeftMouse>"] = "select_entry",
+              ["-"] = "toggle_stage_entry",
+              ["S"] = "stage_all",
+              ["U"] = "unstage_all",
+              ["X"] = "restore_entry",
+              ["R"] = "refresh_files",
+              ["L"] = "open_commit_log",
+              ["<c-b>"] = "scroll_view(-0.25)",
+              ["<c-f>"] = "scroll_view(0.25)",
+              ["<tab>"] = "select_next_entry",
+              ["<s-tab>"] = "select_prev_entry",
+              ["gf"] = "goto_file",
+              ["<C-w><C-f>"] = "goto_file_split",
+              ["<C-w>gf"] = "goto_file_tab",
+              ["i"] = "listing_style",
+              ["f"] = "toggle_flatten_dirs",
+              ["<leader>e"] = "focus_files",
+              ["<leader>b"] = "toggle_files",
+            },
+          },
+        })
+        vim.keymap.set("n", "<leader>dv", ":DiffviewOpen<CR>", { desc = "Diffview open" })
+        vim.keymap.set("n", "<leader>dc", ":DiffviewClose<CR>", { desc = "Diffview close" })
+        vim.keymap.set("n", "<leader>dh", ":DiffviewFileHistory<CR>", { desc = "Diffview file history" })
+        vim.keymap.set("n", "<leader>df", ":DiffviewFileHistory %<CR>", { desc = "Diffview current file history" })
       end
     },
     {
@@ -240,31 +370,6 @@ require("lazy").setup({
       end
     },
     {
-      "github/copilot.vim",
-      event = "InsertEnter",
-      config = function()
-        -- Disable default tab mapping
-        vim.g.copilot_no_tab_map = true
-        vim.g.copilot_assume_mapped = true
-        
-        -- Simple reliable mappings
-        vim.api.nvim_create_autocmd("VimEnter", {
-          callback = function()
-            vim.keymap.set("i", "<Tab>", 'copilot#Accept("\\<CR>")', {
-              expr = true,
-              replace_keycodes = false,
-              silent = true
-            })
-            vim.keymap.set("i", "<C-J>", 'copilot#Accept("\\<CR>")', {
-              expr = true,
-              replace_keycodes = false,
-              silent = true
-            })
-          end,
-        })
-      end,
-    },
-    {
       "hrsh7th/nvim-cmp",
       event = "InsertEnter",
       dependencies = {
@@ -276,10 +381,18 @@ require("lazy").setup({
         local cmp = require("cmp")
         cmp.setup({
           mapping = cmp.mapping.preset.insert({
-            ["<Tab>"] = cmp.mapping.select_next_item(),
-            ["<S-Tab>"] = cmp.mapping.select_prev_item(),
+            -- Use Ctrl+n/p for completion navigation instead of Tab
+            ["<C-n>"] = cmp.mapping.select_next_item(),
+            ["<C-p>"] = cmp.mapping.select_prev_item(),
             ["<CR>"] = cmp.mapping.confirm({ select = true }),
             ["<C-Space>"] = cmp.mapping.complete(),
+            -- Disable Tab for cmp to avoid conflict with Copilot
+            ["<Tab>"] = cmp.mapping(function(fallback)
+              fallback()
+            end, { "i", "s" }),
+            ["<S-Tab>"] = cmp.mapping(function(fallback)
+              fallback()
+            end, { "i", "s" }),
           }),
           sources = cmp.config.sources({
             { name = "nvim_lsp" },
@@ -299,6 +412,23 @@ require("lazy").setup({
 vim.keymap.set("i", "jj", "<Esc>", { desc = "Exit insert mode with jj" })
 vim.keymap.set("n", ";", ":", { desc = "Use semicolon for command mode" })
 vim.keymap.set("n", ":", ";", { desc = "Use colon for repeat find" })
+
+-- Copilot configuration (after plugins are loaded)
+vim.g.copilot_no_tab_map = true
+vim.g.copilot_assume_mapped = true
+
+-- Map Tab to accept Copilot suggestions
+vim.keymap.set("i", "<Tab>", 'copilot#Accept("\\<CR>")', {
+  expr = true,
+  replace_keycodes = false,
+  silent = true
+})
+-- Alternative mapping
+vim.keymap.set("i", "<C-J>", 'copilot#Accept("\\<CR>")', {
+  expr = true,
+  replace_keycodes = false,
+  silent = true
+})
 
 -- Use a different key for fold toggle since space is leader
 vim.keymap.set("n", "za", "za", { desc = "Toggle fold" })
