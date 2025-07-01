@@ -79,7 +79,7 @@ COMPLETION_WAITING_DOTS="true"
 plugins=(
   git
   #bundler
-  dotenv
+  #dotenv
  # osx
  # rake
   #rbenv

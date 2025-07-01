@@ -59,7 +59,7 @@ map('n', ';', ':', { noremap = true })
 map('n', ':', ';', { noremap = true })
 
 -- Fix email paragraphs (remove leading '>')
-map('n', '<leader>par', ':%s/^>\s*//<CR>', nomap_opts)
+map('n', '<leader>par', ':%s/^>\\s*//<CR>', nomap_opts)
 
 
 -- Example for <F9> to remove DOS line endings
