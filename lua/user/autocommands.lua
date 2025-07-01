@@ -28,7 +28,7 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, { -- BufWritePre is better than B
     if not vim.bo.binary and vim.bo.modifiable and vim.bo.readonly == false then
       local original_cursor_pos = vim.api.nvim_win_get_cursor(0)
       local original_view = vim.fn.winsaveview()
-      vim.cmd("silent! %s/\s\+$//e")
+      vim.cmd("silent! %s/\\s\\+$//e")
       vim.fn.winrestview(original_view)
       -- Only restore cursor if it's still valid, otherwise it might error
       if original_cursor_pos[1] <= vim.api.nvim_buf_line_count(0) then
