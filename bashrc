@@ -889,3 +889,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
 # Add dotfiles tools to PATH
 export PATH="$PATH:$HOME/code/dotfiles/tools"
+export aideg='aider --model gemini/gemini-2.5-pro-preview-06-05 --thinking-tokens 32k'
+export aided='aider --model deepseek/deepseek-reasoner'
+alias pip='uv pip'
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
