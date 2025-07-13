@@ -1,6 +1,6 @@
 -- ~/.config/nvim/lua/user/keymaps.lua
 
-local map = vim.keymap.set
+local map = vim.api.nvim_set_keymap
 local nomap_opts = { noremap = true, silent = true }
 local map_opts = { noremap = false, silent = true } -- for recursive maps like nzz
 
@@ -51,15 +51,19 @@ map('n', 'zk', 'O<Esc>', nomap_opts)
 map('n', '<Space>', 'za', { noremap = true }) -- not silent, so you see the fold status change
 
 -- Search mappings to center screen
-map({'n', 'v', 'o'}, 'N', 'Nzz', map_opts)
-map({'n', 'v', 'o'}, 'n', 'nzz', map_opts)
+map('n', 'N', 'Nzz', map_opts)
+map('v', 'N', 'Nzz', map_opts)
+map('o', 'N', 'Nzz', map_opts)
+map('n', 'n', 'nzz', map_opts)
+map('v', 'n', 'nzz', map_opts)
+map('o', 'n', 'nzz', map_opts)
 
 -- Swap ; and :
 map('n', ';', ':', { noremap = true })
 map('n', ':', ';', { noremap = true })
 
 -- Fix email paragraphs (remove leading '>')
-map('n', '<leader>par', ':%s/^>\s*//<CR>', nomap_opts)
+map('n', '<leader>par', ':%s/^>\\s*//<CR>', nomap_opts)
 
 
 -- Example for <F9> to remove DOS line endings

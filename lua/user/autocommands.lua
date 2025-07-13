@@ -1,14 +1,15 @@
 -- ~/.config/nvim/lua/user/autocommands.lua
 
-local group = vim.api.nvim_create_augroup("UserAutocommands", { clear = true })
+-- Create augroup using older API
+vim.cmd [[
+  augroup UserAutocommands
+    autocmd!
+  augroup END
+]]
 
 -- Change to the directory of the file on BufEnter
-vim.api.nvim_create_autocmd("BufEnter", {
-  group = group,
-  pattern = "*",
-  desc = "Change directory to current file's directory",
-  callback = function()
-    -- Check if the buffer has a name and is not a temporary/special buffer
+vim.cmd [[
+  autocmd UserAutocommands BufEnter * lua <<EOF
     local bufname = vim.fn.bufname("%")
     if bufname ~= "" and vim.fn.filereadable(bufname) == 1 then
       local dir = vim.fn.expand("%:p:h")
@@ -16,50 +17,34 @@ vim.api.nvim_create_autocmd("BufEnter", {
         vim.cmd("silent! chdir " .. vim.fn.escape(dir, " "))
       end
     end
-  end,
-})
+EOF
+]]
 
 -- Remove trailing whitespace on save
-vim.api.nvim_create_autocmd({ "BufWritePre" }, { -- BufWritePre is better than BufWrite
-  group = group,
-  pattern = "*",
-  desc = "Remove trailing whitespace",
-  callback = function()
+vim.cmd [[
+  autocmd UserAutocommands BufWritePre * lua <<EOF
     if not vim.bo.binary and vim.bo.modifiable and vim.bo.readonly == false then
       local original_cursor_pos = vim.api.nvim_win_get_cursor(0)
       local original_view = vim.fn.winsaveview()
-      vim.cmd("silent! %s/\s\+$//e")
+      vim.cmd("silent! %s/\\s\\+$//e")
       vim.fn.winrestview(original_view)
-      -- Only restore cursor if it's still valid, otherwise it might error
       if original_cursor_pos[1] <= vim.api.nvim_buf_line_count(0) then
          vim.api.nvim_win_set_cursor(0, original_cursor_pos)
       end
     end
-  end,
-})
+EOF
+]]
 
--- Restore cursor position (Neovim's built-in shada often handles this)
--- If you still want more explicit control, especially for folds:
-vim.api.nvim_create_autocmd("BufReadPost", {
-  group = group,
-  pattern = "*",
-  desc = "Restore cursor position and open folds",
-  callback = function()
-    -- Check if we should ignore this buffer (e.g., temp buffers)
+-- Restore cursor position
+vim.cmd [[
+  autocmd UserAutocommands BufReadPost * lua <<EOF
     if vim.bo.buftype ~= "" or vim.api.nvim_eval('&filetype') == 'gitcommit' then
       return
     end
-
+    
     local last_known_line = vim.fn.line("'\"")
     if last_known_line > 1 and last_known_line <= vim.fn.line("$") then
       vim.api.nvim_win_set_cursor(0, { last_known_line, vim.fn.col("'\"") - 1 })
-      -- Smart fold opening: only if the cursor is on a line that might be folded away
-      -- This is a simplified version. The original logic was more complex.
-      -- You might want to just use `normal! zv` if your folds are simple markers
-      -- or rely on Neovim's view/session features (see :h viewoptions, :h mksession)
-      -- if foldlevel(last_known_line) > 0 then
-      --   vim.cmd("normal! zv")
-      -- end
     end
-  end,
-}) 
+EOF
+]] 
