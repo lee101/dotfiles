@@ -63,3 +63,28 @@ vim.api.nvim_create_autocmd("BufReadPost", {
     end
   end,
 }) 
+
+-- Jinja2 file type associations
+vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
+  group = group,
+  pattern = { "*.j2", "*.jinja", "*.jinja2", "*.html.j2", "*.htm.j2" },
+  desc = "Set filetype for Jinja2 templates",
+  callback = function()
+    vim.bo.filetype = "htmljinja"
+  end,
+})
+
+-- Additional template file associations
+vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
+  group = group,
+  pattern = { "*.template", "*.tmpl" },
+  desc = "Set filetype for generic templates",
+  callback = function()
+    local ext = vim.fn.expand("%:e:e") -- Get second extension if exists
+    if ext == "html" or ext == "htm" then
+      vim.bo.filetype = "htmljinja"
+    else
+      vim.bo.filetype = "jinja"
+    end
+  end,
+})

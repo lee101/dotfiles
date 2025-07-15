@@ -509,6 +509,8 @@ alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 alias pip='uv pip'
+export NODE_OPTIONS="--max-old-space-size=8192"
+
 
 alias cl='claude'
 alias refresh='source ~/.bashrc'
@@ -877,6 +879,9 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 alias ains='sudo apt install'
 alias ainst='sudo apt install'
 
+alias qx='at -q X now'
+alias qy='at -q Y now'
+alias qz='at -q Z now'
 export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
 
 #if [ -t 1 ]; then
