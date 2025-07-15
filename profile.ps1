@@ -230,6 +230,120 @@ function pinu { pip install -U $args }
 function pfr { pip freeze }
 function pfrr { pip freeze > requirements.txt }
 
+# Node.js/Yarn/NPM aliases
+function ni { npm install $args }
+function nig { npm install -g $args }
+function nis { npm install --save $args }
+function nid { npm install --save-dev $args }
+function nu { npm uninstall $args }
+function nug { npm uninstall -g $args }
+function nrs { npm run start }
+function nrt { npm run test }
+function nrb { npm run build }
+function nrd { npm run dev }
+function nls { npm list }
+function nlsg { npm list -g --depth=0 }
+
+function yi { yarn install $args }
+function ya { yarn add $args }
+function yad { yarn add --dev $args }
+function yag { yarn global add $args }
+function yr { yarn remove $args }
+function yrg { yarn global remove $args }
+function ys { yarn start }
+function yt { yarn test }
+function yb { yarn build }
+function yd { yarn dev }
+function yls { yarn list }
+function ylsg { yarn global list }
+
+# Directory usage (like bash usager/usage)
+function usager { 
+    Get-ChildItem | ForEach-Object { 
+        $size = if ($_.PSIsContainer) { 
+            (Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum 
+        } else { 
+            $_.Length 
+        }
+        [PSCustomObject]@{
+            Name = $_.Name
+            Size = $size
+            SizeStr = "{0:N2} MB" -f ($size / 1MB)
+        }
+    } | Sort-Object Size | Format-Table Name, SizeStr -AutoSize
+}
+
+function usage { 
+    Get-ChildItem -Force | ForEach-Object { 
+        $size = if ($_.PSIsContainer) { 
+            (Get-ChildItem $_.FullName -Recurse -Force | Measure-Object Length -Sum).Sum 
+        } else { 
+            $_.Length 
+        }
+        [PSCustomObject]@{
+            Name = $_.Name
+            Size = $size
+            SizeStr = "{0:N2} MB" -f ($size / 1MB)
+        }
+    } | Sort-Object Size | Format-Table Name, SizeStr -AutoSize
+}
+
+# Archive functions
+function compress { 
+    param($path)
+    $name = (Get-Item $path).BaseName
+    Compress-Archive -Path $path -DestinationPath "$name.zip"
+}
+
+function mktgz { 
+    param($path)
+    $name = (Get-Item $path).BaseName
+    tar -czf "$name.tar.gz" $path
+}
+
+# Find by name (findn equivalent)
+function findn { 
+    param($pattern)
+    Get-ChildItem -Recurse -Filter "*$pattern*" | Select-Object FullName
+}
+
+# Simple web server
+function webserver { 
+    param($port = 8080)
+    python -m http.server $port
+}
+
+# More npm/yarn shortcuts  
+function pn { pnpm $args }
+function yt { yarn test $args }
+function yr { yarn remove $args }
+
+# Codex shortcuts (if you use it)
+function cx { codex $args }
+function cxa { codex --auto-edit $args }
+function cxf { codex --full-auto $args }
+
+# IP address functions
+function my-ip {
+    (Invoke-WebRequest -Uri "https://ifconfig.me/ip" -UseBasicParsing).Content.Trim()
+}
+
+function local-ip {
+    Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notlike "*Loopback*" } | Select-Object IPAddress, InterfaceAlias
+}
+
+# Enhanced pip with uv (if you use uv)
+function piuv { uv pip install $args }
+function pinuv { uv pip install $args }
+
+# Alias management functions
+function ali {
+    param($aliasDefinition)
+    Add-Content -Path $PROFILE -Value "Set-Alias -Name $aliasDefinition"
+    . $PROFILE
+    Write-Host "Added alias: $aliasDefinition" -ForegroundColor Green
+}
+
 # Directory listing with colors
 if ($PSVersionTable.PSVersion.Major -ge 7) {
     $PSStyle.FileInfo.Directory = "`e[34m"
@@ -269,6 +383,39 @@ function Get-DirSize {
 # Environment variables
 $env:EDITOR = "code"
 
+# PATH Configuration - Add common development tool paths
+$pathsToAdd = @(
+    # Node.js global modules
+    "$env:APPDATA\npm",
+    # Yarn global binaries
+    "$env:LOCALAPPDATA\Yarn\bin",
+    # Python Scripts (if using Python)
+    "$env:LOCALAPPDATA\Programs\Python\Python312\Scripts",
+    "$env:LOCALAPPDATA\Programs\Python\Python311\Scripts",
+    "$env:LOCALAPPDATA\Programs\Python\Python310\Scripts",
+    # Chocolatey tools
+    "$env:ALLUSERSPROFILE\chocolatey\bin",
+    # Windows Kits (for development tools)
+    "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64",
+    # Git (in case it's not in PATH)
+    "${env:ProgramFiles}\Git\bin",
+    # Additional common paths
+    "$env:USERPROFILE\.cargo\bin",
+    "$env:USERPROFILE\go\bin"
+)
+
+# Add paths to current session PATH if they exist and aren't already there
+foreach ($path in $pathsToAdd) {
+    if ((Test-Path $path) -and ($env:PATH -notlike "*$path*")) {
+        $env:PATH = "$path;$env:PATH"
+    }
+}
+
+# Node.js environment variables
+if (Get-Command node -ErrorAction SilentlyContinue) {
+    $env:NODE_PATH = "$env:APPDATA\npm\node_modules"
+}
+
 # Utility functions
 function usage { 
     Get-ChildItem -Force | ForEach-Object { 
@@ -276,9 +423,81 @@ function usage {
     } | Sort-Object
 }
 
+# Directory usage (like bash usager/usage)
+function usager { 
+    Get-ChildItem | ForEach-Object { 
+        $size = if ($_.PSIsContainer) { 
+            (Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum 
+        } else { 
+            $_.Length 
+        }
+        [PSCustomObject]@{
+            Name = $_.Name
+            Size = $size
+            SizeStr = "{0:N2} MB" -f ($size / 1MB)
+        }
+    } | Sort-Object Size | Format-Table Name, SizeStr -AutoSize
+}
+
 function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function o { explorer.exe . }
 function oo { explorer.exe $args }
+
+# Environment management
+function refresh-env {
+    Write-Host "Refreshing environment variables..." -ForegroundColor Cyan
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+    Write-Host "Environment refreshed!" -ForegroundColor Green
+}
+
+function check-tools {
+    $tools = @("node", "npm", "yarn", "git", "code", "nvim", "python", "pip", "fzf")
+    foreach ($tool in $tools) {
+        if (Get-Command $tool -ErrorAction SilentlyContinue) {
+            Write-Host "✓ $tool" -ForegroundColor Green
+        } else {
+            Write-Host "✗ $tool" -ForegroundColor Red
+        }
+    }
+}
+
+# FZF-like functionality (if fzf is available)
+function fe {
+    if (Get-Command fzf -ErrorAction SilentlyContinue) {
+        $file = Get-ChildItem -Recurse -File | ForEach-Object { $_.FullName } | fzf
+        if ($file) { & $env:EDITOR $file }
+    } else {
+        Write-Host "fzf not installed. Install with: choco install fzf" -ForegroundColor Yellow
+    }
+}
+
+function fd {
+    if (Get-Command fzf -ErrorAction SilentlyContinue) {
+        $dir = Get-ChildItem -Recurse -Directory | ForEach-Object { $_.FullName } | fzf
+        if ($dir) { Set-Location $dir }
+    } else {
+        Write-Host "fzf not installed. Install with: choco install fzf" -ForegroundColor Yellow
+    }
+}
+
+# Clipboard functions (Windows native)
+function pbcopy {
+    $input | Set-Clipboard
+}
+
+function pbpaste {
+    Get-Clipboard
+}
+
+# Enhanced ls with git status (if in git repo)
+function lsg {
+    Get-ChildItem
+    if (git rev-parse --git-dir 2>$null) {
+        Write-Host ""
+        Write-Host "Git Status:" -ForegroundColor Cyan
+        git status --porcelain
+    }
+}
 
 
 # Import modules

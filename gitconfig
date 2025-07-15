@@ -29,7 +29,7 @@
 	pager = diff-so-fancy | less --tabs=4 -RFX
 	autocrlf = input
 [credential]
-	helper = gcloud.sh
+	helper = store
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path =
