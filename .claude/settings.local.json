@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(ls:*)",
+      "Bash(ln:*)",
       "Bash(mkdir:*)"
     ],
     "deny": []
