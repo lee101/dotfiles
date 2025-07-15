@@ -67,6 +67,14 @@ return {
     config = function()
       require("nvim-treesitter.configs").setup({
         auto_install = true,
+        ensure_installed = {
+          "lua", "vim", "vimdoc", "query",
+          "javascript", "typescript", "tsx",
+          "python", "go", "rust",
+          "html", "css", "json", "yaml",
+          "markdown", "markdown_inline",
+          "bash", "dockerfile"
+        },
         highlight = {
           enable = true,
         },
@@ -75,6 +83,12 @@ return {
         },
       })
     end,
+  },
+
+  -- Jinja2 syntax support
+  {
+    "Glench/Vim-Jinja2-Syntax",
+    ft = { "jinja", "jinja2", "htmljinja" },
   },
 
   -- Git integration
@@ -96,6 +110,102 @@ return {
   {
     'numToStr/Comment.nvim',
     config = true,
+  },
+
+  -- Cursor teleport visualization
+  {
+    'gen740/SmoothCursor.nvim',
+    config = function()
+      require('smoothcursor').setup({
+        type = "default",           -- Cursor movement calculation method, choose "default", "exp" (exponential) or "matrix".
+        cursor = "",              -- Cursor shape (need nerd font)
+        texthl = "SmoothCursor",   -- Highlight group, default is { bg = None, fg = "#FFD400" }
+        linehl = nil,              -- Highlights the line under the cursor, similar to 'cursorline'. "CursorLine" is recommended
+        fancy = {
+          enable = true,           -- enable fancy mode
+          head = { cursor = "▷", texthl = "SmoothCursor", linehl = nil }, -- false to disable fancy head
+          body = {
+            { cursor = "●", texthl = "SmoothCursorRed" },
+            { cursor = "●", texthl = "SmoothCursorOrange" },
+            { cursor = "●", texthl = "SmoothCursorYellow" },
+            { cursor = "●", texthl = "SmoothCursorGreen" },
+            { cursor = "●", texthl = "SmoothCursorAqua" },
+            { cursor = "●", texthl = "SmoothCursorBlue" },
+            { cursor = "●", texthl = "SmoothCursorPurple" },
+          },
+          tail = { cursor = nil, texthl = "SmoothCursor" } -- false to disable fancy tail
+        },
+        matrix = {  -- Loaded when 'type' is set to "matrix"
+          head = {
+            cursor = require('smoothcursor.matrix_chars'),
+            texthl = {
+              'SmoothCursor',
+            },
+            linehl = nil,
+          },
+          body = {
+            length = 6,
+            cursor = require('smoothcursor.matrix_chars'),
+            texthl = {
+              'SmoothCursorGreen',
+            },
+          },
+          tail = {
+            cursor = nil,
+            texthl = {
+              'SmoothCursor',
+            },
+          },
+          unstop = false,
+        },
+        autostart = true,          -- Automatically start SmoothCursor
+        always_redraw = true,      -- Redraw the screen on each update
+        flyin_effect = nil,        -- Choose "bottom" or "top" for flying effect
+        speed = 25,                -- Max speed is 100 to stick with your terminal's max refresh rate
+        intervals = 35,            -- Update intervals in milliseconds
+        priority = 10,             -- Set marker priority
+        timeout = 3000,            -- Timeout for animations in milliseconds
+        threshold = 3,             -- Animate only if cursor moves more than this many lines
+        max_threshold = nil,       -- If you move more than this many lines, don't animate (if `nil`, deactivated)
+        disable_float_win = false, -- Disable in floating windows
+        enabled_filetypes = nil,   -- Enable only for specific file types, e.g., { "lua", "vim" }
+        disabled_filetypes = nil,  -- Disable for these file types, ignored if enabled_filetypes is set. e.g., { "TelescopePrompt", "NvimTree" }
+      })
+    end,
+  },
+
+  -- GitHub Copilot
+  {
+    "github/copilot.vim",
+    event = "InsertEnter",
+    config = function()
+      -- Copilot settings
+      vim.g.copilot_no_tab_map = true
+      vim.g.copilot_assume_mapped = true
+      vim.g.copilot_tab_fallback = ""
+      
+      -- Enable Copilot for specific filetypes
+      vim.g.copilot_filetypes = {
+        ["*"] = true,
+        ["TelescopePrompt"] = false,
+        ["TelescopeResults"] = false,
+      }
+      
+      -- Key mappings for Copilot
+      vim.keymap.set("i", "<C-l>", 'copilot#Accept("\\<CR>")', {
+        expr = true,
+        replace_keycodes = false,
+        desc = "Accept Copilot suggestion"
+      })
+      vim.keymap.set("i", "<C-j>", "<Plug>(copilot-next)", { desc = "Next Copilot suggestion" })
+      vim.keymap.set("i", "<C-k>", "<Plug>(copilot-previous)", { desc = "Previous Copilot suggestion" })
+      vim.keymap.set("i", "<C-d>", "<Plug>(copilot-dismiss)", { desc = "Dismiss Copilot suggestion" })
+      
+      -- Add a command to check Copilot status
+      vim.api.nvim_create_user_command("CopilotStatus", function()
+        vim.cmd("Copilot status")
+      end, { desc = "Check Copilot status" })
+    end,
   },
 
   -- Which-key for keybinding help
@@ -130,9 +240,33 @@ return {
 
       require('mason').setup({})
       require('mason-lspconfig').setup({
-        ensure_installed = {'lua_ls', 'rust_analyzer', 'pyright'},
+        ensure_installed = {
+          'lua_ls',           -- Lua
+          'rust_analyzer',    -- Rust
+          'pyright',          -- Python
+          'ts_ls',            -- TypeScript/JavaScript
+          'html',             -- HTML
+          'cssls',            -- CSS
+          'jsonls',           -- JSON
+          'gopls',            -- Go
+          'emmet_ls',         -- Emmet for HTML/CSS
+        },
         handlers = {
           lsp_zero.default_setup,
+          -- Custom handler for HTML to support Jinja2 templates
+          html = function()
+            require('lspconfig').html.setup({
+              filetypes = { 'html', 'templ', 'htmljinja', 'jinja.html' },
+              init_options = {
+                configurationSection = { "html", "css", "javascript" },
+                embeddedLanguages = {
+                  css = true,
+                  javascript = true
+                },
+                provideFormatter = true
+              }
+            })
+          end,
         },
       })
 
