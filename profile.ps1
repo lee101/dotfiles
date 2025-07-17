@@ -86,6 +86,8 @@ function gdfbd { git diff develop... }
 # Modern Git tools
 function lg { lazygit }
 function gti { tig status }
+function tgi { tig status }  # Alternative alias for tig
+function tg { tig $args }    # Short tig alias
 function gdiff { git difftool --no-symlinks --dir-diff $args }
 function gmerge { git mergetool $args }
 
