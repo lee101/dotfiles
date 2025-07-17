@@ -49,3 +49,13 @@ vim.opt.completeopt = "longest,menuone,preview" -- Completion options (nvim-cmp 
 -- Set leader key before plugins that might use it (already in init.lua, but good to be aware)
 -- vim.g.mapleader = " "
 -- vim.g.maplocalleader = "\\" 
+
+-- SmoothCursor highlight groups
+vim.api.nvim_set_hl(0, "SmoothCursor", { fg = "#8aa872" })
+vim.api.nvim_set_hl(0, "SmoothCursorRed", { fg = "#ff5189" })
+vim.api.nvim_set_hl(0, "SmoothCursorOrange", { fg = "#ffb964" })
+vim.api.nvim_set_hl(0, "SmoothCursorYellow", { fg = "#ffda64" })
+vim.api.nvim_set_hl(0, "SmoothCursorGreen", { fg = "#8aa872" })
+vim.api.nvim_set_hl(0, "SmoothCursorAqua", { fg = "#64ffda" })
+vim.api.nvim_set_hl(0, "SmoothCursorBlue", { fg = "#64d2ff" })
+vim.api.nvim_set_hl(0, "SmoothCursorPurple", { fg = "#d264ff" })

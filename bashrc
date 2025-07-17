@@ -627,6 +627,8 @@ alias install='sudo apt-get install'
 alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 alias pip='uv pip'
+export NODE_OPTIONS="--max-old-space-size=8192"
+
 
 alias cl='claude'
 alias refresh='source ~/.bashrc'
@@ -994,6 +996,9 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 alias ains='sudo apt install'
 alias ainst='sudo apt install'
 
+alias qx='at -q X now'
+alias qy='at -q Y now'
+alias qz='at -q Z now'
 export PATH="$PATH:/opt/nvim-linux64/bin:/home/lee/.modular/bin"
 
 #if [ -t 1 ]; then
@@ -1007,3 +1012,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
 # Add dotfiles tools to PATH
 export PATH="$PATH:$HOME/code/dotfiles/tools"
+export aideg='aider --model gemini/gemini-2.5-pro-preview-06-05 --thinking-tokens 32k'
+export aided='aider --model deepseek/deepseek-reasoner'
+alias pip='uv pip'
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"

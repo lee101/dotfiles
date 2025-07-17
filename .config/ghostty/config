@@ -91,7 +91,7 @@ selection-background = #979eab
 # scrollback-lines = 10000 (removed - unknown field)
 mouse-hide-while-typing = true
 confirm-close-surface = false
-unsafe-paste = always
+#unsafe-paste = always
 
 # Performance optimizations
 # rendering-backend = auto (removed - unknown field)
