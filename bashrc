@@ -323,8 +323,33 @@ alias gw='git whatchanged'
 # Modern Git tools
 alias lg='lazygit'
 alias gti='tig status'
+alias tgi='tig status'  # Alternative alias for tig
+alias tg='tig'          # Short tig alias
 alias gdiff='git difftool --no-symlinks --dir-diff'
 alias gmerge='git mergetool'
+
+# Debug function for Git tools
+git-tools-debug() {
+    echo "=== Git Tools Debug ==="
+    echo "Environment: $(uname -s) $(uname -r)"
+    echo "Shell: $SHELL"
+    echo "Bashrc loaded: $(test -f ~/.bashrc && echo 'Yes' || echo 'No')"
+    echo ""
+    echo "Tool availability:"
+    for tool in git lazygit tig delta difft gh; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            echo "✓ $tool: $(command -v "$tool")"
+        else
+            echo "✗ $tool: not found"
+        fi
+    done
+    echo ""
+    echo "Git tool aliases:"
+    alias | grep -E "(lg|tgi|gti|tg|gdiff|gmerge)=" || echo "No git tool aliases found"
+    echo ""
+    echo "Delta pager check:"
+    git config --get core.pager || echo "No pager configured"
+}
 alias gdfb='git diff master...'
 alias gdfbm='git diff main...'
 alias gdfbd='git diff develop...'

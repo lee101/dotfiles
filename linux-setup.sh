@@ -4,9 +4,9 @@
 echo "Installing Git and essential Git tools..."
 
 # Install delta (better than diff-so-fancy)
-wget https://github.com/dandavison/delta/releases/download/0.17.0/git-delta_0.17.0_amd64.deb
-sudo dpkg -i git-delta_0.17.0_amd64.deb
-rm git-delta_0.17.0_amd64.deb
+curl -Lo git-delta.deb "https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_amd64.deb"
+sudo dpkg -i git-delta.deb
+rm git-delta.deb
 
 # Install lazygit
 LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
@@ -16,11 +16,18 @@ sudo install lazygit /usr/local/bin
 rm lazygit.tar.gz lazygit
 
 # Install difftastic
-curl -L https://github.com/Wilfred/difftastic/releases/download/0.60.0/difft-x86_64-unknown-linux-gnu.tar.gz | tar -xz
-sudo mv difft /usr/local/bin/
+curl -Lo difft.tar.gz "https://github.com/Wilfred/difftastic/releases/download/0.61.0/difft-x86_64-unknown-linux-gnu.tar.gz"
+tar xf difft.tar.gz
+sudo install difft /usr/local/bin
+rm difft.tar.gz difft
 
 # Install tig
 sudo apt install tig -y
+
+# Setup lazygit config
+mkdir -p ~/.config/lazygit
+echo "gui:
+  skipDiscardChangeWarning: true" > ~/.config/lazygit/config.yml
 
 # Install GitHub CLI (already in script but let's make sure it's here)
 (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
