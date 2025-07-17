@@ -19,7 +19,7 @@ parser.add_option("-f", "--force", dest="force", default=False, action="store_tr
 (options, args) = parser.parse_args()
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua']
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua']
 cwd = os.path.realpath(os.getcwd())
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)
@@ -55,6 +55,55 @@ for filename in files:
     os.symlink(source, destination)
 
 print('Done.')
+
+# Handle Neovim configuration separately
+nvim_source_init = os.path.join(cwd, 'init.lua')
+nvim_source_lua = os.path.join(cwd, 'lua')
+nvim_config_dir = os.path.join(homedir, '.config', 'nvim')
+
+if os.path.exists(nvim_source_init) or os.path.exists(nvim_source_lua):
+    print('Setting up Neovim configuration...')
+    
+    # Create .config/nvim directory if it doesn't exist
+    if not os.path.exists(nvim_config_dir):
+        os.makedirs(nvim_config_dir)
+    
+    # Link init.lua
+    if os.path.exists(nvim_source_init):
+        nvim_dest_init = os.path.join(nvim_config_dir, 'init.lua')
+        if os.path.lexists(nvim_dest_init):
+            if options.force:
+                print('Removing existing %s' % nvim_dest_init)
+                try:
+                    os.remove(nvim_dest_init)
+                except OSError:
+                    print('Failed to remove existing init.lua')
+            else:
+                print('Not overwriting %s since it exists and force (-f) is not in effect' % nvim_dest_init)
+        
+        if not os.path.lexists(nvim_dest_init):
+            print('Creating link %s -> %s' % (nvim_source_init, nvim_dest_init))
+            os.symlink(nvim_source_init, nvim_dest_init)
+    
+    # Link lua directory
+    if os.path.exists(nvim_source_lua):
+        nvim_dest_lua = os.path.join(nvim_config_dir, 'lua')
+        if os.path.lexists(nvim_dest_lua):
+            if options.force:
+                print('Removing existing %s' % nvim_dest_lua)
+                try:
+                    if os.path.isdir(nvim_dest_lua):
+                        rmtree(nvim_dest_lua)
+                    else:
+                        os.remove(nvim_dest_lua)
+                except OSError:
+                    print('Failed to remove existing lua directory')
+            else:
+                print('Not overwriting %s since it exists and force (-f) is not in effect' % nvim_dest_lua)
+        
+        if not os.path.lexists(nvim_dest_lua):
+            print('Creating link %s -> %s' % (nvim_source_lua, nvim_dest_lua))
+            os.symlink(nvim_source_lua, nvim_dest_lua)
 
 # Also link .config files
 config_source = os.path.join(cwd, '.config')

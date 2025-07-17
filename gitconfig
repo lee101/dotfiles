@@ -47,7 +47,7 @@
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
 [credential]
-	helper = gcloud.sh
+	helper = store
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path =
