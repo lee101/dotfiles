@@ -1,15 +1,13 @@
 -- ~/.config/nvim/lua/user/autocommands.lua
 
--- Create augroup using older API
-vim.cmd [[
-  augroup UserAutocommands
-    autocmd!
-  augroup END
-]]
+-- Create augroup for all autocommands
+local group = vim.api.nvim_create_augroup("UserAutocommands", { clear = true })
 
 -- Change to the directory of the file on BufEnter
-vim.cmd [[
-  autocmd UserAutocommands BufEnter * lua <<EOF
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = group,
+  desc = "Change to directory of file",
+  callback = function()
     local bufname = vim.fn.bufname("%")
     if bufname ~= "" and vim.fn.filereadable(bufname) == 1 then
       local dir = vim.fn.expand("%:p:h")
@@ -17,12 +15,14 @@ vim.cmd [[
         vim.cmd("silent! chdir " .. vim.fn.escape(dir, " "))
       end
     end
-EOF
-]]
+  end,
+})
 
 -- Remove trailing whitespace on save
-vim.cmd [[
-  autocmd UserAutocommands BufWritePre * lua <<EOF
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = group,
+  desc = "Remove trailing whitespace",
+  callback = function()
     if not vim.bo.binary and vim.bo.modifiable and vim.bo.readonly == false then
       local original_cursor_pos = vim.api.nvim_win_get_cursor(0)
       local original_view = vim.fn.winsaveview()
@@ -32,12 +32,14 @@ vim.cmd [[
          vim.api.nvim_win_set_cursor(0, original_cursor_pos)
       end
     end
-EOF
-]]
+  end,
+})
 
 -- Restore cursor position
-vim.cmd [[
-  autocmd UserAutocommands BufReadPost * lua <<EOF
+vim.api.nvim_create_autocmd("BufReadPost", {
+  group = group,
+  desc = "Restore cursor position",
+  callback = function()
     if vim.bo.buftype ~= "" or vim.api.nvim_eval('&filetype') == 'gitcommit' then
       return
     end
@@ -47,7 +49,7 @@ vim.cmd [[
       vim.api.nvim_win_set_cursor(0, { last_known_line, vim.fn.col("'\"") - 1 })
     end
   end,
-}) 
+})
 
 -- Jinja2 file type associations
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
