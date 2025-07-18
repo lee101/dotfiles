@@ -985,3 +985,5 @@ export aideg='aider --model gemini/gemini-2.5-pro-preview-06-05 --thinking-token
 export aided='aider --model deepseek/deepseek-reasoner'
 alias pip='uv pip'
 export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
+# Chrome profile environment variable
+export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
