@@ -375,3 +375,5 @@ source ~/powerlevel10k/powerlevel10k.zsh-theme
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+# Chrome profile environment variable
+export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
