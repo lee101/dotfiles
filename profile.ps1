@@ -83,6 +83,14 @@ function gdfb { git diff master... }
 function gdfbm { git diff main... }
 function gdfbd { git diff develop... }
 
+# Modern Git tools
+function lg { lazygit }
+function gti { tig status }
+function tgi { tig status }  # Alternative alias for tig
+function tg { tig $args }    # Short tig alias
+function gdiff { git difftool --no-symlinks --dir-diff $args }
+function gmerge { git mergetool $args }
+
 # Additional Git command combinations from bashrc
 function gcmp { 
     git commit -m $args
