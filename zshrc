@@ -202,6 +202,14 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 alias gpr='hub pull-request' #'gh pr create'
 alias gcm='git commit -m'
 alias gsw='git show'
+
+# Modern Git tools
+alias lg='lazygit'
+alias gti='tig status'
+alias tgi='tig status'  # Alternative alias for tig
+alias tg='tig'          # Short tig alias  
+alias gdiff='git difftool --no-symlinks --dir-diff'
+alias gmerge='git mergetool'
 # aliases again
 alias k=kubectl
 alias refresh='source ~/.zshrc'
