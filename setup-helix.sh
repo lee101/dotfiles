@@ -25,7 +25,7 @@ OS=$(detect_os)
 # Install Helix based on OS
 install_helix() {
     echo "📦 Installing Helix..."
-    
+
     case $OS in
         "linux")
             if command -v apt &> /dev/null; then
@@ -68,7 +68,7 @@ install_helix() {
 # Set up config directories
 setup_config() {
     echo "⚙️  Setting up configuration..."
-    
+
     # Determine config directory based on OS
     case $OS in
         "linux"|"unknown")
@@ -81,25 +81,25 @@ setup_config() {
             CONFIG_DIR="$APPDATA/helix"
             ;;
     esac
-    
+
     # Create config directory if it doesn't exist
     mkdir -p "$CONFIG_DIR"
-    
+
     # Copy configuration files
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     DOTFILES_DIR="$(dirname "$SCRIPT_DIR")"
-    
+
     echo "📂 Copying configuration files..."
     cp "$DOTFILES_DIR/.helix/config.toml" "$CONFIG_DIR/"
     cp "$DOTFILES_DIR/.helix/languages.toml" "$CONFIG_DIR/"
-    
+
     echo "✅ Configuration files copied to: $CONFIG_DIR"
 }
 
 # Install clipboard tools if needed
 setup_clipboard() {
     echo "📋 Setting up clipboard integration..."
-    
+
     case $OS in
         "linux")
             if ! command -v xclip &> /dev/null; then
@@ -124,34 +124,34 @@ setup_clipboard() {
 install_language_servers() {
     echo "🔧 Would you like to install common language servers? (y/n)"
     read -r response
-    
+
     if [[ "$response" =~ ^[Yy]$ ]]; then
         echo "Installing language servers..."
-        
+
         # Install Node.js-based language servers
         if command -v npm &> /dev/null; then
             echo "Installing TypeScript/JavaScript language server..."
             npm install -g typescript-language-server typescript
-            
+
             echo "Installing HTML/CSS language servers..."
             npm install -g vscode-langservers-extracted
-            
+
             echo "Installing JSON language server..."
             npm install -g vscode-json-languageserver
         fi
-        
+
         # Install Python language server
         if command -v pip3 &> /dev/null; then
             echo "Installing Python language server..."
             pip3 install --user pylsp
         fi
-        
+
         # Install Rust language server
         if command -v rustup &> /dev/null; then
             echo "Installing Rust language server..."
             rustup component add rust-analyzer
         fi
-        
+
         echo "✅ Language servers installed"
     fi
 }
@@ -159,18 +159,18 @@ install_language_servers() {
 # Main installation flow
 main() {
     echo "🚀 Starting Helix setup..."
-    
+
     # Check if Helix is already installed
     if command -v hx &> /dev/null; then
         echo "✅ Helix is already installed"
     else
         install_helix
     fi
-    
+
     setup_config
     setup_clipboard
     install_language_servers
-    
+
     echo ""
     echo "🎉 Helix setup complete!"
     echo ""
