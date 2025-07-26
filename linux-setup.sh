@@ -20,6 +20,19 @@ curl -Lo difft.tar.gz "https://github.com/Wilfred/difftastic/releases/download/0
 tar xf difft.tar.gz
 sudo install difft /usr/local/bin
 rm difft.tar.gz difft
+# Install diff tools for git
+echo "Installing delta and difft diff tools..."
+
+# Install delta (syntax-highlighting pager for git and diff output)
+curl -L https://github.com/dandavison/delta/releases/latest/download/delta-0.18.2-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+sudo mv delta-0.18.2-x86_64-unknown-linux-gnu/delta /usr/local/bin/
+rm -rf delta-0.18.2-x86_64-unknown-linux-gnu
+
+# Install difft (structural diff tool)
+curl -L https://github.com/Wilfred/difftastic/releases/latest/download/difft-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+sudo mv difft /usr/local/bin/
+
+echo "Delta and difft installed successfully"
 
 # Install tig
 sudo apt install tig -y
