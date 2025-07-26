@@ -102,6 +102,7 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
+alias sve='source .venv/bin/activate'
 # Easy extract
 extract () {
   if [ -f $1 ] ; then
@@ -319,6 +320,41 @@ alias gclf='git clean -f'
 alias grv='git revert'
 alias gds='git describe'
 alias gw='git whatchanged'
+
+# Modern Git tools
+alias lg='lazygit'
+alias gti='tig status'
+alias tgi='tig status'  # Alternative alias for tig
+alias tg='tig'          # Short tig alias
+alias gdiff='git difftool --no-symlinks --dir-diff'
+alias gmerge='git mergetool'
+
+# Difftastic aliases
+alias gdft='difft'
+alias gdfts='difft --display side-by-side'
+
+# Debug function for Git tools
+git-tools-debug() {
+    echo "=== Git Tools Debug ==="
+    echo "Environment: $(uname -s) $(uname -r)"
+    echo "Shell: $SHELL"
+    echo "Bashrc loaded: $(test -f ~/.bashrc && echo 'Yes' || echo 'No')"
+    echo ""
+    echo "Tool availability:"
+    for tool in git lazygit tig delta difft gh; do
+        if command -v "$tool" >/dev/null 2>&1; then
+            echo "✓ $tool: $(command -v "$tool")"
+        else
+            echo "✗ $tool: not found"
+        fi
+    done
+    echo ""
+    echo "Git tool aliases:"
+    alias | grep -E "(lg|tgi|gti|tg|gdiff|gmerge)=" || echo "No git tool aliases found"
+    echo ""
+    echo "Delta pager check:"
+    git config --get core.pager || echo "No pager configured"
+}
 alias gdfb='git diff master...'
 alias gdfbm='git diff main...'
 alias gdfbd='git diff develop...'
@@ -380,10 +416,10 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias pbpaste="powershell.exe -command 'Get-Clipboard'"
   # Cntrl+] to copy current command to clipboard for Git Bash
   bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
-  
+
   # Windows Git Bash open setup
   alias open="explorer.exe"
-  
+
   # Windows Git Bash nvim setup
   export EDITOR="nvim"
   export VISUAL="nvim"
@@ -391,7 +427,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias vim="nvim"
   alias n="nvim"
   alias ni="nvim"
-  
+
   # Add common Windows nvim paths to PATH
   if [ -d "/c/Program Files/Neovim/bin" ]; then
     export PATH="/c/Program Files/Neovim/bin:$PATH"
@@ -413,7 +449,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   if [ -d "/c/Users/$USER/AppData/Local/Microsoft/WinGet/Packages/Neovim.Neovim_Microsoft.Winget.Source_8wekyb3d8bbwe/bin" ]; then
     export PATH="/c/Users/$USER/AppData/Local/Microsoft/WinGet/Packages/Neovim.Neovim_Microsoft.Winget.Source_8wekyb3d8bbwe/bin:$PATH"
   fi
-  
+
   # Debug function for nvim on Windows
   nvim-debug() {
     echo "Current environment: $machine / $OSTYPE"
@@ -423,7 +459,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
     echo "PATH contains:"
     echo "$PATH" | tr ':' '\n' | grep -i nvim || echo "No nvim paths found in PATH"
   }
-  
+
   # WSL2 integration for Git Bash
   alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
   alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
@@ -437,7 +473,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
       cd "//wsl$/Ubuntu/home/lee/$1"
     fi
   }
-  
+
 elif [[ ! $(uname -s) = "Darwin" ]]; then
   # Linux clipboard setup
   alias pbcopy='xclip -selection clipboard'
@@ -447,7 +483,7 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
 
   # Cntrl+] to copy current command to clipboard for Linux
   bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
-  
+
   # Linux nvim setup
   export EDITOR="nvim"
   export VISUAL="nvim"
@@ -985,3 +1021,5 @@ export aideg='aider --model gemini/gemini-2.5-pro-preview-06-05 --thinking-token
 export aided='aider --model deepseek/deepseek-reasoner'
 alias pip='uv pip'
 export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
+# Chrome profile environment variable
+export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"

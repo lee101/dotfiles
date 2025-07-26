@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page with JS Errors</title>
+</head>
+<body>
+    <h1>Test Page with JavaScript Errors</h1>
+    <p>This page contains intentional JavaScript errors for testing.</p>
+    
+    <script>
+        // Error 1: Reference error
+        console.log("Starting tests...");
+        undefinedVariable.someMethod();
+        
+        // Error 2: Type error
+        setTimeout(() => {
+            let obj = null;
+            obj.property = "test";
+        }, 100);
+        
+        // Error 3: Console error
+        console.error("This is a test console error");
+        
+        // Error 4: Unhandled promise rejection
+        setTimeout(() => {
+            Promise.reject("Test promise rejection");
+        }, 200);
+        
+        // Error 5: Syntax error in eval
+        setTimeout(() => {
+            eval("invalid syntax {");
+        }, 300);
+        
+        console.log("Test page loaded");
+    </script>
+</body>
+</html>
