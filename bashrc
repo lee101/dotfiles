@@ -102,6 +102,7 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
+alias sve='source .venv/bin/activate'
 # Easy extract
 extract () {
   if [ -f $1 ] ; then
@@ -328,6 +329,10 @@ alias tg='tig'          # Short tig alias
 alias gdiff='git difftool --no-symlinks --dir-diff'
 alias gmerge='git mergetool'
 
+# Difftastic aliases
+alias gdft='difft'
+alias gdfts='difft --display side-by-side'
+
 # Debug function for Git tools
 git-tools-debug() {
     echo "=== Git Tools Debug ==="
@@ -411,10 +416,10 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias pbpaste="powershell.exe -command 'Get-Clipboard'"
   # Cntrl+] to copy current command to clipboard for Git Bash
   bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
-  
+
   # Windows Git Bash open setup
   alias open="explorer.exe"
-  
+
   # Windows Git Bash nvim setup
   export EDITOR="nvim"
   export VISUAL="nvim"
@@ -422,7 +427,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias vim="nvim"
   alias n="nvim"
   alias ni="nvim"
-  
+
   # Add common Windows nvim paths to PATH
   if [ -d "/c/Program Files/Neovim/bin" ]; then
     export PATH="/c/Program Files/Neovim/bin:$PATH"
@@ -444,7 +449,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   if [ -d "/c/Users/$USER/AppData/Local/Microsoft/WinGet/Packages/Neovim.Neovim_Microsoft.Winget.Source_8wekyb3d8bbwe/bin" ]; then
     export PATH="/c/Users/$USER/AppData/Local/Microsoft/WinGet/Packages/Neovim.Neovim_Microsoft.Winget.Source_8wekyb3d8bbwe/bin:$PATH"
   fi
-  
+
   # Debug function for nvim on Windows
   nvim-debug() {
     echo "Current environment: $machine / $OSTYPE"
@@ -454,7 +459,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
     echo "PATH contains:"
     echo "$PATH" | tr ':' '\n' | grep -i nvim || echo "No nvim paths found in PATH"
   }
-  
+
   # WSL2 integration for Git Bash
   alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
   alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
@@ -468,7 +473,7 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
       cd "//wsl$/Ubuntu/home/lee/$1"
     fi
   }
-  
+
 elif [[ ! $(uname -s) = "Darwin" ]]; then
   # Linux clipboard setup
   alias pbcopy='xclip -selection clipboard'
@@ -478,7 +483,7 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
 
   # Cntrl+] to copy current command to clipboard for Linux
   bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
-  
+
   # Linux nvim setup
   export EDITOR="nvim"
   export VISUAL="nvim"
