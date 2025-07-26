@@ -42,7 +42,6 @@
 [mergetool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [diff]
-    external = difft
     tool = nvimdiff
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
@@ -88,3 +87,5 @@
 	directory = /media/lee/crucial2/code
 	directory = /media/lee/crucial2/code/audiounderstanding
 	directory = *
+[pull]
+	rebase = false
