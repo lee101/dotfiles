@@ -1,0 +1,101 @@
+# Languages configuration for Helix
+# Configures indentation and language-specific settings based on your vim preferences
+
+# JavaScript and TypeScript family - 3 spaces
+[[language]]
+name = "javascript"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "typescript" 
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "jsx"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "tsx"
+indent = { tab-width = 3, unit = "   " }
+
+# Python - 3 spaces (you can change to 4 if you prefer PEP 8)
+[[language]]
+name = "python"
+indent = { tab-width = 3, unit = "   " }
+
+# Rust - 3 spaces
+[[language]]
+name = "rust"
+indent = { tab-width = 3, unit = "   " }
+
+# Go - 3 spaces (typically uses tabs, but respecting your preference)
+[[language]]
+name = "go"
+indent = { tab-width = 3, unit = "   " }
+
+# C/C++ - 3 spaces
+[[language]]
+name = "c"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "cpp"
+indent = { tab-width = 3, unit = "   " }
+
+# Java - 3 spaces
+[[language]]
+name = "java"
+indent = { tab-width = 3, unit = "   " }
+
+# Web languages - 3 spaces
+[[language]]
+name = "html"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "css"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "scss"
+indent = { tab-width = 3, unit = "   " }
+
+# Config files - 3 spaces
+[[language]]
+name = "json"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "yaml"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "toml"
+indent = { tab-width = 3, unit = "   " }
+
+# Markup and documentation - 3 spaces
+[[language]]
+name = "xml"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "markdown"
+indent = { tab-width = 3, unit = "   " }
+
+# Shell scripts - 3 spaces
+[[language]]
+name = "bash"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "fish"
+indent = { tab-width = 3, unit = "   " }
+
+[[language]]
+name = "zsh"
+indent = { tab-width = 3, unit = "   " }
+
+# Lua - 3 spaces
+[[language]]
+name = "lua"
+indent = { tab-width = 3, unit = "   " }

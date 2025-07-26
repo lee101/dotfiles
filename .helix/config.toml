@@ -1,0 +1,160 @@
+# Helix Configuration
+# Based on your Vim/Neovim preferences and migrated to Helix paradigms
+
+theme = "catppuccin_mocha"
+
+[editor]
+# Line numbers - combining your preference for both absolute and relative
+line-number = "relative"
+cursorline = true
+cursorcolumn = false
+
+# Mouse support like your vim config
+mouse = true
+
+# Indentation - matching your 3-space preference from vimrc
+auto-format = true
+auto-completion = true
+auto-info = true
+
+# Default indentation settings (applies to most languages)
+# Note: Some languages like Go may override this with their own defaults
+
+# Text width and formatting
+text-width = 100
+insert-final-newline = true
+trim-trailing-whitespace = true  # Auto-remove trailing whitespace like your vimrc
+
+# Clipboard - using system clipboard
+clipboard-provider = "x-clip"  # Linux clipboard, change to "pasteboard" on macOS
+
+# Search preferences - smart case like your vim config
+[editor.search]
+smart-case = true
+wrap-around = true
+
+# File picker configuration - hidden files and git integration
+[editor.file-picker]
+hidden = false
+git-ignore = true
+git-global = true
+git-exclude = true
+follow-symlinks = true
+
+# Auto-pairs - similar to vim's behavior
+[editor.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+"'" = "'"
+'`' = '`'
+
+# Auto-save configuration
+[editor.auto-save]
+focus-lost = true
+after-delay.enable = true
+after-delay.timeout = 3000
+
+# Whitespace rendering (optional - you can toggle with :set whitespace.render all)
+[editor.whitespace]
+render = "none"  # Change to "all" if you want to see whitespace
+[editor.whitespace.characters]
+space = "·"
+tab = "→"
+newline = "⏎"
+
+# Indent guides
+[editor.indent-guides]
+render = true
+character = "│"
+skip-levels = 0
+
+# Statusline configuration - similar to your lualine setup
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-modification-indicator"]
+center = ["workspace-diagnostics"]
+right = ["diagnostics", "selections", "register", "position", "file-encoding", "file-type"]
+separator = "│"
+
+# LSP configuration - enabled with signature help like nvim
+[editor.lsp]
+enable = true
+display-messages = true
+display-progress-messages = false
+auto-signature-help = true
+display-inlay-hints = false
+display-signature-help-docs = true
+snippets = true
+goto-reference-include-declaration = true
+
+# Cursor shape configuration
+[editor.cursor-shape]
+normal = "block"
+insert = "bar"
+select = "underline"
+
+# Gutters - diagnostics, line numbers, and diff like your setup
+[editor.gutters]
+layout = ["diagnostics", "spacer", "line-numbers", "spacer", "diff"]
+
+[editor.gutters.line-numbers]
+min-width = 3
+
+# Soft wrap configuration
+[editor.soft-wrap]
+enable = false
+max-wrap = 20
+wrap-indicator = "↪ "
+
+# Smart tab behavior
+[editor.smart-tab]
+enable = true
+supersede-menu = false
+
+# Inline diagnostics
+[editor.inline-diagnostics]
+cursor-line = "warning"
+other-lines = "disable"
+
+# Key mappings - adapting your vim preferences to Helix
+[keys.normal]
+# Your vim mapping: jj in insert mode -> escape (handled in insert mode below)
+# Space is used by Helix for selections, so we'll use simpler fold mappings
+# Use 'z' prefix for folding (Helix has built-in fold commands)
+# za, zo, zc work by default in Helix
+
+# Your vim mapping: C-t for new tab -> Helix doesn't have tabs, but we can open file picker
+"C-t" = "file_picker"
+
+# Your vim mapping: C-Right/C-Left for tab navigation -> buffer navigation in Helix
+"C-right" = "goto_next_buffer"
+"C-left" = "goto_previous_buffer"
+
+# Center search results like your vim config (n/N + zz)
+"n" = ["search_next", "align_view_center"]
+"N" = ["search_prev", "align_view_center"]
+
+# Your vim mapping: ; and : swap
+";" = "command_mode"
+
+# Additional useful mappings based on your workflow
+"C-s" = ":write"  # Save file
+"C-q" = ":quit"   # Quit
+
+# File operations
+"space" = { "f" = "file_picker", "b" = "buffer_picker", "s" = ":write", "q" = ":quit" }
+
+[keys.insert]
+# Your key vim mapping: jj to escape
+"j" = { "j" = "normal_mode" }
+
+# Alt+Enter for newline without exiting insert mode (handy addition)
+"A-ret" = ["insert_newline"]
+
+[keys.select]
+# In select mode, maintain some familiar patterns
+";" = "command_mode"
+
+# Additional useful select mode mappings
+"space" = { "f" = "file_picker", "b" = "buffer_picker" }

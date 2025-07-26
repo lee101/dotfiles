@@ -46,8 +46,8 @@ vim.cmd [[
     if last_known_line > 1 and last_known_line <= vim.fn.line("$") then
       vim.api.nvim_win_set_cursor(0, { last_known_line, vim.fn.col("'\"") - 1 })
     end
-  end,
-}) 
+EOF
+]]
 
 -- Jinja2 file type associations
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
