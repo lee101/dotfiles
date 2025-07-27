@@ -636,6 +636,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cl='claude'
+alias cld='claude --dangerously-skip-permissions'
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
