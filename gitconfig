@@ -25,11 +25,28 @@
     ign = ls-files -o -i --exclude-standard
 [core]
     whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
-   excludesfile = ~/.gitignore_global
-	pager = diff-so-fancy | less --tabs=4 -RFX
-	autocrlf = input
+    excludesfile = ~/.gitignore_global
+    pager = delta
+    autocrlf = input
+[interactive]
+    diffFilter = delta --color-only
+[delta]
+    navigate = true
+    light = false
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = Monokai Extended
+[merge]
+    conflictstyle = diff3
+    tool = nvimdiff
+[mergetool "nvimdiff"]
+    cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
+[diff]
+    tool = nvimdiff
+[difftool "nvimdiff"]
+    cmd = nvim -d $LOCAL $REMOTE
 [credential]
-	helper = gcloud.sh
+	helper = store
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path =
@@ -62,8 +79,6 @@
 	old = red bold
 	new = green bold
 	whitespace = red reverse
-[merge]
-	conflictstyle = diff3
 [safe]
 	directory = /media/lee/crucial/code/excalidraw
 	directory = /media/lee/crucial/code/stock
@@ -71,4 +86,6 @@
 	directory = /media/lee/crucial2/code
 	directory = /media/lee/crucial2/code
 	directory = /media/lee/crucial2/code/audiounderstanding
-   directory = *
+	directory = *
+[pull]
+	rebase = false
