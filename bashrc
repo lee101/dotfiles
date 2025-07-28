@@ -637,6 +637,12 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 alias cla='claude'
 alias cld='claude --dangerously-skip-permissions'
+
+# Claude code review tool
+alias cr='claude-review'
+alias creview='claude-review'
+alias claude-rev='claude-review'
+
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
@@ -985,18 +991,7 @@ else
     alias o='xdg-open .'
     alias oo='xdg-open'
 fi
-# Simple function to run Claude and check exit code
-cld() {
-    local prompt="$1"
-    local output_format="${2:-text}"
 
-    if claude -p "$prompt" --output-format "$output_format"; then
-        echo "Success!"
-    else
-        echo "Error: Claude failed with exit code $?" >&2
-        return 1
-    fi
-}
 
 export PATH="$PATH:/opt/nvim-linux64/bin"
 alias ains='sudo apt install'

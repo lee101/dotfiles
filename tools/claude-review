@@ -1,0 +1,166 @@
+#!/bin/bash
+# filepath: c:\Users\leepenkman\code\dotfiles\tools\claude-review
+
+# Claude Review Tool
+# Usage: claude-review [options] [files...]
+# Options:
+#   --staged, -s    Review staged changes only
+#   --help, -h      Show this help message
+#   --full, -f      Review full files instead of just diff
+#   --commit, -c    Review specific commit (e.g. -c HEAD~1)
+
+show_help() {
+    cat << EOF
+Claude Review Tool - AI-powered code review using Claude
+
+Usage: claude-review [options] [files...]
+
+Options:
+    --staged, -s        Review staged changes only
+    --help, -h          Show this help message  
+    --full, -f          Review full files instead of just diff
+    --commit, -c COMMIT Review changes in specific commit
+    --against, -a REF   Compare against specific branch/commit (default: HEAD)
+
+Examples:
+    claude-review                    # Review all unstaged changes
+    claude-review -s                 # Review staged changes
+    claude-review file1.py file2.js  # Review specific files
+    claude-review -c HEAD~1          # Review last commit
+    claude-review -a main            # Review changes against main branch
+    claude-review -f src/app.py      # Review full file content
+
+EOF
+}
+
+# Default values
+STAGED_ONLY=false
+FULL_FILES=false
+SPECIFIC_COMMIT=""
+AGAINST_REF=""
+FILES=()
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --staged|-s)
+            STAGED_ONLY=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --full|-f)
+            FULL_FILES=true
+            shift
+            ;;
+        --commit|-c)
+            SPECIFIC_COMMIT="$2"
+            shift 2
+            ;;
+        --against|-a)
+            AGAINST_REF="$2"
+            shift 2
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            FILES+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found. Please install Claude CLI."
+    exit 1
+fi
+
+# Build the review prompt
+REVIEW_PROMPT="Let's review this code across multiple dimensions:
+
+**Performance**: Look for performance bottlenecks, inefficient algorithms, unnecessary computations, memory leaks, or suboptimal data structures.
+
+**Accuracy & Correctness**: Check for logical errors, edge cases, potential bugs, incorrect assumptions, or missing error handling.
+
+**Code Quality**: Examine code structure, readability, maintainability, naming conventions, and adherence to best practices.
+
+**Security**: Identify potential security vulnerabilities, input validation issues, or unsafe operations.
+
+**Context & Integration**: Consider how changes fit within the broader codebase, potential impacts on other components, and architectural consistency.
+
+Focus on **practical and low-risk improvements** that can be implemented without major refactoring. Prioritize suggestions that:
+- Have clear, measurable benefits
+- Are unlikely to introduce new bugs
+- Simplify or flatten eg simplify less oop/inheritance or less allocations or allow data to fit better into caches etc
+- Can be implemented incrementally
+
+Please provide specific, actionable recommendations then implement"
+
+# Function to get diff content using gdfa pattern (git --no-pager diff -p)
+get_diff_content() {
+    if [[ $FULL_FILES == true ]]; then
+        # Show full file content
+        if [[ ${#FILES[@]} -gt 0 ]]; then
+            for file in "${FILES[@]}"; do
+                if [[ -f "$file" ]]; then
+                    echo "=== Full content of $file ==="
+                    cat "$file"
+                    echo ""
+                fi
+            done
+        else
+            echo "Error: --full requires specific files to be specified"
+            exit 1
+        fi
+    elif [[ -n "$SPECIFIC_COMMIT" ]]; then
+        # Show diff for specific commit using --no-pager
+        git --no-pager show -p "$SPECIFIC_COMMIT" "${FILES[@]}"
+    elif [[ $STAGED_ONLY == true ]]; then
+        # Show staged changes using --no-pager diff -p (gdfa pattern)
+        git --no-pager diff -p --cached "${FILES[@]}"
+    elif [[ -n "$AGAINST_REF" ]]; then
+        # Compare against specific reference using --no-pager diff -p
+        git --no-pager diff -p "$AGAINST_REF" "${FILES[@]}"
+    else
+        # Show unstaged changes using gdfa pattern (default)
+        if [[ ${#FILES[@]} -gt 0 ]]; then
+            git --no-pager diff -p "${FILES[@]}"
+        else
+            # If no specific files, show all changes
+            git --no-pager diff -p
+        fi
+    fi
+}
+
+# Get the diff content
+DIFF_CONTENT=$(get_diff_content)
+
+# Check if there are any changes to review
+if [[ -z "$DIFF_CONTENT" ]]; then
+    echo "No changes found to review."
+    if [[ $STAGED_ONLY == true ]]; then
+        echo "Try: git add <files> first, or run without --staged"
+    else
+        echo "Try: claude-review --staged to review staged changes"
+    fi
+    exit 0
+fi
+
+echo "🔍 Reviewing code changes with Claude..."
+echo "📊 Analysis scope: $(echo "$DIFF_CONTENT" | wc -l) lines of diff"
+echo ""
+
+# Pipe the diff to Claude with the review prompt
+echo "$DIFF_CONTENT" | cld -p "$REVIEW_PROMPT"
