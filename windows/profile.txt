@@ -1,0 +1,17 @@
+function usager {
+    Get-ChildItem | ForEach-Object {
+        $size = 0
+        if ($_.PSIsContainer) {
+            $size = (Get-ChildItem $_.FullName -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+        } else {
+            $size = $_.Length
+        }
+        $sizeMB = [math]::Round($size / 1MB, 2)
+        Write-Host "$($_.Name) - $sizeMB MB"
+    }
+}
+
+function gst { git status }
+function u { Set-Location .. }
+
+Write-Host "PowerShell profile loaded!" -ForegroundColor Green 

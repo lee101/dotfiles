@@ -597,7 +597,7 @@ alias pinstall='sudo pip install'
 alias ninstall='sudo npm install'
 alias pip='uv pip'
 
-alias cl='claude'
+alias cld='claude'
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
