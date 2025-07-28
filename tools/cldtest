@@ -1,0 +1,338 @@
+#!/bin/bash
+# filepath: /home/lee/code/dotfiles/tools/cldtest
+
+# Claude Test Tool
+# Usage: cldtest [options]
+# Options:
+#   --fix, -f       Auto-fix failing tests with Claude
+#   --analyze, -a   Analyze test results and suggest improvements
+#   --help, -h      Show this help message
+#   --unit, -u      Run unit tests only
+#   --integration, -i   Run integration tests only
+#   --verbose, -v   Show verbose test output
+
+show_help() {
+    cat << EOF
+Claude Test Tool - AI-powered test runner and analyzer
+
+Usage: cldtest [options]
+
+This tool automatically detects your test framework and runs appropriate tests:
+- Go projects (go.mod): Runs 'go test'
+- Python projects (pytest/unittest): Runs 'pytest' or 'python -m unittest'
+- Bun projects (package.json + bun): Runs 'bun test'
+- Node.js projects (package.json): Runs npm test scripts
+- Rust projects (Cargo.toml): Runs 'cargo test'
+- Maven/Gradle Java projects: Runs test commands
+
+Options:
+    --fix, -f           Auto-fix failing tests with Claude
+    --analyze, -a       Analyze test results and suggest improvements
+    --help, -h          Show this help message
+    --unit, -u          Run unit tests only
+    --integration, -i   Run integration tests only  
+    --verbose, -v       Show verbose test output
+
+Examples:
+    cldtest                 # Run all tests
+    cldtest --fix           # Run tests and auto-fix failures
+    cldtest --analyze       # Run tests and get analysis
+    cldtest --unit          # Run unit tests only
+    cldtest -f -v           # Fix tests with verbose output
+
+EOF
+}
+
+# Default values
+AUTO_FIX=false
+ANALYZE=false
+UNIT_ONLY=false
+INTEGRATION_ONLY=false
+VERBOSE=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --fix|-f)
+            AUTO_FIX=true
+            shift
+            ;;
+        --analyze|-a)
+            ANALYZE=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --unit|-u)
+            UNIT_ONLY=true
+            shift
+            ;;
+        --integration|-i)
+            INTEGRATION_ONLY=true
+            shift
+            ;;
+        --verbose|-v)
+            VERBOSE=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Check if we're in a project directory
+if [[ ! -f "$(pwd)" ]]; then
+    echo "Error: Could not access current directory"
+    exit 1
+fi
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found. Please install Claude CLI."
+    exit 1
+fi
+
+# Function to detect test framework and generate test command
+detect_test_framework() {
+    local test_cmd=""
+    local framework=""
+    
+    # Go project
+    if [[ -f "go.mod" ]]; then
+        framework="Go"
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="go test -short ./..."
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="go test -run Integration ./..."
+        else
+            test_cmd="go test ./..."
+        fi
+        if [[ $VERBOSE == true ]]; then
+            test_cmd="$test_cmd -v"
+        fi
+    
+    # Python project with pytest
+    elif command -v pytest &> /dev/null && [[ -d "tests" || -f "pytest.ini" || -f "pyproject.toml" || -f "setup.cfg" ]]; then
+        framework="Python (pytest)"
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="pytest -m 'not integration'"
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="pytest -m integration"
+        else
+            test_cmd="pytest ."
+        fi
+        if [[ $VERBOSE == true ]]; then
+            test_cmd="$test_cmd -v"
+        fi
+    
+    # Python project with unittest  
+    elif [[ -d "tests" ]] && find tests -name "*.py" | grep -q test; then
+        framework="Python (unittest)"
+        if [[ $VERBOSE == true ]]; then
+            test_cmd="python -m unittest discover -s tests -v"
+        else
+            test_cmd="python -m unittest discover -s tests"
+        fi
+    
+    # Bun project (check for bun first since it can also use package.json)
+    elif [[ -f "package.json" ]] && command -v bun &> /dev/null; then
+        framework="Bun"
+        if grep -q '"test"' package.json; then
+            test_cmd="bun test"
+        else
+            test_cmd="bun test"
+        fi
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="bun run test:unit 2>/dev/null || bun test"
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="bun run test:integration 2>/dev/null || bun test"
+        fi
+    
+    # Node.js project
+    elif [[ -f "package.json" ]] && grep -q '"test"' package.json; then
+        framework="Node.js"
+        test_cmd="npm test"
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="npm run test:unit 2>/dev/null || npm test"
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="npm run test:integration 2>/dev/null || npm test"
+        fi
+    
+    # Rust project
+    elif [[ -f "Cargo.toml" ]]; then
+        framework="Rust"
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="cargo test --lib"
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="cargo test --test '*'"
+        else
+            test_cmd="cargo test"
+        fi
+    
+    # Maven Java project
+    elif [[ -f "pom.xml" ]]; then
+        framework="Java (Maven)"
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="mvn test"
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="mvn integration-test"
+        else
+            test_cmd="mvn test"
+        fi
+    
+    # Gradle Java project  
+    elif [[ -f "build.gradle" || -f "build.gradle.kts" ]]; then
+        framework="Java (Gradle)"
+        if [[ $UNIT_ONLY == true ]]; then
+            test_cmd="./gradlew test"
+        elif [[ $INTEGRATION_ONLY == true ]]; then
+            test_cmd="./gradlew integrationTest"
+        else
+            test_cmd="./gradlew test"
+        fi
+    fi
+    
+    echo "$framework|$test_cmd"
+}
+
+# Detect framework and get test command
+FRAMEWORK_INFO=$(detect_test_framework)
+FRAMEWORK=$(echo "$FRAMEWORK_INFO" | cut -d'|' -f1)
+TEST_CMD=$(echo "$FRAMEWORK_INFO" | cut -d'|' -f2)
+
+if [[ -z "$FRAMEWORK" || -z "$TEST_CMD" ]]; then
+    echo "❌ No supported test framework detected in current directory"
+    echo ""
+    echo "Supported frameworks:"
+    echo "  • Go (go.mod)"
+    echo "  • Python (pytest, unittest with tests/ dir)"
+    echo "  • Bun (package.json + bun command available)"
+    echo "  • Node.js (package.json with test script)"
+    echo "  • Rust (Cargo.toml)"
+    echo "  • Java (pom.xml or build.gradle)"
+    exit 1
+fi
+
+echo "🧪 Claude Test Tool"
+echo "📋 Detected framework: $FRAMEWORK"
+echo "🔧 Test command: $TEST_CMD"
+echo ""
+
+# Run the tests and capture output
+echo "▶️  Running tests..."
+TEST_OUTPUT=$(eval "$TEST_CMD" 2>&1)
+TEST_EXIT_CODE=$?
+
+# Display results
+echo "📊 Test Results:"
+echo "----------------------------------------"
+echo "$TEST_OUTPUT"
+echo "----------------------------------------"
+
+if [[ $TEST_EXIT_CODE -eq 0 ]]; then
+    echo "✅ All tests passed!"
+    
+    # If analyze flag is set, analyze even passing tests
+    if [[ $ANALYZE == true ]]; then
+        echo ""
+        echo "🤖 Analyzing test results..."
+        
+        ANALYSIS_PROMPT="Please analyze these test results and provide insights:
+
+**Test Framework**: $FRAMEWORK
+**Test Command**: $TEST_CMD
+**Status**: All tests passed
+
+**Test Output**:
+$TEST_OUTPUT
+
+Please provide:
+1. **Test Coverage Analysis**: Are there gaps in test coverage?
+2. **Test Quality**: Are the tests comprehensive and realistic?
+3. **Performance**: Are tests running efficiently?
+4. **Recommendations**: Suggest improvements for test quality, coverage, or performance
+5. **Best Practices**: Any framework-specific best practices to implement?
+
+Focus on actionable improvements that would make the test suite more robust and comprehensive."
+
+        echo "$ANALYSIS_PROMPT" | cld
+    fi
+else
+    echo "❌ Tests failed!"
+    
+    if [[ $AUTO_FIX == true ]]; then
+        echo ""
+        echo "🤖 Attempting to fix failing tests with Claude..."
+        
+        FIX_PROMPT="Please help fix these failing tests:
+
+**Test Framework**: $FRAMEWORK  
+**Test Command**: $TEST_CMD
+**Exit Code**: $TEST_EXIT_CODE
+
+**Test Output**:
+$TEST_OUTPUT
+
+**Current Directory Structure**:
+$(find . -type f -name "*.py" -o -name "*.go" -o -name "*.js" -o -name "*.ts" -o -name "*.rs" -o -name "*.java" | head -20)
+
+Please:
+1. **Analyze the failures**: Identify root causes of test failures
+2. **Suggest fixes**: Provide specific code changes to fix the failing tests
+3. **Code improvements**: Suggest improvements to make tests more robust
+4. **Best practices**: Recommend testing best practices for this framework
+
+**Guidelines**:
+- Prefer integration tests when possible, but make them fast
+- Focus on realistic test scenarios
+- Ensure tests are deterministic and not flaky
+- Add proper setup/teardown if needed
+- Consider edge cases and error conditions
+
+Provide specific file changes and code snippets to fix the issues."
+
+        echo "$FIX_PROMPT" | cld
+        
+    elif [[ $ANALYZE == true ]]; then
+        echo ""
+        echo "🤖 Analyzing test failures..."
+        
+        ANALYSIS_PROMPT="Please analyze these test failures:
+
+**Test Framework**: $FRAMEWORK
+**Test Command**: $TEST_CMD  
+**Exit Code**: $TEST_EXIT_CODE
+
+**Test Output**:
+$TEST_OUTPUT
+
+Please provide:
+1. **Failure Analysis**: What are the root causes of these test failures?
+2. **Quick Fixes**: What are the most likely fixes for these issues?
+3. **Test Improvements**: How can these tests be made more robust?
+4. **Code Quality**: Are there underlying code quality issues revealed by these failures?
+
+Focus on actionable insights to resolve the test failures."
+
+        echo "$ANALYSIS_PROMPT" | cld
+    fi
+fi
+
+echo ""
+echo "💡 Next steps:"
+if [[ $TEST_EXIT_CODE -ne 0 ]]; then
+    echo "   • Run 'cldtest --fix' to auto-fix failures"
+    echo "   • Run 'cldtest --analyze' for detailed failure analysis"
+fi
+echo "   • Run 'cldtest --analyze' for test quality insights"
+echo "   • Use 'cldtest --unit' or 'cldtest --integration' for specific test types"
