@@ -8,6 +8,8 @@
 #   --help, -h      Show this help message
 #   --full, -f      Review full files instead of just diff
 #   --commit, -c    Review specific commit (e.g. -c HEAD~1)
+#   --prompt, -p    Add custom review focus prompt
+#   --dir, -d       Review specific directory
 
 show_help() {
     cat << EOF
@@ -21,6 +23,8 @@ Options:
     --full, -f          Review full files instead of just diff
     --commit, -c COMMIT Review changes in specific commit
     --against, -a REF   Compare against specific branch/commit (default: HEAD)
+    --prompt, -p TEXT   Add custom review focus prompt
+    --dir, -d PATH      Review specific directory
 
 Examples:
     claude-review                    # Review all unstaged changes
@@ -29,6 +33,8 @@ Examples:
     claude-review -c HEAD~1          # Review last commit
     claude-review -a main            # Review changes against main branch
     claude-review -f src/app.py      # Review full file content
+    claude-review -p "focus on security issues"  # Custom review focus
+    claude-review -d src/components  # Review specific directory
 
 EOF
 }
@@ -38,6 +44,8 @@ STAGED_ONLY=false
 FULL_FILES=false
 SPECIFIC_COMMIT=""
 AGAINST_REF=""
+CUSTOM_PROMPT=""
+REVIEW_DIR=""
 FILES=()
 
 # Parse arguments
@@ -61,6 +69,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --against|-a)
             AGAINST_REF="$2"
+            shift 2
+            ;;
+        --prompt|-p)
+            CUSTOM_PROMPT="$2"
+            shift 2
+            ;;
+        --dir|-d)
+            REVIEW_DIR="$2"
             shift 2
             ;;
         -*)
@@ -88,7 +104,7 @@ if ! command -v cld &> /dev/null; then
 fi
 
 # Build the review prompt
-REVIEW_PROMPT="Let's review this code across multiple dimensions:
+BASE_REVIEW_PROMPT="Let's review this code across multiple dimensions:
 
 **Performance**: Look for performance bottlenecks, inefficient algorithms, unnecessary computations, memory leaks, or suboptimal data structures.
 
@@ -107,6 +123,15 @@ Focus on **practical and low-risk improvements** that can be implemented without
 - Can be implemented incrementally
 
 Please provide specific, actionable recommendations then implement"
+
+# Add custom prompt if provided
+if [[ -n "$CUSTOM_PROMPT" ]]; then
+    REVIEW_PROMPT="Core review goal: $CUSTOM_PROMPT
+
+$BASE_REVIEW_PROMPT"
+else
+    REVIEW_PROMPT="$BASE_REVIEW_PROMPT"
+fi
 
 # Function to get diff content using gdfa pattern (git --no-pager diff -p)
 get_diff_content() {
@@ -135,7 +160,10 @@ get_diff_content() {
         git --no-pager diff -p "$AGAINST_REF" "${FILES[@]}"
     else
         # Show unstaged changes using gdfa pattern (default)
-        if [[ ${#FILES[@]} -gt 0 ]]; then
+        if [[ -n "$REVIEW_DIR" ]]; then
+            # Review specific directory
+            git --no-pager diff -p -- "$REVIEW_DIR"
+        elif [[ ${#FILES[@]} -gt 0 ]]; then
             git --no-pager diff -p "${FILES[@]}"
         else
             # If no specific files, show all changes

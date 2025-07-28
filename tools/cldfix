@@ -1,0 +1,237 @@
+#!/bin/bash
+# filepath: /home/lee/code/dotfiles/tools/cldfix
+
+# Claude Fix Tool
+# Usage: cldfix [options] [files...]
+# Options:
+#   --staged, -s    Fix staged changes only
+#   --help, -h      Show this help message
+#   --tests, -t     Focus on test fixes
+#   --lint, -l      Focus on linting issues only
+#   --security      Focus on security issues
+#   --performance   Focus on performance issues
+
+show_help() {
+    cat << EOF
+Claude Fix Tool - AI-powered code fixing using Claude
+
+Usage: cldfix [options] [files...]
+
+This tool analyzes your code changes and automatically fixes common issues like:
+- Failing tests
+- Linting errors
+- Type errors
+- Security vulnerabilities
+- Performance issues
+- Code style problems
+
+Options:
+    --staged, -s        Fix staged changes only
+    --help, -h          Show this help message  
+    --tests, -t         Focus on fixing test failures
+    --lint, -l          Focus on linting issues only
+    --security          Focus on security vulnerabilities
+    --performance       Focus on performance optimizations
+
+Examples:
+    cldfix                      # Fix all unstaged changes
+    cldfix -s                   # Fix staged changes only
+    cldfix --tests              # Focus on test failures
+    cldfix --lint src/app.js    # Fix linting issues in specific file
+    cldfix --security           # Focus on security issues
+
+EOF
+}
+
+# Default values
+STAGED_ONLY=false
+FOCUS_TESTS=false
+FOCUS_LINT=false
+FOCUS_SECURITY=false
+FOCUS_PERFORMANCE=false
+FILES=()
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --staged|-s)
+            STAGED_ONLY=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --tests|-t)
+            FOCUS_TESTS=true
+            shift
+            ;;
+        --lint|-l)
+            FOCUS_LINT=true
+            shift
+            ;;
+        --security)
+            FOCUS_SECURITY=true
+            shift
+            ;;
+        --performance)
+            FOCUS_PERFORMANCE=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            FILES+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found. Please install Claude CLI."
+    exit 1
+fi
+
+# Build focus-specific prompts
+build_focus_prompt() {
+    local base_prompt="Please analyze and fix the issues in this code:"
+    
+    if [[ $FOCUS_TESTS == true ]]; then
+        echo "$base_prompt
+
+**FOCUS: TEST FIXES**
+- Fix failing unit tests, integration tests, and end-to-end tests
+- Update test assertions and expectations
+- Fix mock/stub configurations
+- Add missing test cases for edge cases
+- Update test data and fixtures
+- Ensure proper test cleanup and teardown"
+        
+    elif [[ $FOCUS_LINT == true ]]; then
+        echo "$base_prompt
+
+**FOCUS: LINTING FIXES** 
+- Fix ESLint, Pylint, RuboCop, or other linter errors
+- Correct code style and formatting issues
+- Fix unused imports and variables
+- Add missing semicolons, correct indentation
+- Fix naming convention violations
+- Remove dead/unreachable code"
+        
+    elif [[ $FOCUS_SECURITY == true ]]; then
+        echo "$base_prompt
+
+**FOCUS: SECURITY FIXES**
+- Fix SQL injection vulnerabilities
+- Correct XSS and CSRF issues  
+- Fix insecure random number generation
+- Add input validation and sanitization
+- Fix authentication and authorization issues
+- Remove hardcoded secrets and credentials
+- Fix insecure HTTP connections"
+        
+    elif [[ $FOCUS_PERFORMANCE == true ]]; then
+        echo "$base_prompt
+
+**FOCUS: PERFORMANCE OPTIMIZATION**
+- Optimize database queries and reduce N+1 problems
+- Fix memory leaks and reduce memory usage
+- Optimize algorithms and data structures
+- Add caching where appropriate
+- Reduce unnecessary API calls
+- Optimize loops and conditionals
+- Fix blocking operations"
+        
+    else
+        echo "$base_prompt
+
+**COMPREHENSIVE FIXES**
+1. **Tests**: Fix failing tests and improve test coverage
+2. **Linting**: Fix code style and linting errors
+3. **Types**: Fix type errors and add missing type annotations
+4. **Security**: Address security vulnerabilities
+5. **Performance**: Fix obvious performance issues
+6. **Bugs**: Fix logical errors and edge cases
+7. **Best Practices**: Apply language-specific best practices
+
+**Guidelines**:
+- Make minimal, safe changes that fix actual problems
+- Don't change working functionality unnecessarily  
+- Preserve the original code intent and behavior
+- Add comments only where necessary for clarity
+- Ensure all tests pass after fixes"
+    fi
+}
+
+# Function to get changes
+get_changes() {
+    if [[ $STAGED_ONLY == true ]]; then
+        if [[ ${#FILES[@]} -gt 0 ]]; then
+            git diff --cached "${FILES[@]}"
+        else
+            git diff --cached
+        fi
+    else
+        if [[ ${#FILES[@]} -gt 0 ]]; then
+            git diff "${FILES[@]}"
+        else
+            git diff
+        fi
+    fi
+}
+
+# Get the changes content
+CHANGES_CONTENT=$(get_changes)
+
+# Check if there are any changes to fix
+if [[ -z "$CHANGES_CONTENT" ]]; then
+    echo "No changes found to fix."
+    if [[ $STAGED_ONLY == true ]]; then
+        echo "Try: git add <files> first, or run without --staged"
+    else
+        echo "Make some changes first, or try: cldfix --staged for staged changes"
+    fi
+    exit 0
+fi
+
+# Show what we're working with
+CHANGED_FILES=$(get_changes --name-only | tr '\n' ' ')
+echo "🔧 Claude Fix Tool"
+echo "📁 Working on: $CHANGED_FILES"
+echo "📊 Analyzing $(echo "$CHANGES_CONTENT" | wc -l) lines of changes"
+
+# Build the appropriate prompt
+FIX_PROMPT=$(build_focus_prompt)
+
+echo ""
+echo "🤖 Running Claude fixes..."
+
+# Apply fixes
+echo "$CHANGES_CONTENT" | cld -p "$FIX_PROMPT"
+
+echo ""
+echo "✅ Claude fixes completed!"
+
+# Suggest next steps
+if [[ $STAGED_ONLY == false ]]; then
+    echo ""
+    echo "💡 Next steps:"
+    echo "   • Review changes with: git diff"
+    echo "   • Add changes with: git add <files>"
+    echo "   • Commit with: cldcmt \"your commit message\""
+else
+    echo ""
+    echo "💡 Next steps:"
+    echo "   • Review staged changes with: git diff --cached"
+    echo "   • Commit with: git commit -m \"your message\""
+fi
