@@ -642,6 +642,20 @@ alias cld='claude --dangerously-skip-permissions'
 alias cr='claude-review'
 alias creview='claude-review'
 alias claude-rev='claude-review'
+alias crc='claude-review --staged'  # review cached/staged changes
+alias crw='claude-review'           # review working directory (default)
+
+# Claude Git workflow tools
+alias cldcmt='cldcmt'               # Claude commit with cleanup
+alias cldgcmep='cldgcmep'           # Claude add+commit+push workflow  
+alias cldfix='cldfix'               # Claude fix issues in changes
+alias cldpr='cldpr'                 # Claude pull request generator
+
+# Additional Claude Git aliases
+alias ccmt='cldcmt'                 # Short alias for cldcmt
+alias cgcmep='cldgcmep'             # Short alias for cldgcmep  
+alias cfix='cldfix'                 # Short alias for cldfix
+alias cpr='cldpr'                   # Short alias for cldpr
 
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'

@@ -1,0 +1,263 @@
+#!/bin/bash
+# filepath: /home/lee/code/dotfiles/tools/cldpr
+
+# Claude Pull Request Tool
+# Usage: cldpr [options] [base-branch]
+# Options:
+#   --title, -t     Custom PR title
+#   --help, -h      Show this help message
+#   --draft, -d     Create as draft PR
+#   --template      Use custom PR template prompt
+
+show_help() {
+    cat << EOF
+Claude Pull Request Tool - AI-powered PR creation using Claude
+
+Usage: cldpr [options] [base-branch]
+
+This tool will:
+1. Analyze commits between current branch and base branch
+2. Generate a comprehensive PR description using Claude
+3. Create the pull request (requires GitHub CLI)
+
+Options:
+    --title, -t TITLE   Custom PR title (otherwise Claude generates one)
+    --help, -h          Show this help message  
+    --draft, -d         Create as draft PR
+    --template PROMPT   Use custom template for PR description
+
+Arguments:
+    base-branch         Branch to compare against (default: main/master)
+
+Examples:
+    cldpr                           # Create PR against main/master
+    cldpr develop                   # Create PR against develop branch
+    cldpr -t "Fix user auth" main   # Custom title against main
+    cldpr --draft                   # Create draft PR
+    cldpr --template "focus on security changes"  # Custom prompt
+
+Requirements:
+    - GitHub CLI (gh) must be installed and authenticated
+    - Current branch must have commits ahead of base branch
+
+EOF
+}
+
+# Default values
+CUSTOM_TITLE=""
+BASE_BRANCH=""
+DRAFT=false
+CUSTOM_TEMPLATE=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --title|-t)
+            CUSTOM_TITLE="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --draft|-d)
+            DRAFT=true
+            shift
+            ;;
+        --template)
+            CUSTOM_TEMPLATE="$2"
+            shift 2
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            BASE_BRANCH="$1"
+            shift
+            ;;
+    esac
+done
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Check if gh command exists
+if ! command -v gh &> /dev/null; then
+    echo "Error: GitHub CLI (gh) not found. Please install it: https://cli.github.com/"
+    exit 1
+fi
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found. Please install Claude CLI."
+    exit 1
+fi
+
+# Check if authenticated with GitHub
+if ! gh auth status &> /dev/null; then
+    echo "Error: Not authenticated with GitHub CLI. Run: gh auth login"
+    exit 1
+fi
+
+# Get current branch
+CURRENT_BRANCH=$(git branch --show-current)
+
+# Determine base branch if not provided
+if [[ -z "$BASE_BRANCH" ]]; then
+    if git show-ref --verify --quiet refs/heads/main; then
+        BASE_BRANCH="main"
+    elif git show-ref --verify --quiet refs/heads/master; then
+        BASE_BRANCH="master"
+    elif git show-ref --verify --quiet refs/heads/develop; then
+        BASE_BRANCH="develop"
+    else
+        echo "Error: Could not determine base branch. Please specify one."
+        echo "Available branches:"
+        git branch -r | head -5
+        exit 1
+    fi
+fi
+
+# Check if base branch exists
+if ! git show-ref --verify --quiet refs/heads/"$BASE_BRANCH"; then
+    # Try to fetch it from remote
+    echo "📡 Base branch '$BASE_BRANCH' not found locally. Fetching from remote..."
+    git fetch origin "$BASE_BRANCH:$BASE_BRANCH" 2>/dev/null || {
+        echo "Error: Base branch '$BASE_BRANCH' not found locally or remotely"
+        exit 1
+    }
+fi
+
+# Check if current branch has commits ahead of base
+COMMITS_AHEAD=$(git rev-list --count "${BASE_BRANCH}..${CURRENT_BRANCH}")
+if [[ $COMMITS_AHEAD -eq 0 ]]; then
+    echo "Error: Current branch '$CURRENT_BRANCH' has no commits ahead of '$BASE_BRANCH'"
+    echo "💡 Make some commits first, or switch to a different branch"
+    exit 1
+fi
+
+echo "🚀 Claude Pull Request Generator"
+echo "📍 Branch: $CURRENT_BRANCH → $BASE_BRANCH"
+echo "📊 Commits ahead: $COMMITS_AHEAD"
+echo ""
+
+# Get commit information
+echo "📝 Analyzing commits and changes..."
+COMMIT_LOG=$(git log --oneline "${BASE_BRANCH}..${CURRENT_BRANCH}")
+FULL_DIFF=$(git diff "${BASE_BRANCH}..${CURRENT_BRANCH}")
+CHANGED_FILES=$(git diff --name-only "${BASE_BRANCH}..${CURRENT_BRANCH}" | tr '\n' ' ')
+
+echo "🔧 Changed files: $CHANGED_FILES"
+echo ""
+
+# Build PR generation prompt
+if [[ -n "$CUSTOM_TEMPLATE" ]]; then
+    PR_PROMPT="Create a comprehensive pull request description with focus on: $CUSTOM_TEMPLATE
+
+Analyze these commits and changes:"
+else
+    PR_PROMPT="Please analyze these commits and code changes to create a comprehensive pull request description.
+
+**Required sections:**
+1. **Summary** - Brief overview of what this PR accomplishes
+2. **Changes Made** - Key changes and their purpose (bullet points)
+3. **Testing** - How these changes have been tested
+4. **Breaking Changes** - Any breaking changes (if none, state \"None\")
+5. **Checklist** - Standard PR checklist items
+
+**Guidelines:**
+- Write clear, professional descriptions suitable for team review
+- Focus on the 'why' behind changes, not just the 'what'
+- Highlight important technical decisions or trade-offs
+- Mention any dependencies or follow-up work needed
+- Keep it concise but comprehensive
+
+Analyze these commits and changes:"
+fi
+
+# Combine commit and diff information
+ANALYSIS_CONTENT="=== COMMIT HISTORY ===
+$COMMIT_LOG
+
+=== CODE CHANGES ===
+$FULL_DIFF"
+
+echo "🤖 Generating PR description with Claude..."
+
+# Generate PR description
+PR_DESCRIPTION=$(echo "$ANALYSIS_CONTENT" | cld -p "$PR_PROMPT")
+
+# Generate title if not provided
+if [[ -z "$CUSTOM_TITLE" ]]; then
+    echo ""
+    echo "🎯 Generating PR title..."
+    TITLE_PROMPT="Based on these commits and changes, generate a concise, descriptive pull request title (max 72 characters):
+
+$COMMIT_LOG
+
+Guidelines:
+- Start with action verb (Add, Fix, Update, Refactor, etc.)
+- Be specific but concise
+- Avoid generic titles like 'Update code' or 'Fix bugs'
+- Focus on the main accomplishment or change
+
+Just return the title, nothing else."
+    
+    PR_TITLE=$(echo "$COMMIT_LOG" | cld -p "$TITLE_PROMPT")
+    # Clean up the title (remove quotes, extra whitespace)
+    PR_TITLE=$(echo "$PR_TITLE" | sed 's/^["\s]*//;s/["\s]*$//' | head -1)
+else
+    PR_TITLE="$CUSTOM_TITLE"
+fi
+
+echo ""
+echo "📋 Generated PR Details:"
+echo "📝 Title: $PR_TITLE"
+echo "📄 Description:"
+echo "----------------------------------------"
+echo "$PR_DESCRIPTION"
+echo "----------------------------------------"
+echo ""
+
+# Ask for confirmation
+read -p "🤔 Create pull request with this content? (y/N): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ PR creation cancelled"
+    echo "💡 You can copy the generated content above to create the PR manually"
+    exit 0
+fi
+
+# Create the pull request
+echo ""
+echo "🚀 Creating pull request..."
+
+# Build gh pr create command
+PR_CMD="gh pr create --title \"$PR_TITLE\" --body \"$PR_DESCRIPTION\" --base \"$BASE_BRANCH\""
+
+if [[ $DRAFT == true ]]; then
+    PR_CMD="$PR_CMD --draft"
+fi
+
+# Execute the command
+eval "$PR_CMD"
+
+if [[ $? -eq 0 ]]; then
+    echo ""
+    echo "✅ Pull request created successfully!"
+    echo "🌐 View your PR: $(gh pr view --web --json url --jq .url 2>/dev/null || echo 'Use: gh pr view --web')"
+    
+    # Show PR details
+    echo ""
+    echo "📊 PR Summary:"
+    gh pr view --json number,title,url --jq '"#\(.number): \(.title)\n\(.url)"' 2>/dev/null || echo "Run 'gh pr view' to see details"
+else
+    echo "❌ Failed to create pull request"
+    echo "💡 Check GitHub CLI authentication and repository permissions"
+    exit 1
+fi

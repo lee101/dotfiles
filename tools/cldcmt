@@ -1,0 +1,207 @@
+#!/bin/bash
+# filepath: /home/lee/code/dotfiles/tools/cldcmt
+
+# Claude Commit Tool
+# Usage: cldcmt [options] "commit message or prompt"
+# Options:
+#   --cached, -c    Work with staged changes only
+#   --all, -a       Add all changes and commit
+#   --help, -h      Show this help message
+#   --dry-run, -n   Show what would be done without committing
+#   --no-fix        Skip running fixes, just commit
+
+show_help() {
+    cat << EOF
+Claude Commit Tool - AI-powered code cleanup and commit using Claude
+
+Usage: cldcmt [options] "commit message or prompt"
+
+Options:
+    --cached, -c        Work with staged changes only
+    --all, -a           Add all changes and commit
+    --help, -h          Show this help message  
+    --dry-run, -n       Show what would be done without committing
+    --no-fix            Skip running fixes, just commit
+
+Examples:
+    cldcmt "fix authentication bug"                    # Clean up and commit working dir
+    cldcmt -c "add user validation"                    # Clean up and commit staged changes
+    cldcmt -a "refactor user service"                  # Add all, clean up and commit
+    cldcmt -n "test cleanup" --all                     # Dry run to see what would happen
+    cldcmt --no-fix "quick commit without cleanup"     # Just commit without fixes
+
+EOF
+}
+
+# Default values
+CACHED_ONLY=false
+ADD_ALL=false
+DRY_RUN=false
+NO_FIX=false
+COMMIT_MESSAGE=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --cached|-c)
+            CACHED_ONLY=true
+            shift
+            ;;
+        --all|-a)
+            ADD_ALL=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --dry-run|-n)
+            DRY_RUN=true
+            shift
+            ;;
+        --no-fix)
+            NO_FIX=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            COMMIT_MESSAGE="$1"
+            shift
+            ;;
+    esac
+done
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found. Please install Claude CLI."
+    exit 1
+fi
+
+# Require commit message
+if [[ -z "$COMMIT_MESSAGE" ]]; then
+    echo "Error: Commit message is required"
+    show_help
+    exit 1
+fi
+
+# Add all files if requested
+if [[ $ADD_ALL == true ]]; then
+    echo "📝 Adding all changes..."
+    if [[ $DRY_RUN == true ]]; then
+        echo "[DRY RUN] Would run: git add -A"
+    else
+        git add -A
+    fi
+fi
+
+# Check if there are changes to commit
+if [[ $CACHED_ONLY == true ]]; then
+    CHANGES=$(git diff --cached --name-only)
+    DIFF_CMD="git diff --cached"
+else
+    CHANGES=$(git diff --name-only)
+    if [[ $ADD_ALL == true ]]; then
+        CHANGES=$(git diff --cached --name-only)
+        DIFF_CMD="git diff --cached"
+    else
+        DIFF_CMD="git diff"
+    fi
+fi
+
+if [[ -z "$CHANGES" ]]; then
+    echo "No changes found to commit."
+    if [[ $CACHED_ONLY == true ]]; then
+        echo "Try: git add <files> first, or run without --cached"
+    else
+        echo "Try: git add <files> first, or use --all to add all changes"
+    fi
+    exit 0
+fi
+
+echo "🔧 Found changes in: $(echo "$CHANGES" | tr '\n' ' ')"
+
+# Skip fixes if requested
+if [[ $NO_FIX == true ]]; then
+    echo "⏭️  Skipping cleanup and fixes (--no-fix specified)"
+else
+    # Build the cleanup prompt
+    CLEANUP_PROMPT="Please analyze and clean up this code with the following focus:
+
+**Goal**: $COMMIT_MESSAGE
+
+**Actions to take**:
+1. **Code Cleanup**: Fix formatting, remove dead code, improve readability
+2. **Low-Risk Fixes**: Fix obvious bugs, typos, or inefficiencies that are safe to change
+3. **Linting**: Run appropriate linters (eslint, pylint, etc.) and fix issues
+4. **Tests**: Run relevant tests and fix any failures
+5. **Best Practices**: Apply language-specific best practices
+
+**Important**:
+- Only make SAFE, LOW-RISK changes that align with the commit goal
+- Do NOT make major architectural changes or breaking changes  
+- Focus on improvements that make the code better without changing functionality
+- If tests exist, ensure they pass after changes
+- Preserve the original intent and behavior of the code
+
+Please implement these improvements and then prepare the code for commit."
+
+    echo "🤖 Running Claude cleanup and fixes..."
+    echo "📊 Analyzing $(echo "$CHANGES" | wc -l) changed files"
+    echo ""
+
+    # Get the diff content and send to Claude
+    if [[ $DRY_RUN == true ]]; then
+        echo "[DRY RUN] Would run cleanup with Claude using:"
+        echo "Command: $DIFF_CMD | cld -p \"$CLEANUP_PROMPT\""
+        echo ""
+        echo "Diff content preview:"
+        $DIFF_CMD | head -20
+        echo "..."
+    else
+        $DIFF_CMD | cld -p "$CLEANUP_PROMPT"
+        
+        # Check if there are new changes after cleanup
+        if [[ $CACHED_ONLY == false && $ADD_ALL == false ]]; then
+            echo ""
+            echo "⚠️  Note: Claude may have made additional changes."
+            echo "   You may want to review with 'git diff' and add changes with 'git add' if needed."
+        fi
+    fi
+fi
+
+# Commit the changes
+echo ""
+echo "📦 Committing changes..."
+
+if [[ $DRY_RUN == true ]]; then
+    echo "[DRY RUN] Would commit with message: \"$COMMIT_MESSAGE\""
+    echo "[DRY RUN] Git status:"
+    git status --short
+else
+    # If we added all changes, or working with cached only, commit directly
+    if [[ $ADD_ALL == true || $CACHED_ONLY == true ]]; then
+        git commit -m "$COMMIT_MESSAGE"
+    else
+        echo "⚠️  Committing currently staged changes only."
+        echo "   Use --all to add and commit all changes, or git add specific files first."
+        git commit -m "$COMMIT_MESSAGE"
+    fi
+    
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Successfully committed changes!"
+        echo "📝 Commit message: $COMMIT_MESSAGE"
+    else
+        echo "❌ Failed to commit changes"
+        exit 1
+    fi
+fi

@@ -1,0 +1,240 @@
+#!/bin/bash
+# filepath: /home/lee/code/dotfiles/tools/cldgcmep
+
+# Claude Git Add, Commit, and Push Tool
+# Usage: cldgcmep [options] "commit message or prompt"
+# Similar to gcmep but with Claude-powered cleanup
+# Options:
+#   --no-push, -n   Don't push after commit
+#   --help, -h      Show this help message
+#   --dry-run, -d   Show what would be done without executing
+#   --no-fix        Skip running fixes, just add/commit/push
+#   --force, -f     Force push (use with caution)
+
+show_help() {
+    cat << EOF
+Claude Git Add, Commit, and Push Tool - AI-powered git workflow using Claude
+
+Usage: cldgcmep [options] "commit message or prompt"
+
+This tool will:
+1. Add all changes (git add -A)
+2. Run Claude cleanup and fixes
+3. Commit with your message
+4. Push to remote (unless --no-push)
+
+Options:
+    --no-push, -n       Don't push after commit
+    --help, -h          Show this help message  
+    --dry-run, -d       Show what would be done without executing
+    --no-fix            Skip running fixes, just add/commit/push
+    --force, -f         Force push (use with caution)
+
+Examples:
+    cldgcmep "fix user authentication"           # Full workflow: add, cleanup, commit, push
+    cldgcmep -n "wip: refactoring"              # Add, cleanup, commit (no push)
+    cldgcmep -d "test feature"                  # Dry run to see what would happen
+    cldgcmep --no-fix "quick fix"               # Skip Claude cleanup
+    cldgcmep -f "force update after rebase"    # Force push after commit
+
+EOF
+}
+
+# Default values
+NO_PUSH=false
+DRY_RUN=false
+NO_FIX=false
+FORCE_PUSH=false
+COMMIT_MESSAGE=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --no-push|-n)
+            NO_PUSH=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --dry-run|-d)
+            DRY_RUN=true
+            shift
+            ;;
+        --no-fix)
+            NO_FIX=true
+            shift
+            ;;
+        --force|-f)
+            FORCE_PUSH=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+        *)
+            COMMIT_MESSAGE="$1"
+            shift
+            ;;
+    esac
+done
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found. Please install Claude CLI."
+    exit 1
+fi
+
+# Require commit message
+if [[ -z "$COMMIT_MESSAGE" ]]; then
+    echo "Error: Commit message is required"
+    show_help
+    exit 1
+fi
+
+# Check current branch and remote
+CURRENT_BRANCH=$(git branch --show-current)
+REMOTE_EXISTS=$(git remote | head -1)
+
+if [[ -z "$REMOTE_EXISTS" ]] && [[ $NO_PUSH == false ]]; then
+    echo "⚠️  No remote repository found. Will skip push step."
+    NO_PUSH=true
+fi
+
+echo "🚀 Claude Git Add-Commit-Push Workflow"
+echo "📍 Branch: $CURRENT_BRANCH"
+if [[ $NO_PUSH == false ]]; then
+    echo "🌐 Will push to: $REMOTE_EXISTS"
+fi
+echo ""
+
+# Step 1: Add all changes
+echo "📝 Step 1: Adding all changes..."
+if [[ $DRY_RUN == true ]]; then
+    echo "[DRY RUN] Would run: git add -A"
+    git status --short
+else
+    git add -A
+    echo "✅ All changes added to staging area"
+fi
+
+# Check if there are changes to commit
+STAGED_CHANGES=$(git diff --cached --name-only)
+if [[ -z "$STAGED_CHANGES" ]]; then
+    echo "No changes found to commit."
+    exit 0
+fi
+
+echo "🔧 Found changes in: $(echo "$STAGED_CHANGES" | tr '\n' ' ')"
+echo ""
+
+# Step 2: Claude cleanup (unless skipped)
+if [[ $NO_FIX == true ]]; then
+    echo "⏭️  Step 2: Skipping cleanup and fixes (--no-fix specified)"
+else
+    echo "🤖 Step 2: Running Claude cleanup and fixes..."
+    
+    # Build the cleanup prompt
+    CLEANUP_PROMPT="Please analyze and optimize this code for commit with the following focus:
+
+**Commit Goal**: $COMMIT_MESSAGE
+
+**Required Actions**:
+1. **Code Quality**: Clean up formatting, remove dead/commented code, improve naming
+2. **Performance**: Optimize algorithms, reduce memory usage, improve efficiency  
+3. **Safety**: Fix potential bugs, add error handling, validate inputs
+4. **Testing**: Run tests and fix any failures, add missing test coverage
+5. **Linting**: Apply linter fixes and code style improvements
+6. **Documentation**: Update comments and docs if needed
+
+**Guidelines**:
+- Make SAFE, incremental improvements that align with the commit goal
+- Preserve existing functionality and behavior
+- Focus on low-risk optimizations and fixes
+- Ensure all tests pass after changes
+- Don't make breaking changes or major architectural modifications
+
+Please implement these improvements and ensure the code is ready for production."
+
+    if [[ $DRY_RUN == true ]]; then
+        echo "[DRY RUN] Would run Claude cleanup with:"
+        echo "git diff --cached | cld -p \"$CLEANUP_PROMPT\""
+        echo ""
+        echo "Staged changes preview:"
+        git diff --cached --name-only | head -10
+    else
+        git diff --cached | cld -p "$CLEANUP_PROMPT"
+        echo "✅ Claude cleanup completed"
+    fi
+fi
+
+echo ""
+
+# Step 3: Commit
+echo "📦 Step 3: Committing changes..."
+if [[ $DRY_RUN == true ]]; then
+    echo "[DRY RUN] Would commit with message: \"$COMMIT_MESSAGE\""
+else
+    git commit -m "$COMMIT_MESSAGE"
+    
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Successfully committed changes!"
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        echo "📝 Commit: $COMMIT_HASH - $COMMIT_MESSAGE"
+    else
+        echo "❌ Failed to commit changes"
+        exit 1
+    fi
+fi
+
+echo ""
+
+# Step 4: Push (unless skipped)
+if [[ $NO_PUSH == true ]]; then
+    echo "⏭️  Step 4: Skipping push (--no-push specified)"
+    echo "✅ Workflow complete! (Local commit only)"
+else
+    echo "🚀 Step 4: Pushing to remote..."
+    
+    if [[ $DRY_RUN == true ]]; then
+        if [[ $FORCE_PUSH == true ]]; then
+            echo "[DRY RUN] Would run: git push --force-with-lease origin $CURRENT_BRANCH"
+        else
+            echo "[DRY RUN] Would run: git push origin $CURRENT_BRANCH"
+        fi
+    else
+        if [[ $FORCE_PUSH == true ]]; then
+            echo "⚠️  Force pushing with lease..."
+            git push --force-with-lease origin "$CURRENT_BRANCH"
+        else
+            git push origin "$CURRENT_BRANCH"
+        fi
+        
+        if [[ $? -eq 0 ]]; then
+            echo "✅ Successfully pushed to remote!"
+            echo "🌐 Branch $CURRENT_BRANCH is now up to date"
+        else
+            echo "❌ Failed to push to remote"
+            echo "💡 You may need to pull first or use --force if you rebased"
+            exit 1
+        fi
+    fi
+fi
+
+echo ""
+echo "🎉 Claude Git workflow completed successfully!"
+
+if [[ $DRY_RUN == false ]]; then
+    echo "📊 Final status:"
+    git log --oneline -1
+    echo "🌳 Branch: $CURRENT_BRANCH"
+fi
