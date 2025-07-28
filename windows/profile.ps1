@@ -84,49 +84,49 @@ function gdfbm { git diff main... }
 function gdfbd { git diff develop... }
 
 # Additional Git command combinations from bashrc
-function gcmp { 
+function gcmp {
     git commit -m $args
     gpsh
 }
 
-function gcmps { 
+function gcmps {
     git commit -n -m $args
     gpsh
 }
 
-function gcmpf { 
+function gcmpf {
     git commit -m $args
     git push -f
 }
 
-function gcmap { 
+function gcmap {
     git commit -a -m $args
     git push
 }
 
-function gcmapf { 
+function gcmapf {
     git commit -a -m $args
     git push -f
 }
 
-function gcme { 
+function gcme {
     git add -A
     git commit -a -m $args
 }
 
-function gcmep { 
+function gcmep {
     git add -A
     git commit -a -m $args
     gpsh
 }
 
-function gcmeps { 
+function gcmeps {
     git add -A
     git commit -a -n -m $args
     gpsh
 }
 
-function gcmepf { 
+function gcmepf {
     git add -A
     git commit -a -m $args
     git push -f
@@ -147,7 +147,7 @@ function gcof {
     git checkout $branchName
 }
 
-function gusco { 
+function gusco {
     git reset HEAD $args
     git checkout -- $args
 }
@@ -164,7 +164,7 @@ function gsp2 { git stash pop stash@{1} }
 function gsp3 { git stash pop stash@{2} }
 
 # Additional utility functions from bashrc
-function findn { 
+function findn {
     param($pattern)
     Get-ChildItem -Recurse -Filter $pattern
 }
@@ -197,7 +197,7 @@ function dprn { docker system prune }
 function ddf { docker system df }
 
 # Utility functions
-function mkcd { 
+function mkcd {
     param($path)
     New-Item -ItemType Directory -Path $path
     Set-Location $path
@@ -258,12 +258,12 @@ function yls { yarn list }
 function ylsg { yarn global list }
 
 # Directory usage (like bash usager/usage)
-function usager { 
-    Get-ChildItem | ForEach-Object { 
-        $size = if ($_.PSIsContainer) { 
-            (Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum 
-        } else { 
-            $_.Length 
+function usager {
+    Get-ChildItem | ForEach-Object {
+        $size = if ($_.PSIsContainer) {
+            (Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum
+        } else {
+            $_.Length
         }
         [PSCustomObject]@{
             Name = $_.Name
@@ -273,12 +273,12 @@ function usager {
     } | Sort-Object Size | Format-Table Name, SizeStr -AutoSize
 }
 
-function usage { 
-    Get-ChildItem -Force | ForEach-Object { 
-        $size = if ($_.PSIsContainer) { 
-            (Get-ChildItem $_.FullName -Recurse -Force | Measure-Object Length -Sum).Sum 
-        } else { 
-            $_.Length 
+function usage {
+    Get-ChildItem -Force | ForEach-Object {
+        $size = if ($_.PSIsContainer) {
+            (Get-ChildItem $_.FullName -Recurse -Force | Measure-Object Length -Sum).Sum
+        } else {
+            $_.Length
         }
         [PSCustomObject]@{
             Name = $_.Name
@@ -289,31 +289,31 @@ function usage {
 }
 
 # Archive functions
-function compress { 
+function compress {
     param($path)
     $name = (Get-Item $path).BaseName
     Compress-Archive -Path $path -DestinationPath "$name.zip"
 }
 
-function mktgz { 
+function mktgz {
     param($path)
     $name = (Get-Item $path).BaseName
     tar -czf "$name.tar.gz" $path
 }
 
 # Find by name (findn equivalent)
-function findn { 
+function findn {
     param($pattern)
     Get-ChildItem -Recurse -Filter "*$pattern*" | Select-Object FullName
 }
 
 # Simple web server
-function webserver { 
+function webserver {
     param($port = 8080)
     python -m http.server $port
 }
 
-# More npm/yarn shortcuts  
+# More npm/yarn shortcuts
 function pn { pnpm $args }
 function yt { yarn test $args }
 function yr { yarn remove $args }
@@ -417,19 +417,19 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
 }
 
 # Utility functions
-function usage { 
-    Get-ChildItem -Force | ForEach-Object { 
+function usage {
+    Get-ChildItem -Force | ForEach-Object {
         $_.Name + " " + [math]::Round((Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum / 1MB, 2) + " MB"
     } | Sort-Object
 }
 
 # Directory usage (like bash usager/usage)
-function usager { 
-    Get-ChildItem | ForEach-Object { 
-        $size = if ($_.PSIsContainer) { 
-            (Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum 
-        } else { 
-            $_.Length 
+function usager {
+    Get-ChildItem | ForEach-Object {
+        $size = if ($_.PSIsContainer) {
+            (Get-ChildItem $_.FullName -Recurse | Measure-Object Length -Sum).Sum
+        } else {
+            $_.Length
         }
         [PSCustomObject]@{
             Name = $_.Name
@@ -454,9 +454,9 @@ function check-tools {
     $tools = @("node", "npm", "yarn", "git", "code", "nvim", "python", "pip", "fzf")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
-            Write-Host "✓ $tool" -ForegroundColor Green
+            Write-Host "ok: $tool" -ForegroundColor Green
         } else {
-            Write-Host "✗ $tool" -ForegroundColor Red
+            Write-Host "x: $tool" -ForegroundColor Red
         }
     }
 }
@@ -494,7 +494,7 @@ function lsg {
     Get-ChildItem
     if (git rev-parse --git-dir 2>$null) {
         Write-Host ""
-        Write-Host "Git Status:" -ForegroundColor Cyan
+        Write-Host 'Git Status:' -ForegroundColor Cyan
         git status --porcelain
     }
 }
@@ -509,4 +509,4 @@ Import-Module PSFzf
 Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
 
 # Better tab completion
-Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete 

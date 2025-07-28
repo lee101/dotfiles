@@ -7,7 +7,7 @@ sudo apt-get install -y libarrow-dev libparquet-dev
 sudo apt install nasm
 
 sudo apt install zile plocate hstr
-
+sudo snap install nvim
 
 
 # ffmpeg
