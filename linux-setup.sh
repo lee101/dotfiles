@@ -1,3 +1,57 @@
+#!/bin/bash
+
+# Essential Git tools setup
+echo "Installing Git and essential Git tools..."
+
+# Install delta (better than diff-so-fancy)
+curl -Lo git-delta.deb "https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_amd64.deb"
+sudo dpkg -i git-delta.deb
+rm git-delta.deb
+
+# Install lazygit
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+tar xf lazygit.tar.gz lazygit
+sudo install lazygit /usr/local/bin
+rm lazygit.tar.gz lazygit
+
+# Install difftastic
+curl -Lo difft.tar.gz "https://github.com/Wilfred/difftastic/releases/download/0.61.0/difft-x86_64-unknown-linux-gnu.tar.gz"
+tar xf difft.tar.gz
+sudo install difft /usr/local/bin
+rm difft.tar.gz difft
+# Install diff tools for git
+echo "Installing delta and difft diff tools..."
+
+# Install delta (syntax-highlighting pager for git and diff output)
+curl -L https://github.com/dandavison/delta/releases/latest/download/delta-0.18.2-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+sudo mv delta-0.18.2-x86_64-unknown-linux-gnu/delta /usr/local/bin/
+rm -rf delta-0.18.2-x86_64-unknown-linux-gnu
+
+# Install difft (structural diff tool)
+curl -L https://github.com/Wilfred/difftastic/releases/latest/download/difft-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+sudo mv difft /usr/local/bin/
+
+echo "Delta and difft installed successfully"
+
+# Install tig
+sudo apt install tig -y
+
+# Setup lazygit config
+mkdir -p ~/.config/lazygit
+echo "gui:
+  skipDiscardChangeWarning: true" > ~/.config/lazygit/config.yml
+
+# Install GitHub CLI (already in script but let's make sure it's here)
+(type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+	&& sudo mkdir -p -m 755 /etc/apt/keyrings \
+        && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+	&& sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+	&& sudo apt update \
+	&& sudo apt install gh -y
+
 sudo apt install fzf
 sudo apt-get install tk-dev
 sudo apt-get install libreadline-dev

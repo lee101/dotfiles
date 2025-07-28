@@ -1,8 +1,21 @@
+# Install GitHub CLI and Git tools
 winget install --id GitHub.cli
+
+# Install Git tools via chocolatey
+choco install git-delta --yes
+choco install lazygit --yes
+choco install tig --yes
+
+# difftastic installation for Windows - download from releases
+$difftUrl = "https://github.com/Wilfred/difftastic/releases/download/0.60.0/difft-x86_64-pc-windows-msvc.zip"
+$difftPath = "$env:TEMP\difft.zip"
+Invoke-WebRequest -Uri $difftUrl -OutFile $difftPath
+Expand-Archive -Path $difftPath -DestinationPath "$env:TEMP\difft"
+Copy-Item "$env:TEMP\difft\difft.exe" "$env:ProgramFiles\Git\usr\bin\difft.exe"
+Remove-Item $difftPath, "$env:TEMP\difft" -Recurse -Force
+
 gh auth login
 gh extension install github/gh-copilot
-
-
 
 # uninstalled powertoys as causes issues 
 #winget install --id Microsoft.PowerToys
