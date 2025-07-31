@@ -401,9 +401,19 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
-if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+# Source Windows-specific configurations for Git Bash and similar environments
+if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [ "$machine" = "Cygwin" ] || [ "$machine" = "MinGw" ]; then
+  # Get the directory where this bashrc is located
+  BASHRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  
+  # Source the Windows-specific bashrc if it exists
+  if [ -f "$BASHRC_DIR/lib/winbashrc" ]; then
+    . "$BASHRC_DIR/lib/winbashrc"
+  elif [ -f ~/code/dotfiles/lib/winbashrc ]; then
+    . ~/code/dotfiles/lib/winbashrc
+  fi
 
-   export GOROOT="/c/Program Files/Go"
+  export GOROOT="/c/Program Files/Go"
 else
    export DOCKER_HOST=tcp://127.0.0.1:2376
    alias docker='sudo docker'
@@ -459,7 +469,6 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
     echo "PATH contains:"
     echo "$PATH" | tr ':' '\n' | grep -i nvim || echo "No nvim paths found in PATH"
   }
-
   # WSL2 integration for Git Bash
   alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
   alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
@@ -999,8 +1008,11 @@ alias ni=nvim
 
 # Find the existing 'o' alias and replace/add this instead
 if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
-    alias o='explorer.exe .'
-    alias oo='explorer.exe'
+    alias o='explore'
+    alias oo='explore'
+    # Keep the old direct aliases as alternatives
+    alias ox='explorer.exe .'
+    alias oox='explorer.exe'
 else
     alias o='xdg-open .'
     alias oo='xdg-open'
