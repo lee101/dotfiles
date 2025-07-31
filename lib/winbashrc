@@ -1,0 +1,133 @@
+
+#!/bin/bash
+# Windows-specific bashrc configurations for Git Bash and similar environments
+
+# Windows path conversion function for Git Bash
+win_path_convert() {
+    local path="$1"
+    
+    # If no path provided, use current directory
+    if [ -z "$path" ]; then
+        path="."
+    fi
+    
+    # Convert to absolute path first
+    local abs_path
+    if [[ "$path" = /* ]]; then
+        # Already absolute Unix path
+        abs_path="$path"
+    else
+        # Relative path - make it absolute
+        abs_path="$(cd "$path" 2>/dev/null && pwd)" || abs_path="$(pwd)/$path"
+    fi
+    
+    # Convert Unix path to Windows path
+    # Handle /c/, /d/, etc. drive patterns
+    if [[ "$abs_path" =~ ^/([a-zA-Z])/ ]]; then
+        # Convert /c/foo/bar to C:/foo/bar or /d/foo/bar to D:/foo/bar
+        local drive="${abs_path:1:1}"
+        local rest="${abs_path:3}"
+        echo "${drive^^}:/${rest}"
+    elif [[ "$abs_path" =~ ^/([a-zA-Z])$ ]]; then
+        # Convert /c to C:/ or /d to D:/
+        local drive="${abs_path:1:1}"
+        echo "${drive^^}:/"
+    else
+        # Fallback: use cygpath if available, otherwise return as-is
+        if command -v cygpath >/dev/null 2>&1; then
+            cygpath -w "$abs_path" 2>/dev/null || echo "$abs_path"
+        else
+            echo "$abs_path"
+        fi
+    fi
+}
+
+# Enhanced explorer function for Windows
+explore() {
+    local target="$1"
+    if [ -z "$target" ]; then
+        target="."
+    fi
+    
+    # Get the absolute path first
+    local abs_path
+    if [[ "$target" = /* ]]; then
+        abs_path="$target"
+    else
+        abs_path="$(cd "$target" 2>/dev/null && pwd)" || abs_path="$(pwd)/$target"
+    fi
+    
+    # Convert Unix path to Windows path format with backslashes
+    local win_path
+    if [[ "$abs_path" =~ ^/([a-zA-Z])/ ]]; then
+        # Convert /d/code to D:\code
+        local drive="${abs_path:1:1}"
+        local rest="${abs_path:3}"
+        win_path="${drive^^}:\\${rest//\//\\}"
+    elif [[ "$abs_path" =~ ^/([a-zA-Z])$ ]]; then
+        # Convert /d to D:\
+        local drive="${abs_path:1:1}"
+        win_path="${drive^^}:\\"
+    else
+        # Fallback: use cygpath if available
+        if command -v cygpath >/dev/null 2>&1; then
+            win_path="$(cygpath -w "$abs_path" 2>/dev/null)" || win_path="$abs_path"
+        else
+            win_path="$abs_path"
+        fi
+    fi
+    
+    # Use PowerShell to open the folder in Explorer
+    powershell.exe -Command "Invoke-Item '$win_path'"
+}
+
+# Windows-specific clipboard setup
+alias pbcopy="clip"
+alias pbpaste="powershell.exe -command 'Get-Clipboard'"
+# Ctrl+] to copy current command to clipboard for Git Bash
+bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+
+# Windows-specific file explorer setup
+alias open="explorer.exe"
+
+# Windows-specific nvim setup
+export EDITOR="nvim"
+export VISUAL="nvim"
+alias vi="nvim"
+alias vim="nvim"
+alias n="nvim"
+alias ni="nvim"
+
+# Add common Windows nvim paths to PATH
+if [ -d "/c/Program Files/Neovim/bin" ]; then
+  export PATH="/c/Program Files/Neovim/bin:$PATH"
+fi
+if [ -d "/c/tools/neovim/Neovim/bin" ]; then
+  export PATH="/c/tools/neovim/Neovim/bin:$PATH"
+fi
+if [ -d "/c/Users/$USER/scoop/apps/neovim/current/bin" ]; then
+  export PATH="/c/Users/$USER/scoop/apps/neovim/current/bin:$PATH"
+fi
+if [ -d "/c/ProgramData/chocolatey/lib/neovim/tools/Neovim/bin" ]; then
+  export PATH="/c/ProgramData/chocolatey/lib/neovim/tools/Neovim/bin:$PATH"
+fi
+
+# WSL2 integration for Git Bash
+alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
+alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
+alias w='wsl'
+
+# Function to cd into WSL2 directory from Git Bash
+cdw() {
+  if [ -z "$1" ]; then
+    cd "//wsl$/Ubuntu/home/lee"
+  else
+    cd "//wsl$/Ubuntu/home/lee/$1"
+  fi
+}
+
+# Windows-specific virtual environment
+alias sve='source .venv/Scripts/activate'  # Windows version
+alias pc='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt --python .venv/Scripts/python.exe'
+alias pcw='uv pip compile requirements.in -o requirements.txt && uv pip install -r requirements.txt --python .venv/Scripts/python.exe'
+
