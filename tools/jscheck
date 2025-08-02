@@ -1,0 +1,22 @@
+#!/bin/bash
+# JavaScript error checker wrapper script
+
+# Set default Chrome profile path if not set
+if [ -z "$CHROME_PROFILE_PATH" ]; then
+    export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
+fi
+
+# Check if we need help
+if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ $# -eq 0 ]; then
+    echo "Usage: jscheck <url>"
+    echo "Example: jscheck https://google.com"
+    echo ""
+    echo "Environment Variables:"
+    echo "  CHROME_PROFILE_PATH: Path to Chrome profile directory"
+    echo "  Current: $CHROME_PROFILE_PATH"
+    exit 0
+fi
+
+# Use uvx to run the package with all arguments properly quoted
+cd /home/lee/code/dotfiles/tools/js_error_checker
+exec uvx --from . js-error-checker "$1"

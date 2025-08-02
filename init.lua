@@ -214,7 +214,7 @@ require("lazy").setup({
           "c", "lua", "vim", "vimdoc", "query", "python", "javascript", 
           "typescript", "html", "css", "json", "yaml", "toml", "bash",
           "go", "rust", "cpp", "java", "php", "ruby", "dockerfile",
-          "markdown", "sql", "regex", "tsx", "jsx"
+          "markdown", "sql", "regex", "tsx"
         },
         sync_install = false,
         auto_install = true,
@@ -349,7 +349,7 @@ require("lazy").setup({
         ensure_installed = {
           'lua_ls',
           'pyright',
-          'tsserver', 
+          'ts_ls', 
           'html',
           'cssls',
           'jsonls',
@@ -380,7 +380,7 @@ require("lazy").setup({
           },
         },
         pyright = {},
-        tsserver = {},
+        ts_ls = {},
         html = {},
         cssls = {},
         jsonls = {},
@@ -470,7 +470,13 @@ require("lazy").setup({
             elseif luasnip.expand_or_jumpable() then
               luasnip.expand_or_jump()
             else
-              fallback()
+              -- Let Tab pass through for Copilot
+              local copilot_keys = vim.fn['copilot#Accept']()
+              if copilot_keys ~= '' then
+                vim.api.nvim_feedkeys(copilot_keys, 'i', true)
+              else
+                fallback()
+              end
             end
           end, { 'i', 's' }),
           ['<S-Tab>'] = cmp.mapping(function(fallback)

@@ -33,6 +33,9 @@ export HISTFILE=~/.bash_eternal_history
 # http://superuser.com/questions/20900/bash-history-loss
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
+# Chrome profile path for js-error-checker
+export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
+
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 if [ -n "$BASH_VERSION" ]; then
@@ -987,6 +990,20 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
 
+# Interactive history search with fzf
+fh() {
+  local cmd
+  cmd=$( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac --no-sort --query "$*" | sed 's/ *[0-9]* *//' | sed 's/\[[^]]*\] //')
+  if [ -n "$cmd" ]; then
+    echo "$cmd"
+    # Copy to clipboard if xclip is available
+    if command -v xclip &> /dev/null; then
+      echo -n "$cmd" | xclip -selection clipboard
+      echo "(Copied to clipboard)"
+    fi
+  fi
+}
+
 # pnpm
 export PNPM_HOME="/home/lee/.local/share/pnpm"
 case ":$PATH:" in
@@ -1032,4 +1049,12 @@ export aided='aider --model deepseek/deepseek-reasoner'
 alias pip='uv pip'
 export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
 # Chrome profile environment variable
+
+# JavaScript Error Checker alias
+alias jscheck='/home/lee/code/dotfiles/tools/jscheck'
+alias jserrors='/home/lee/code/dotfiles/tools/jscheck'
+# Add tools directory to PATH if not already there
+if [[ ":$PATH:" != *":/home/lee/code/dotfiles/tools:"* ]]; then
+    export PATH="$PATH:/home/lee/code/dotfiles/tools"
+fi
 export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
