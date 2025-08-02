@@ -6,7 +6,7 @@ This script loads a web URL in Chrome using a local profile (configured via ENV 
 collects any JavaScript errors, prints them out, and then exits the browser.
 
 Usage:
-    python js_error_checker.py <url>
+    js-error-checker <url>
     
 Environment Variables:
     CHROME_PROFILE_PATH: Path to the Chrome profile directory (optional)
@@ -216,9 +216,18 @@ class JSErrorChecker:
                 self.driver.quit()
 
 def main():
+    # Handle help flag first
+    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
+        print("Usage: js-error-checker <url>")
+        print("Example: js-error-checker https://google.com")
+        print("\nEnvironment Variables:")
+        print("  CHROME_PROFILE_PATH: Path to Chrome profile directory")
+        sys.exit(0)
+    
+    # Then check for correct number of arguments
     if len(sys.argv) != 2:
-        print("Usage: python js_error_checker.py <url>")
-        print("Example: python js_error_checker.py https://google.com")
+        print("Usage: js-error-checker <url>")
+        print("Example: js-error-checker https://google.com")
         sys.exit(1)
     
     url = sys.argv[1]
