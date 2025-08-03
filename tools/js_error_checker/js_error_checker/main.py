@@ -15,6 +15,7 @@ Environment Variables:
 import sys
 import os
 import time
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -38,6 +39,16 @@ class JSErrorChecker:
             chrome_options.add_argument(f"--user-data-dir={self.profile_path}")
             print(f"Using Chrome profile: {self.profile_path}")
         
+        # Options to prevent window from stealing focus (popunder behavior)
+        chrome_options.add_argument("--no-first-run")
+        chrome_options.add_argument("--no-default-browser-check")
+        chrome_options.add_argument("--disable-popup-blocking")
+        chrome_options.add_argument("--disable-translate")
+        chrome_options.add_argument("--disable-default-apps")
+        chrome_options.add_argument("--disable-background-timer-throttling")
+        chrome_options.add_argument("--disable-renderer-backgrounding")
+        chrome_options.add_argument("--disable-device-discovery-notifications")
+        
         # Additional Chrome options for better error collection
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
@@ -58,6 +69,23 @@ class JSErrorChecker:
             service = Service(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             print("Chrome driver initialized successfully")
+            
+            # Minimize window and send to background to prevent focus stealing
+            self.driver.minimize_window()
+            
+            # Use xdotool to ensure window doesn't steal focus (Linux only)
+            try:
+                # Get the window ID of the Chrome instance
+                window_title = self.driver.title or "Chrome"
+                subprocess.run(['xdotool', 'search', '--name', window_title, 'windowminimize'], 
+                             capture_output=True, check=False)
+                # Switch focus back to the current window
+                subprocess.run(['xdotool', 'getactivewindow', 'windowfocus'], 
+                             capture_output=True, check=False)
+            except:
+                # xdotool not available or command failed, that's okay
+                pass
+                
         except WebDriverException as e:
             print(f"Error initializing Chrome driver: {e}")
             sys.exit(1)

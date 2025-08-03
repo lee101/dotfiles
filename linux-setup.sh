@@ -180,6 +180,9 @@ sudo apt install jq imagemagick luarocks -y
 
 sudo apt install hub vim build-essential -y
 
+# Install xdotool for window management (used by js_checker)
+sudo apt install xdotool -y
+
 sudo apt-get install libbz2-dev -y
 sudo npm install -g yarn grunt gulp
 
