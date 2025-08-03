@@ -26,8 +26,9 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 
 class JSErrorChecker:
-    def __init__(self, profile_path=None):
+    def __init__(self, profile_path=None, show_window=False):
         self.profile_path = profile_path or os.getenv('CHROME_PROFILE_PATH')
+        self.show_window = show_window
         self.driver = None
         
     def setup_driver(self):
@@ -38,6 +39,12 @@ class JSErrorChecker:
         if self.profile_path:
             chrome_options.add_argument(f"--user-data-dir={self.profile_path}")
             print(f"Using Chrome profile: {self.profile_path}")
+        
+        # Run in headless mode unless explicitly showing window
+        if not self.show_window:
+            chrome_options.add_argument("--headless=new")
+            chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+            print("Running in headless mode (no visible window)")
         
         # Options to prevent window from stealing focus (popunder behavior)
         chrome_options.add_argument("--no-first-run")
@@ -70,21 +77,23 @@ class JSErrorChecker:
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             print("Chrome driver initialized successfully")
             
-            # Minimize window and send to background to prevent focus stealing
-            self.driver.minimize_window()
-            
-            # Use xdotool to ensure window doesn't steal focus (Linux only)
-            try:
-                # Get the window ID of the Chrome instance
-                window_title = self.driver.title or "Chrome"
-                subprocess.run(['xdotool', 'search', '--name', window_title, 'windowminimize'], 
-                             capture_output=True, check=False)
-                # Switch focus back to the current window
-                subprocess.run(['xdotool', 'getactivewindow', 'windowfocus'], 
-                             capture_output=True, check=False)
-            except:
-                # xdotool not available or command failed, that's okay
-                pass
+            # Only minimize if showing window
+            if self.show_window:
+                # Minimize window and send to background to prevent focus stealing
+                self.driver.minimize_window()
+                
+                # Use xdotool to ensure window doesn't steal focus (Linux only)
+                try:
+                    # Get the window ID of the Chrome instance
+                    window_title = self.driver.title or "Chrome"
+                    subprocess.run(['xdotool', 'search', '--name', window_title, 'windowminimize'], 
+                                 capture_output=True, check=False)
+                    # Switch focus back to the current window
+                    subprocess.run(['xdotool', 'getactivewindow', 'windowfocus'], 
+                                 capture_output=True, check=False)
+                except:
+                    # xdotool not available or command failed, that's okay
+                    pass
                 
         except WebDriverException as e:
             print(f"Error initializing Chrome driver: {e}")
@@ -244,27 +253,46 @@ class JSErrorChecker:
                 self.driver.quit()
 
 def main():
-    # Handle help flag first
+    import argparse
+    
+    # Handle help before initializing anything
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
-        print("Usage: js-error-checker <url>")
-        print("Example: js-error-checker https://google.com")
+        print("Usage: js-error-checker [options] <url>")
+        print("\nPositional arguments:")
+        print("  url                   URL to check for JavaScript errors")
+        print("\nOptional arguments:")
+        print("  -h, --help           Show this help message and exit")
+        print("  --show-window        Show Chrome window (default: headless mode)")
         print("\nEnvironment Variables:")
-        print("  CHROME_PROFILE_PATH: Path to Chrome profile directory")
+        print("  CHROME_PROFILE_PATH  Path to Chrome profile directory")
+        print(f"                       Current: {os.getenv('CHROME_PROFILE_PATH', 'Not set')}")
+        print("\nExamples:")
+        print("  js-error-checker https://google.com")
+        print("  js-error-checker --show-window https://example.com")
         sys.exit(0)
     
-    # Then check for correct number of arguments
-    if len(sys.argv) != 2:
-        print("Usage: js-error-checker <url>")
-        print("Example: js-error-checker https://google.com")
+    parser = argparse.ArgumentParser(description='JavaScript Error Checker Tool', add_help=False)
+    parser.add_argument('url', nargs='?', help='URL to check for JavaScript errors')
+    parser.add_argument('--show-window', action='store_true', 
+                        help='Show Chrome window (default: headless mode)')
+    parser.add_argument('-h', '--help', action='store_true', help='Show help message')
+    
+    args = parser.parse_args()
+    
+    # Check if URL is provided
+    if not args.url:
+        print("Error: URL is required")
+        print("Usage: js-error-checker [options] <url>")
+        print("Try 'js-error-checker --help' for more information.")
         sys.exit(1)
     
-    url = sys.argv[1]
+    url = args.url
     
     # Add protocol if missing
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
     
-    checker = JSErrorChecker()
+    checker = JSErrorChecker(show_window=args.show_window)
     checker.run(url)
 
 if __name__ == "__main__":

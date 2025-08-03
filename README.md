@@ -158,7 +158,7 @@ Choose specific configurations:
 # Just git configuration
 ln -sf ~/.dotfiles/gitconfig ~/.gitconfig
 
-# Just shell configuration  
+# Just shell configuration
 ln -sf ~/.dotfiles/bashrc ~/.bashrc
 
 # Just vim configuration
@@ -228,4 +228,11 @@ This project is open source and available under the [MIT License](LICENSE).
 ---
 
 **Note**: These dotfiles are actively maintained and used across Windows, macOS, and Linux development environments. Feel free to customize them to match your workflow!
+
+extra tools
+ # Headless mode (default, no window)
+  jscheck https://example.com
+
+  # With visible window (if needed for debugging)
+  jscheck --show-window https://example.com
 
