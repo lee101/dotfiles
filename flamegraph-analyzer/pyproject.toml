@@ -1,0 +1,17 @@
+[project]
+name = "flamegraph-analyzer"
+version = "0.1.0"
+description = "Convert flamegraphs and profile data to markdown descriptions"
+requires-python = ">=3.8"
+dependencies = [
+    "lxml>=4.9.0",
+    "click>=8.0.0",
+    "flameprof>=0.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+flamegraph-analyzer = "flamegraph_analyzer.main:cli"

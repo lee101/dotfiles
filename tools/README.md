@@ -1,125 +1,187 @@
-# JavaScript Error Checker
+# Developer Tools Collection
 
-A Python tool that loads web pages in Chrome and collects JavaScript errors for debugging purposes.
+A collection of AI-powered developer tools for code quality, testing, and performance optimization.
 
-## Features
+## Tools Overview
 
-- Loads web pages using Chrome WebDriver
-- Collects JavaScript console errors and runtime errors
-- Captures unhandled promise rejections
-- Supports custom Chrome profiles via environment variables
-- Automatic ChromeDriver management using webdriver-manager
+### 🧪 cldtest - AI-Powered Test Runner
+Automatically detects your test framework and runs tests with AI-powered analysis and fixes.
+
+**Features:**
+- Auto-detects test frameworks (Go, Python, Bun, Node.js, Rust, Java)
+- AI-powered test failure analysis and auto-fixing
+- Test quality and coverage insights
+- Unit and integration test filtering
+
+**Usage:**
+```bash
+cldtest                 # Run all tests
+cldtest --fix           # Run tests and auto-fix failures
+cldtest --analyze       # Run tests and get analysis
+cldtest --unit          # Run unit tests only
+```
+
+### ⚡ cldperf - Performance Profiling Tool
+AI-powered performance analysis and optimization for your codebase.
+
+**Commands:**
+```bash
+cldperf profile [path]   # Profile code and identify bottlenecks
+cldperf optimize [path]  # Get optimization suggestions (--fix to apply)
+cldperf benchmark        # Run and analyze benchmarks
+cldperf memory           # Analyze memory usage and leaks
+```
+
+**Features:**
+- Language-specific profiling strategies
+- Algorithmic complexity analysis
+- Memory leak detection
+- Performance optimization suggestions
+- Benchmark analysis
+
+### 🔍 jscheck - JavaScript Error Checker
+Loads web pages in Chrome and collects JavaScript errors for debugging.
+
+**Features:**
+- Detects console errors, runtime errors, and unhandled promises
+- Chrome profile support via environment variables
 - Clean, formatted error output
+
+**Usage:**
+```bash
+jscheck <url>                          # Check a URL for JS errors
+export CHROME_PROFILE_PATH="/path"     # Use specific Chrome profile
+jscheck https://example.com
+```
+
+### 🤖 cldpr - Pull Request Creator
+Creates well-structured pull requests with AI-generated summaries.
+
+**Usage:**
+```bash
+cldpr                   # Create PR from current branch
+```
+
+### 🔧 cldfix - Code Fixer
+AI-powered code fixing tool for common issues.
+
+**Usage:**
+```bash
+cldfix                  # Fix issues in current directory
+```
+
+### 📝 cldcmt - Commit Helper
+Creates well-formatted git commits with AI-generated messages.
+
+**Usage:**
+```bash
+cldcmt                  # Create commit with AI message
+```
+
+### 🚀 cldgcmep - Git Add, Commit & Push
+Full git workflow with Claude-powered cleanup and fixes.
+
+**Features:**
+- Adds all changes (git add -A)
+- Runs Claude cleanup and fixes
+- Commits with your message
+- Pushes to remote
+
+**Usage:**
+```bash
+cldgcmep "commit message"        # Full workflow
+cldgcmep -n "wip: refactoring"  # Skip push
+cldgcmep --no-fix "quick fix"   # Skip Claude cleanup
+cldgcmep -f "force update"       # Force push
+```
+
+### 🔍 claude-review - Code Review Tool
+AI-powered code review for your changes.
+
+**Usage:**
+```bash
+claude-review           # Review current changes
+```
+
+### 🎯 cldrvcmt - Review & Commit Tool
+Intelligent git workflow that reviews changes, fixes issues, and creates atomic commits.
+
+**Features:**
+- Reviews all changes for code quality
+- Automatically fixes linting/formatting issues
+- Groups related changes into logical commits
+- Creates atomic commits with clear messages
+- Uses conventional commit format
+
+**Usage:**
+```bash
+cldrvcmt                # Review, fix, and commit all changes
+```
+
+**Example workflow:**
+- Reviews all unstaged/staged changes
+- Fixes any code issues found
+- Groups changes (e.g., API changes, tests, docs)
+- Creates separate commits for each group
 
 ## Installation
 
-1. Run the setup script:
+All tools are already in this directory. To use them system-wide:
+
+1. Add this directory to your PATH:
    ```bash
-   ./setup_js_checker.sh
+   export PATH="$PATH:/home/lee/code/dotfiles/tools"
    ```
 
-   This will:
-   - Install required Python dependencies (selenium, webdriver-manager)
-   - Set up ChromeDriver automatically
-   - Make the script executable
+2. Or create symlinks:
+   ```bash
+   ln -s /home/lee/code/dotfiles/tools/cldtest ~/.local/bin/cldtest
+   ln -s /home/lee/code/dotfiles/tools/cldperf ~/.local/bin/cldperf
+   # etc...
+   ```
 
-## Usage
+## Common Features
 
-### Basic Usage
-```bash
-python js_error_checker.py <url>
-```
-
-### Examples
-```bash
-# Test Google.com
-python js_error_checker.py https://google.com
-
-# Test without protocol (will default to https)
-python js_error_checker.py google.com
-
-# Test with explicit HTTP
-python js_error_checker.py http://localhost:8080/page.html
-```
-
-### Using Chrome Profile
-Set the `CHROME_PROFILE_PATH` environment variable to use a specific Chrome profile:
-
-```bash
-export CHROME_PROFILE_PATH="/path/to/chrome/profile"
-python js_error_checker.py https://example.com
-```
-
-## Output
-
-The tool provides a summary of errors found:
-
-```
-==================================================
-ERROR SUMMARY: 2 errors found
-==================================================
-
-CONSOLE ERRORS (1):
-------------------------------
-1. [SEVERE] https://example.com/script.js 42:8 Uncaught ReferenceError: undefinedVariable is not defined
-   Source: javascript
-
-JAVASCRIPT ERRORS (1):
-------------------------------
-1. [error] undefinedVariable is not defined
-   File: https://example.com/script.js:42
-   Stack: ReferenceError: undefinedVariable is not defined
-       at https://example.com/script.js:42:8
-```
-
-## Error Types Detected
-
-- **Console Errors**: Errors logged to the browser console
-- **JavaScript Runtime Errors**: Uncaught exceptions
-- **Unhandled Promise Rejections**: Promises that reject without handling
-- **Network Errors**: Failed resource loads (as console errors)
-
-## Demo
-
-Run the demo script to see the tool in action:
-
-```bash
-./demo.sh
-```
-
-This will test the tool on:
-1. Google.com (should have no errors)
-2. A local test page with intentional errors
-3. Usage with Chrome profile (if configured)
+- **AI-Powered**: All tools use Claude for intelligent analysis
+- **Auto-Detection**: Tools automatically detect languages and frameworks
+- **Actionable Insights**: Get specific, implementable suggestions
+- **Multi-Language**: Support for Go, Python, JavaScript, Rust, Java, and more
 
 ## Requirements
 
-- Python 3.6+
-- Chrome browser
-- Linux/macOS/Windows
+- Claude CLI (`cld` command) installed
+- Language-specific tools (e.g., go, python, node, cargo)
+- Chrome browser (for jscheck)
 
-## Files
+## Other Utilities
 
-- `js_error_checker.py` - Main script
-- `setup_js_checker.sh` - Setup script
-- `demo.sh` - Demo script
-- `test_errors.html` - Test page with intentional errors
-- `requirements.txt` - Python dependencies
-- `README.md` - This file
+### Chrome Profile Management
+- `export_chrome_profile.sh` - Export Chrome profiles
+- `setup_chrome_profile.sh` - Setup Chrome profiles
+- `simple_chrome_backup.sh` - Simple Chrome backup utility
+
+### Additional Tools
+- `dustg` - Git-aware disk usage analyzer (respects .gitignore)
+- `curls` - Simple curl wrapper
+
+## JavaScript Error Checker Setup
+
+For the JavaScript error checker specifically:
+```bash
+./setup_js_checker.sh   # Install Python dependencies
+```
 
 ## Troubleshooting
 
-### ChromeDriver Issues
-If you encounter ChromeDriver issues, the webdriver-manager will automatically download and manage the correct version.
+### Command Not Found
+Ensure the tools directory is in your PATH or create symlinks as shown above.
 
-### Permission Issues
-Make sure the script is executable:
-```bash
-chmod +x js_error_checker.py
-```
+### Claude CLI Missing
+Install Claude CLI from: https://claude.ai/cli
 
-### Profile Path Issues
-Ensure the Chrome profile path exists and is accessible:
+### Permission Denied
+Make tools executable:
 ```bash
-ls -la "$CHROME_PROFILE_PATH"
+chmod +x cld*
+chmod +x jscheck
 ```

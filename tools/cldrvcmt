@@ -1,0 +1,85 @@
+#!/bin/bash
+# Claude Review & Commit Tool - Intelligent git workflow
+# Reviews changes, groups related files, and creates atomic commits
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found."
+    echo "Please install Claude CLI: https://claude.ai/cli"
+    exit 1
+fi
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+echo "🔍 Claude Review & Commit Tool"
+echo "==============================="
+
+# Get current git status
+GIT_STATUS=$(git status --porcelain)
+if [[ -z "$GIT_STATUS" ]]; then
+    echo "✨ Working directory is clean. Nothing to commit."
+    exit 0
+fi
+
+echo "📊 Current changes:"
+git status --short
+
+# Create the review and commit prompt
+REVIEW_PROMPT="Think carefully, answer concisely.
+
+You are a code review and git workflow expert. Review the current git changes and intelligently group them into logical, atomic commits.
+
+**Current git status:**
+$(git status --porcelain)
+
+**Detailed diff:**
+$(git diff --cached)
+$(git diff)
+
+**Instructions:**
+1. Review all changes for code quality issues
+2. Fix any issues you find (linting, formatting, bugs, best practices)
+3. Group related changes into separate commits
+4. Create atomic commits with clear, concise messages
+5. DO NOT include any fluff or Claude/Anthropic related naming in commit messages
+6. Each commit should have a single clear purpose
+
+**Process:**
+1. First, review and fix any code issues across all files
+2. Then, identify logical groupings of changes
+3. Stage and commit each group separately
+4. Use conventional commit format: type(scope): description
+
+**Commit types:**
+- feat: new feature
+- fix: bug fix
+- docs: documentation changes
+- style: formatting, missing semicolons, etc
+- refactor: code restructuring
+- test: test additions/changes
+- chore: maintenance tasks
+
+**Example groupings:**
+- Group all API endpoint changes together
+- Group all test updates together
+- Group documentation updates separately
+- Group dependency updates separately
+
+Be concise. No explanations needed. Just execute the workflow."
+
+echo ""
+echo "🤖 Analyzing changes and creating commits..."
+echo ""
+
+# Run Claude with the review and commit workflow
+echo "$REVIEW_PROMPT" | cld --dangerously-skip-permissions
+
+echo ""
+echo "✅ Review and commit workflow complete!"
+echo ""
+echo "📝 Recent commits:"
+git log --oneline -5
