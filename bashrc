@@ -671,11 +671,20 @@ function my_ipe() # Get IP adress on ethernet.
     echo ${MY_IP:-"Not connected"}
 }
 
-function my_ip() # Get IP adress on wireless.
+function my_ip() # Get local IP address (any interface)
 {
-    MY_IP=$(/sbin/ifconfig wlan | awk '/inet/ { print $2 } ' |
-      sed -e s/addr://)
+    MY_IP=$(ip route get 8.8.8.8 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
     echo ${MY_IP:-"Not connected"}
+}
+
+function my_ip_all() # Get all IP addresses
+{
+    ip addr show | grep -E 'inet [0-9]' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1
+}
+
+function public_ip() # Get public/external IP address
+{
+    curl -s ifconfig.me || curl -s icanhazip.com || curl -s ipecho.net/plain
 }
 
 
