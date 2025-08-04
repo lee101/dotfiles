@@ -1,0 +1,53 @@
+#!/bin/bash
+# dustg - git-aware disk usage analyzer
+# Runs dust while ignoring files listed in .gitignore
+
+# Find the .gitignore file (current dir or parent dirs)
+find_gitignore() {
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        if [[ -f "$dir/.gitignore" ]]; then
+            echo "$dir/.gitignore"
+            return 0
+        fi
+        dir=$(dirname "$dir")
+    done
+    return 1
+}
+
+# Check if dust command exists
+if ! command -v dust &> /dev/null; then
+    echo "Error: 'dust' command not found."
+    echo "Please install dust: cargo install du-dust"
+    exit 1
+fi
+
+# Find .gitignore file
+GITIGNORE_FILE=$(find_gitignore)
+
+if [[ -z "$GITIGNORE_FILE" ]]; then
+    echo "No .gitignore file found in current directory or parent directories."
+    echo "Running dust without exclusions..."
+    exec dust "$@"
+fi
+
+echo "Using .gitignore: $GITIGNORE_FILE"
+
+# Build exclusion arguments from .gitignore
+EXCLUSIONS=""
+while IFS= read -r line; do
+    # Skip empty lines and comments
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    
+    # Remove leading/trailing whitespace
+    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    # Skip empty lines after trimming
+    [[ -z "$line" ]] && continue
+    
+    # Add exclusion flag
+    EXCLUSIONS="$EXCLUSIONS -X $line"
+done < "$GITIGNORE_FILE"
+
+# Run dust with exclusions and user arguments
+eval "dust $EXCLUSIONS $*"

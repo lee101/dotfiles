@@ -10,6 +10,15 @@ return {
     end,
   },
 
+  -- Mini icons (for which-key compatibility)
+  {
+    "echasnovski/mini.icons",
+    version = false,
+    config = function()
+      require("mini.icons").setup()
+    end,
+  },
+
   -- File explorer
   {
     "nvim-tree/nvim-tree.lua",
@@ -216,7 +225,26 @@ return {
       vim.o.timeout = true
       vim.o.timeoutlen = 300
     end,
-    config = true,
+    config = function()
+      require("which-key").setup({
+        -- Add any specific configuration here if needed
+      })
+      
+      -- Register key groups using new spec format
+      require("which-key").add({
+        { "<leader>c", group = "code" },
+        { "<leader>f", group = "file/find" },
+        { "<leader>g", group = "git" },
+        { "<leader>h", group = "git hunks" },
+        { "<leader>r", group = "rename" },
+        { "<leader>w", group = "workspace" },
+        { "<leader>e", desc = "Toggle file tree" },
+        { "<leader>ev", desc = "Edit nvim config" },
+        { "<leader>u", desc = "Open URL under cursor" },
+        { "<leader>z", desc = "Toggle fold" },
+        { "<leader>par", desc = "Fix email paragraphs" },
+      })
+    end,
   },
 
   -- LSP Support

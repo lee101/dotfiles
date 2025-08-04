@@ -1,0 +1,44 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style type="text/css">
+      .func_g:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+    </style>
+  </defs>
+  <g class="func_g">
+    <title>main (10,000 samples, 100.00%)</title>
+    <rect x="10" y="410" width="1180" height="15" fill="rgb(250,128,114)"/>
+    <text x="15" y="422" font-size="12" font-family="Verdana">main</text>
+  </g>
+  <g class="func_g">
+    <title>database_query (4,500 samples, 45.00%)</title>
+    <rect x="10" y="390" width="531" height="15" fill="rgb(250,200,100)"/>
+    <text x="15" y="402" font-size="12" font-family="Verdana">database_query</text>
+  </g>
+  <g class="func_g">
+    <title>process_data (3,000 samples, 30.00%)</title>
+    <rect x="541" y="390" width="354" height="15" fill="rgb(100,200,250)"/>
+    <text x="546" y="402" font-size="12" font-family="Verdana">process_data</text>
+  </g>
+  <g class="func_g">
+    <title>api_request (1,500 samples, 15.00%)</title>
+    <rect x="895" y="390" width="177" height="15" fill="rgb(150,250,150)"/>
+    <text x="900" y="402" font-size="12" font-family="Verdana">api_request</text>
+  </g>
+  <g class="func_g">
+    <title>logging (1,000 samples, 10.00%)</title>
+    <rect x="1072" y="390" width="118" height="15" fill="rgb(250,150,250)"/>
+    <text x="1077" y="402" font-size="12" font-family="Verdana">logging</text>
+  </g>
+  <g class="func_g">
+    <title>parse_json (1,200 samples, 12.00%)</title>
+    <rect x="541" y="370" width="142" height="15" fill="rgb(200,100,200)"/>
+    <text x="546" y="382" font-size="12" font-family="Verdana">parse_json</text>
+  </g>
+  <g class="func_g">
+    <title>calculate_metrics (1,800 samples, 18.00%)</title>
+    <rect x="683" y="370" width="212" height="15" fill="rgb(100,150,200)"/>
+    <text x="688" y="382" font-size="12" font-family="Verdana">calculate_metrics</text>
+  </g>
+</svg>
