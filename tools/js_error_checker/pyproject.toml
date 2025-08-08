@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "js-error-checker"
+version = "0.1.0"
+description = "Check JavaScript errors on any webpage using Chrome with Selenium"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "selenium>=4.0.0",
+    "webdriver-manager>=4.0.0",
+]
+
+[project.scripts]
+js-error-checker = "js_error_checker.main:main"
+
+[tool.hatch.build]
+packages = ["js_error_checker"]

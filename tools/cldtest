@@ -78,27 +78,36 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -*)
-            echo "Unknown option: $1"
-            show_help
+            echo "Error: Unknown option '$1'"
+            echo "Use 'cldtest --help' to see available options."
             exit 1
             ;;
         *)
-            echo "Unknown argument: $1"
-            show_help
+            echo "Error: Unexpected argument '$1'"
+            echo "cldtest doesn't accept positional arguments."
+            echo "Use 'cldtest --help' to see available options."
             exit 1
             ;;
     esac
 done
 
-# Check if we're in a project directory
-if [[ ! -f "$(pwd)" ]]; then
-    echo "Error: Could not access current directory"
+# Check if we can access the current directory
+if ! pwd &> /dev/null; then
+    echo "Error: Unable to access current directory. Please check permissions."
+    exit 1
+fi
+
+# Check if current directory exists and is readable
+if [[ ! -d "." || ! -r "." ]]; then
+    echo "Error: Current directory is not accessible or readable."
     exit 1
 fi
 
 # Check if cld command exists
 if ! command -v cld &> /dev/null; then
-    echo "Error: 'cld' command not found. Please install Claude CLI."
+    echo "Error: 'cld' command not found."
+    echo "Please install Claude CLI: https://claude.ai/cli"
+    echo "Or verify that 'cld' is in your PATH."
     exit 1
 fi
 
@@ -211,15 +220,17 @@ FRAMEWORK=$(echo "$FRAMEWORK_INFO" | cut -d'|' -f1)
 TEST_CMD=$(echo "$FRAMEWORK_INFO" | cut -d'|' -f2)
 
 if [[ -z "$FRAMEWORK" || -z "$TEST_CMD" ]]; then
-    echo "❌ No supported test framework detected in current directory"
+    echo "❌ No supported test framework detected in current directory: $(pwd)"
     echo ""
-    echo "Supported frameworks:"
-    echo "  • Go (go.mod)"
-    echo "  • Python (pytest, unittest with tests/ dir)"
-    echo "  • Bun (package.json + bun command available)"
-    echo "  • Node.js (package.json with test script)"
-    echo "  • Rust (Cargo.toml)"
-    echo "  • Java (pom.xml or build.gradle)"
+    echo "Supported frameworks (looking for these files/patterns):"
+    echo "  • Go: go.mod file"
+    echo "  • Python: pytest installed OR tests/ directory with unittest files"
+    echo "  • Bun: package.json + bun command available"
+    echo "  • Node.js: package.json with 'test' script defined"
+    echo "  • Rust: Cargo.toml file"
+    echo "  • Java: pom.xml (Maven) or build.gradle/build.gradle.kts (Gradle)"
+    echo ""
+    echo "Make sure you're in the root directory of your project."
     exit 1
 fi
 
