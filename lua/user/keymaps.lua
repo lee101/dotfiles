@@ -23,7 +23,7 @@ function _G.OpenURLUnderCursor()
     print("No URL found on current line.")
   end
 end
-map('n', '<Leader>w', '<Cmd>lua _G.OpenURLUnderCursor()<CR>', nomap_opts)
+map('n', '<Leader>u', '<Cmd>lua _G.OpenURLUnderCursor()<CR>', nomap_opts)
 
 -- Tab navigation
 map('n', '<C-Right>', '<Cmd>tabnext<CR>', nomap_opts)
@@ -47,8 +47,8 @@ map('n', '<End>', 'a<Esc>r', nomap_opts)
 map('n', 'zj', 'o<Esc>', nomap_opts)
 map('n', 'zk', 'O<Esc>', nomap_opts)
 
--- Space will toggle folds
-map('n', '<Space>', 'za', { noremap = true }) -- not silent, so you see the fold status change
+-- Use leader key for fold toggle instead of Space to avoid conflicts
+map('n', '<leader>z', 'za', { noremap = true }) -- not silent, so you see the fold status change
 
 -- Search mappings to center screen
 map('n', 'N', 'Nzz', map_opts)

@@ -91,7 +91,7 @@ plugins=(
   node
   pyenv
   redis-cli
-  rustup
+#  rustup
   terraform
   yarn
   aws
@@ -373,7 +373,7 @@ if [ -f '/home/lee/programs/google-cloud-sdk/completion.zsh.inc' ]; then . '/hom
 
 alias monoff='sleep 1; xset dpms force off'
 
-source ~/powerlevel10k/powerlevel10k.zsh-theme
+# source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 [[ -s "/home/lee/.gvm/scripts/gvm" ]] && source "/home/lee/.gvm/scripts/gvm"
 

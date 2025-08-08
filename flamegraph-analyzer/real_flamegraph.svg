@@ -1,0 +1,163 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="216"
+     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<style type="text/css">
+    .func_g:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+</style>
+<svg class="func_g" x="0.0" y="72" width="1198.9779926138306" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 100.00% (1 1 0.00012995000000000001 1.1286912610000002)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 115, 64)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="0.0" y="48" width="636.5952969988948" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:9:slow_function 53.13% (5 5 0.00011438500000000001 0.599717865)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 115, 64)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">slow_function</text>
+</g></svg>
+<svg class="func_g" x="0.0" y="24" width="104.46437754990708" height="23"><g>
+    <title>~:0:&lt;built-in method builtins.sum&gt; 8.79% (5 5 0.05237415 0.099199087)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method builtins.sum&gt;</text>
+</g></svg>
+<svg class="func_g" x="0.0" y="0" width="48.78234159069038" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:12:&lt;genexpr&gt; 4.15% (500005 500005 0.046824937000000004 0.046824937000000004)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;genexpr&gt;</text>
+</g></svg>
+<svg class="func_g" x="105.46437754990708" y="24" width="531.0093100351224" height="23"><g>
+    <title>~:0:&lt;built-in method time.sleep&gt; 44.33% (5 5 0.5004043930000001 0.5004043930000001)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method time.sleep&gt;</text>
+</g></svg>
+<svg class="func_g" x="637.5952969988948" y="48" width="543.9248655565546" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:15:medium_function 45.41% (10 10 0.011840521000000001 0.512552678)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">medium_function</text>
+</g></svg>
+<svg class="func_g" x="637.5952969988948" y="24" width="531.3365120253209" height="23"><g>
+    <title>~:0:&lt;built-in method time.sleep&gt; 44.36% (10 10 0.500712157 0.500712157)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method time.sleep&gt;</text>
+</g></svg>
+<svg class="func_g" x="1182.9035365383181" y="48" width="15.887427314150703" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:26:recursive_function 1.41% (5 5 7.556e-06 0.015884201)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 165, 95)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">recursive_function</text>
+</g></svg>
+<svg class="func_g" x="1182.9035365383181" y="24" width="5.756535271145978" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:26:recursive_function 0.56% (9 3 6.132454711548653e-06 0.006355151812884037)</title>
+    <rect height="100%" width="100%" fill="rgb(71, 230, 126)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">recursive_function</text>
+</g></svg>
+<svg class="func_g" x="1182.9035365383181" y="0" width="1.7019167607942998" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:26:recursive_function 0.23% (4 1 2.4523489488326075e-06 0.002541404804612418)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 165, 95)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">recursive_function</text>
+</g></svg>
+<svg class="func_g" x="1185.6054532991122" y="0" width="3.0480987374528965" height="23"><g>
+    <title>~:0:&lt;built-in method time.sleep&gt; 0.34% (4 4 0.0038076145535600697 0.0038076145535600697)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 240, 141)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method time.sleep&gt;</text>
+</g></svg>
+<svg class="func_g" x="1189.660071809464" y="24" width="9.122858815473434" height="23"><g>
+    <title>~:0:&lt;built-in method time.sleep&gt; 0.84% (9 9 0.009521493187115964 0.009521493187115964)</title>
+    <rect height="100%" width="100%" fill="rgb(44, 255, 210)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method time.sleep&gt;</text>
+</g></svg>
+<svg class="func_g" x="0.3759839663823674" y="120" width="48.78234159069038" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:12:&lt;genexpr&gt; 4.15% (500005 500005 0.046824937000000004 0.046824937000000004)</title>
+    <rect height="100%" width="100%" fill="rgb(166, 166, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;genexpr&gt;</text>
+</g></svg>
+<svg class="func_g" x="0.3759839663823674" y="144" width="48.78234159069038" height="23"><g>
+    <title>~:0:&lt;built-in method builtins.sum&gt; 4.15% (500005 500005 0.046824937000000004 0.046824937000000004)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method builtins.sum&gt;</text>
+</g></svg>
+<svg class="func_g" x="0.3759839663823674" y="168" width="48.78234159069038" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:9:slow_function 4.64% (5 5 0.05237415 0.099199087)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">slow_function</text>
+</g></svg>
+<svg class="func_g" x="0.3759839663823674" y="192" width="48.78234159069038" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 0.01% (5 5 0.00011438500000000001 0.599717865)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="50.15832555707275" y="120" width="11.588353531233645" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:15:medium_function 1.05% (10 10 0.011840521000000001 0.512552678)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">medium_function</text>
+</g></svg>
+<svg class="func_g" x="50.15832555707275" y="144" width="11.588353531233645" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 1.05% (10 10 0.011840521000000001 0.512552678)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="62.98731337711056" y="120" width="54.682035959216705" height="23"><g>
+    <title>~:0:&lt;built-in method builtins.sum&gt; 4.64% (5 5 0.05237415 0.099199087)</title>
+    <rect height="100%" width="100%" fill="rgb(255, 90, 49)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method builtins.sum&gt;</text>
+</g></svg>
+<svg class="func_g" x="62.98731337711056" y="144" width="54.682035959216705" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:9:slow_function 4.64% (5 5 0.05237415 0.099199087)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">slow_function</text>
+</g></svg>
+<svg class="func_g" x="62.98731337711056" y="168" width="54.682035959216705" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 0.01% (5 5 0.00011438500000000001 0.599717865)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="118.66934933632726" y="120" width="1080.2143517277743" height="23"><g>
+    <title>~:0:&lt;built-in method time.sleep&gt; 90.10% (30 30 1.016982976 1.016982976)</title>
+    <rect height="100%" width="100%" fill="rgb(230, 230, 255)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">&lt;built-in method time.sleep&gt;</text>
+</g></svg>
+<svg class="func_g" x="118.66934933632726" y="144" width="531.0093100351223" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:9:slow_function 44.33% (5 5 0.5004043930000001 0.5004043930000001)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">slow_function</text>
+</g></svg>
+<svg class="func_g" x="118.66934933632726" y="168" width="531.0093100351223" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 0.01% (5 5 0.00011438500000000001 0.599717865)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="650.6786593714495" y="144" width="531.3365120253208" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:15:medium_function 44.36% (10 10 0.500712157 0.500712157)</title>
+    <rect height="100%" width="100%" fill="rgb(232, 232, 232)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">medium_function</text>
+</g></svg>
+<svg class="func_g" x="650.6786593714495" y="168" width="531.3365120253208" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 1.05% (10 10 0.011840521000000001 0.512552678)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="1183.0151713967705" y="144" width="15.868529667331128" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:26:recursive_function 1.41% (15 15 0.015866426 0.015866426)</title>
+    <rect height="100%" width="100%" fill="rgb(211, 211, 211)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">recursive_function</text>
+</g></svg>
+<svg class="func_g" x="1183.0151713967705" y="168" width="5.747652970639338" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:26:recursive_function 0.00% (15 5 1.0219e-05 0.010590098000000001)</title>
+    <rect height="100%" width="100%" fill="rgb(211, 211, 211)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">recursive_function</text>
+</g></svg>
+<svg class="func_g" x="1183.0151713967705" y="192" width="1.699157633184611" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:26:recursive_function 0.00% (15 5 1.0219e-05 0.010590098000000001)</title>
+    <rect height="100%" width="100%" fill="rgb(211, 211, 211)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">recursive_function</text>
+</g></svg>
+<svg class="func_g" x="1185.714329029955" y="192" width="3.0484953374547272" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 0.00% (5 5 7.556e-06 0.015884201)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+<svg class="func_g" x="1189.7628243674098" y="168" width="9.12087669669179" height="23"><g>
+    <title>/home/lee/code/dotfiles/flamegraph-analyzer/example_profiler.py:34:main 0.00% (5 5 7.556e-06 0.015884201)</title>
+    <rect height="100%" width="100%" fill="rgb(225, 225, 225)" rx="2" ry="2" />
+    <text alignment-baseline="central" x="4.0" y="12.0" font-size="12px" fill="rgb(0,0,0)">main</text>
+</g></svg>
+</svg>
