@@ -11,6 +11,10 @@ function gph { git push }
 function u { Set-Location .. }
 function c { Set-Location ~/code }
 
+# Python/uv aliases
+function piuv { uv pip install $args }
+function uvls { uv tool list }
+
 # The usager function you wanted
 function usager {
     Get-ChildItem | ForEach-Object {
@@ -36,7 +40,7 @@ function o { explorer.exe . }
 
 # Check if tools are available
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "code")
+    $tools = @("node", "npm", "yarn", "git", "code", "uv")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
             Write-Host "✓ $tool" -ForegroundColor Green
@@ -46,8 +50,17 @@ function check-tools {
     }
 }
 
+# Reload profile function (consistent with bash)
+function reload {
+    Write-Host "Reloading PowerShell profile..." -ForegroundColor Cyan
+    . $PROFILE
+    Write-Host "Profile reloaded!" -ForegroundColor Green
+}
+
 # Add common paths to PATH
 $paths = @(
+    # uv (Python package installer)
+    "$env:USERPROFILE\.local\bin",
     "$env:APPDATA\npm",
     "$env:LOCALAPPDATA\Yarn\bin",
     "$env:ALLUSERSPROFILE\chocolatey\bin"
