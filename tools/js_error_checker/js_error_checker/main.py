@@ -30,15 +30,34 @@ class JSErrorChecker:
         self.profile_path = profile_path or os.getenv('CHROME_PROFILE_PATH')
         self.show_window = show_window
         self.driver = None
+        self.temp_profile = None
         
     def setup_driver(self):
         """Set up Chrome driver with appropriate options"""
         chrome_options = Options()
         
-        # Add Chrome profile if specified
+        # Add Chrome profile if specified - use a temp copy to avoid locks
         if self.profile_path:
-            chrome_options.add_argument(f"--user-data-dir={self.profile_path}")
-            print(f"Using Chrome profile: {self.profile_path}")
+            import tempfile
+            import shutil
+            # Create a temporary copy of the profile to avoid lock issues
+            self.temp_profile = tempfile.mkdtemp(prefix="chrome_profile_")
+            print(f"Creating temporary profile copy at: {self.temp_profile}")
+            try:
+                # Only copy essential directories, skip lock files
+                for item in ['Default', 'Local State']:
+                    src = os.path.join(self.profile_path, item)
+                    if os.path.exists(src):
+                        if os.path.isdir(src):
+                            shutil.copytree(src, os.path.join(self.temp_profile, item), 
+                                          ignore=shutil.ignore_patterns('SingletonLock', 'SingletonCookie', 'SingletonSocket'))
+                        else:
+                            shutil.copy2(src, self.temp_profile)
+            except Exception as e:
+                print(f"Warning: Could not copy profile data: {e}")
+            
+            chrome_options.add_argument(f"--user-data-dir={self.temp_profile}")
+            print(f"Using temporary Chrome profile: {self.temp_profile}")
         
         # Run in headless mode unless explicitly showing window
         if not self.show_window:
@@ -120,12 +139,15 @@ class JSErrorChecker:
             print(f"Error collecting console logs: {e}")
             return []
     
-    def collect_javascript_errors(self):
-        """Collect JavaScript errors using custom script injection"""
+    
+    def check_url(self, url):
+        """Load URL and check for JavaScript errors"""
+        print(f"Loading URL: {url}")
+        
         try:
-            # Inject JavaScript to capture errors
-            error_script = """
-            window.jsErrors = window.jsErrors || [];
+            # First inject error capturing script before navigation
+            inject_script = """
+            window.jsErrors = [];
             
             // Override console.error to capture errors
             const originalConsoleError = console.error;
@@ -160,53 +182,53 @@ class JSErrorChecker:
                     timestamp: Date.now()
                 });
             });
-            
-            return window.jsErrors;
             """
             
-            # Execute the error capturing script
-            self.driver.execute_script(error_script)
+            # Navigate to about:blank first to inject script
+            self.driver.get("about:blank")
+            self.driver.execute_script(inject_script)
             
-            # Wait a bit for any async errors
-            time.sleep(2)
-            
-            # Get collected errors
-            js_errors = self.driver.execute_script("return window.jsErrors || [];")
-            return js_errors
-            
-        except Exception as e:
-            print(f"Error collecting JavaScript errors: {e}")
-            return []
-    
-    def check_url(self, url):
-        """Load URL and check for JavaScript errors"""
-        print(f"Loading URL: {url}")
-        
-        try:
-            # Load the page
+            # Now load the actual page
+            print(f"Navigating to: {url}")
             self.driver.get(url)
             
-            # Wait for page to load
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.TAG_NAME, "body"))
-            )
+            # Wait for page to load with shorter timeout
+            try:
+                WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "body"))
+                )
+                print("Page loaded successfully")
+            except TimeoutException:
+                print("Warning: Page load timeout, but continuing to collect errors")
             
-            print("Page loaded successfully")
+            # Get current URL to verify navigation
+            current_url = self.driver.current_url
+            print(f"Current URL: {current_url}")
             
-            # Wait a bit more for dynamic content
+            # Wait a bit more for dynamic content and errors to accumulate
             time.sleep(3)
             
             # Collect errors from both sources
             console_errors = self.collect_console_errors()
-            js_errors = self.collect_javascript_errors()
+            js_errors = self.driver.execute_script("return window.jsErrors || [];")
+            
+            print(f"Found {len(console_errors)} console errors and {len(js_errors)} JS errors")
             
             return console_errors, js_errors
             
         except TimeoutException:
             print("Timeout waiting for page to load")
-            return [], []
+            # Try to collect any errors that might have occurred
+            try:
+                console_errors = self.collect_console_errors()
+                js_errors = self.driver.execute_script("return window.jsErrors || [];")
+                return console_errors, js_errors
+            except:
+                return [], []
         except Exception as e:
             print(f"Error loading page: {e}")
+            import traceback
+            traceback.print_exc()
             return [], []
     
     def print_errors(self, console_errors, js_errors):
@@ -250,7 +272,19 @@ class JSErrorChecker:
         finally:
             if self.driver:
                 print("\nClosing browser...")
-                self.driver.quit()
+                try:
+                    self.driver.quit()
+                except:
+                    pass
+            
+            # Clean up temporary profile
+            if self.temp_profile and os.path.exists(self.temp_profile):
+                import shutil
+                try:
+                    shutil.rmtree(self.temp_profile)
+                    print(f"Cleaned up temporary profile: {self.temp_profile}")
+                except Exception as e:
+                    print(f"Warning: Could not clean up temp profile: {e}")
 
 def main():
     import argparse
