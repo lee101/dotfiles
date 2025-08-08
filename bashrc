@@ -635,8 +635,8 @@ alias pip='uv pip'
 export NODE_OPTIONS="--max-old-space-size=8192"
 
 
-alias cla='claude'
-alias cld='claude --dangerously-skip-permissions'
+alias cla='ANTHROPIC_API_KEY="" claude'
+alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
 
 # Claude code review tool
 alias cr='claude-review'
