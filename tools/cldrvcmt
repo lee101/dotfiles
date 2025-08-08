@@ -2,12 +2,12 @@
 # Claude Review & Commit Tool - Intelligent git workflow
 # Reviews changes, groups related files, and creates atomic commits
 
-# Check if cld command exists
-if ! command -v cld &> /dev/null; then
-    echo "Error: 'cld' command not found."
-    echo "Please install Claude CLI: https://claude.ai/cli"
-    exit 1
-fi
+# Source common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/.claude-common.sh"
+
+# Get Claude command
+CLD_CMD=$(get_claude_cmd)
 
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -76,7 +76,7 @@ echo "🤖 Analyzing changes and creating commits..."
 echo ""
 
 # Run Claude with the review and commit workflow
-echo "$REVIEW_PROMPT" | cld --dangerously-skip-permissions
+echo "$REVIEW_PROMPT" | $CLD_CMD --dangerously-skip-permissions
 
 echo ""
 echo "✅ Review and commit workflow complete!"
