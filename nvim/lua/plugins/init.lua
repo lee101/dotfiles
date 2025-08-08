@@ -86,11 +86,29 @@ return {
         },
         highlight = {
           enable = true,
+          -- Disable error notifications for highlighting
+          disable = function(lang, buf)
+            -- You can add specific conditions here if needed
+            return false
+          end,
+          additional_vim_regex_highlighting = false,
         },
         indent = {
           enable = true,
         },
       })
+      
+      -- Suppress treesitter errors from interrupting editing
+      vim.treesitter.language.register = (function()
+        local register = vim.treesitter.language.register
+        return function(lang, filetype)
+          local ok, err = pcall(register, lang, filetype)
+          if not ok and err then
+            -- Silently ignore the error instead of showing it
+            return
+          end
+        end
+      end)()
     end,
   },
 
