@@ -1067,3 +1067,17 @@ if [[ ":$PATH:" != *":/home/lee/code/dotfiles/tools:"* ]]; then
     export PATH="$PATH:/home/lee/code/dotfiles/tools"
 fi
 export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
+
+# Claude timeout configurations - Never timeout
+export BASH_DEFAULT_TIMEOUT_MS=1800000  # 30 minutes default
+export BASH_MAX_TIMEOUT_MS=1800000      # 30 minutes max (highest allowed)
+export MCP_TIMEOUT=1800000              # 30 minutes for MCP server startup
+export MCP_TOOL_TIMEOUT=1800000         # 30 minutes for MCP tool execution
+export MAX_MCP_OUTPUT_TOKENS=100000     # Increase MCP output token limit
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000  # Increase max output tokens
+
+# Additional Claude configurations to prevent interruptions
+export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might interrupt
+export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
+
+export PATH="$HOME/.local/bin:$PATH"
