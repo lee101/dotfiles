@@ -680,13 +680,13 @@ alias crw='claude-review'           # review working directory (default)
 
 # Claude Git workflow tools
 alias cldcmt='cldcmt'               # Claude commit with cleanup
-alias cldgcmep='cldgcmep'           # Claude add+commit+push workflow  
+alias cldgcmep='cldgcmep'           # Claude add+commit+push workflow
 alias cldfix='cldfix'               # Claude fix issues in changes
 alias cldpr='cldpr'                 # Claude pull request generator
 
 # Additional Claude Git aliases
 alias ccmt='cldcmt'                 # Short alias for cldcmt
-alias cgcmep='cldgcmep'             # Short alias for cldgcmep  
+alias cgcmep='cldgcmep'             # Short alias for cldgcmep
 alias cfix='cldfix'                 # Short alias for cldfix
 alias cpr='cldpr'                   # Short alias for cldpr
 
@@ -1135,7 +1135,6 @@ export BASH_MAX_TIMEOUT_MS=1800000      # 30 minutes max (highest allowed)
 export MCP_TIMEOUT=1800000              # 30 minutes for MCP server startup
 export MCP_TOOL_TIMEOUT=1800000         # 30 minutes for MCP tool execution
 export MAX_MCP_OUTPUT_TOKENS=100000     # Increase MCP output token limit
-export CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000  # Increase max output tokens
 
 # Additional Claude configurations to prevent interruptions
 export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might interrupt
