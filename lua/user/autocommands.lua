@@ -75,3 +75,31 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
     end
   end,
 })
+
+-- Suppress treesitter decoration errors
+vim.api.nvim_create_autocmd("User", {
+  group = group,
+  pattern = "TSError",
+  desc = "Suppress treesitter errors",
+  callback = function()
+    -- Just return to suppress the error
+    return true
+  end,
+})
+
+-- Override vim.notify for treesitter errors
+local original_notify = vim.notify
+vim.notify = function(msg, level, opts)
+  -- Filter out treesitter highlighter errors
+  if type(msg) == "string" and (
+    msg:match("Error in decoration provider") or
+    msg:match("treesitter/highlighter") or
+    msg:match("Invalid 'end_col'") or
+    msg:match("out of range")
+  ) then
+    -- Silently ignore treesitter highlighting errors
+    return
+  end
+  -- Pass through all other notifications
+  return original_notify(msg, level, opts)
+end

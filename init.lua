@@ -256,22 +256,42 @@ require("lazy").setup({
         },
       })
       
-      -- Handle TreeSitter highlighting errors
-      vim.api.nvim_create_autocmd("BufWritePost", {
-        group = vim.api.nvim_create_augroup("TreesitterErrorRecovery", { clear = true }),
+      -- Handle TreeSitter highlighting errors - comprehensive error suppression
+      local ts_error_group = vim.api.nvim_create_augroup("TreesitterErrorRecovery", { clear = true })
+      
+      -- Suppress treesitter extmark errors by overriding error output
+      local function suppress_ts_errors()
+        local orig_notify = vim.notify
+        vim.notify = function(msg, level, opts)
+          if type(msg) == "string" and 
+             (msg:match("Invalid 'end_row': out of range") or 
+              msg:match("treesitter") or 
+              msg:match("highlighter.lua")) then
+            return -- Suppress treesitter errors
+          end
+          return orig_notify(msg, level, opts)
+        end
+      end
+      
+      -- Recovery on buffer events
+      vim.api.nvim_create_autocmd({"BufWritePost", "BufEnter", "TextChanged"}, {
+        group = ts_error_group,
         callback = function(args)
           local buf = args.buf
           if vim.treesitter.highlighter and vim.treesitter.highlighter.active[buf] then
             local ok, _ = pcall(vim.treesitter.get_parser, buf)
             if not ok then
               vim.schedule(function()
-                vim.treesitter.stop(buf)
-                vim.treesitter.start(buf)
+                pcall(vim.treesitter.stop, buf)
+                pcall(vim.treesitter.start, buf)
               end)
             end
           end
         end,
       })
+      
+      -- Apply error suppression
+      suppress_ts_errors()
     end,
   },
 
