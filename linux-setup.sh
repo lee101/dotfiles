@@ -63,6 +63,11 @@ sudo apt install nasm
 sudo apt install zile plocate hstr
 sudo snap install nvim
 
+# Install Helix editor
+sudo add-apt-repository ppa:maveonair/helix-editor -y
+sudo apt update
+sudo apt install helix -y
+
 
 # ffmpeg
 # First remove any existing FFmpeg installation
