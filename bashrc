@@ -648,8 +648,8 @@ alias claude-rev='claude-review'
 alias crc='claude-review --staged'  # review cached/staged changes
 alias crw='claude-review'           # review working directory (default)
 
-alias ca='cursor-agent'
-
+alias ca='cursor-agent -f'
+alias cap='cursor-agent -f -p'
 
 # Claude Git workflow tools
 alias cldcmt='cldcmt'               # Claude commit with cleanup
