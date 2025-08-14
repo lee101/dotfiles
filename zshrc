@@ -220,6 +220,7 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 alias gpr='hub pull-request' #'gh pr create'
 alias gcm='git commit -m'
 alias gsw='git show'
+alias gpl='git pull'
 
 # Modern Git tools
 alias lg='lazygit'
