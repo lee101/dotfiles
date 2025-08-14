@@ -28,6 +28,11 @@ function u { Set-Location .. }
 function c { Set-Location ~/code }
 function o { explorer.exe . }
 
+# Editor aliases
+function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+
 # Python/uv aliases
 function piuv { uv pip install $args }
 function uvls { uv tool list }
@@ -41,7 +46,7 @@ function reload {
 }
 
 function Test-Tools {
-    $tools = @("uv", "git", "node", "npm", "code")
+    $tools = @("uv", "git", "gh", "hub", "node", "npm", "code", "nvim")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
             Write-Host "✓ $tool" -ForegroundColor Green
