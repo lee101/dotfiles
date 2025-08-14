@@ -1,5 +1,6 @@
 # Install GitHub CLI and Git tools
 winget install --id GitHub.cli
+winget install --id GitHub.hub
 
 # Install uv - Python package installer and resolver
 winget install --id astral-sh.uv
@@ -51,8 +52,11 @@ choco install espeak
 choco install win32yank
 # Note: Configure clipboard in .bashrc with conditional for Git Bash
 
-# Install Neovim for Windows
+# Install Neovim for Windows (using winget for latest version)
 winget install --id Neovim.Neovim
+
+# Fallback: Install via chocolatey if winget fails
+# choco install neovim --yes
 
 # Install ripgrep and fd for better nvim experience
 choco install ripgrep

@@ -12,6 +12,15 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     Write-Host "uv is already installed" -ForegroundColor Green
 }
 
+# Check if hub is installed
+if (-not (Get-Command hub -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing hub..." -ForegroundColor Yellow
+    winget install --id GitHub.hub
+    Write-Host "hub installed!" -ForegroundColor Green
+} else {
+    Write-Host "hub is already installed" -ForegroundColor Green
+}
+
 # Ensure uv is in user PATH
 $uvPath = "$env:USERPROFILE\.local\bin"
 $currentUserPath = [Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
@@ -53,7 +62,7 @@ if (-not (Get-Command fzf -ErrorAction SilentlyContinue)) {
 
 # Check tools
 Write-Host "`nChecking tools:" -ForegroundColor Cyan
-$tools = @("uv", "fzf", "git", "node", "npm")
+$tools = @("uv", "fzf", "git", "gh", "hub", "node", "npm", "nvim")
 foreach ($tool in $tools) {
     if (Get-Command $tool -ErrorAction SilentlyContinue) {
         Write-Host "✓ $tool" -ForegroundColor Green

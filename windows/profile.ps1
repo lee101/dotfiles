@@ -171,6 +171,13 @@ function gsp1 { git stash pop stash@{0} }
 function gsp2 { git stash pop stash@{1} }
 function gsp3 { git stash pop stash@{2} }
 
+# Hub functions (GitHub CLI)
+function hcl { hub clone $args }
+function hcr { hub create $args }
+function hpr { hub pull-request $args }
+function hbr { hub browse $args }
+function hfork { hub fork $args }
+
 # Additional utility functions from bashrc
 function findn {
     param($pattern)
@@ -454,6 +461,9 @@ function usager {
 }
 
 function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function o { explorer.exe . }
 function oo { explorer.exe $args }
 
@@ -471,7 +481,7 @@ function refresh-env {
 }
 
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "code", "nvim", "python", "pip", "uv", "fzf")
+    $tools = @("node", "npm", "yarn", "git", "gh", "hub", "code", "nvim", "python", "pip", "uv", "fzf")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
             Write-Host "✓ $tool" -ForegroundColor Green
