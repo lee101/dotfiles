@@ -250,17 +250,54 @@ return {
       
       -- Register key groups using new spec format
       require("which-key").add({
-        { "<leader>c", group = "code" },
+        -- File/find group with specific mappings
         { "<leader>f", group = "file/find" },
+        { "<leader>ff", desc = "Find files" },
+        { "<leader>fg", desc = "Live grep" },
+        { "<leader>fb", desc = "Buffers" },
+        { "<leader>fh", desc = "Help tags" },
+        { "<leader>fc", desc = "Find config" },
+        { "<leader>fr", desc = "Recent files" },
+        
+        -- Code group
+        { "<leader>c", group = "code" },
+        
+        -- Git group
         { "<leader>g", group = "git" },
+        
+        -- Git hunks group
         { "<leader>h", group = "git hunks" },
+        
+        -- Rename group
         { "<leader>r", group = "rename" },
+        
+        -- Workspace group with specific mappings
         { "<leader>w", group = "workspace" },
+        { "<leader>wa", desc = "Add workspace folder" },
+        { "<leader>wr", desc = "Remove workspace folder" },
+        
+        -- Individual mappings
         { "<leader>e", desc = "Toggle file tree" },
         { "<leader>ev", desc = "Edit nvim config" },
         { "<leader>u", desc = "Open URL under cursor" },
         { "<leader>z", desc = "Toggle fold" },
         { "<leader>par", desc = "Fix email paragraphs" },
+        
+        -- LSP mappings to avoid gr conflicts
+        { "grr", desc = "References" },
+        { "gra", desc = "Code actions" }, 
+        { "grn", desc = "Rename" },
+        { "gri", desc = "Implementation" },
+        { "grt", desc = "Type definition" },
+        
+        -- Comment mappings to avoid gc/gb conflicts
+        { "gc", desc = "Comment toggle linewise" },
+        { "gcc", desc = "Comment toggle current line" },
+        { "gcO", desc = "Comment insert above" },
+        { "gcA", desc = "Comment insert end of line" },
+        { "gco", desc = "Comment insert below" },
+        { "gb", desc = "Comment toggle blockwise" },
+        { "gbc", desc = "Comment toggle current block" },
       })
     end,
   },
