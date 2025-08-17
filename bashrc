@@ -224,6 +224,13 @@ alias had='hg add'
 function hcmep { hg commit -m "$@" ; hg push; }
 function findn { find . -name "$@"; }
 
+# Append arguments to .gitignore
+function gi {
+    for arg in "$@"; do
+        echo "$arg" >> .gitignore
+    done
+}
+
 alias gpr='hub pull-request'
 alias hpr='gpr'
 alias hprs='hub pr show'
@@ -648,8 +655,8 @@ alias claude-rev='claude-review'
 alias crc='claude-review --staged'  # review cached/staged changes
 alias crw='claude-review'           # review working directory (default)
 
-alias ca='cursor-agent -f'
-alias cap='cursor-agent -f -p'
+alias ca='cursor-agent-bun -f'
+alias cap='cursor-agent-bun -f -p'
 
 # Claude Git workflow tools
 alias cldcmt='cldcmt'               # Claude commit with cleanup
@@ -1024,6 +1031,7 @@ case ":$PATH:" in
 esac
 # pnpm end
 alias ni=nvim
+alias v=nvim
 
 
 # Find the existing 'o' alias and replace/add this instead
