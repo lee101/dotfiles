@@ -157,6 +157,10 @@
 --exclude=*.tflite
 --exclude=*.caffemodel
 
+--exclude=tools/chrome_profiles_export
+--exclude=Extensions
+--exclude=Default/Extensions
+
 --exclude=.DS_Store
 --exclude=Thumbs.db
 --exclude=desktop.ini

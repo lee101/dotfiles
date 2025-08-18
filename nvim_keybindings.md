@@ -1,4 +1,9 @@
-# Neovim Search & File Tree Quick Reference
+# Neovim Keybindings Quick Reference
+
+## ⚡ Quick Access Guide
+**Leader Key = SPACE** (press space followed by other keys)
+
+For complete documentation, see: `nvim-complete-guide.md`
 
 ## Fuzzy Finding with fzf-lua (Telescope replacement)
 

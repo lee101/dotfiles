@@ -1,5 +1,13 @@
 # Neovim Tutorial - Complete Guide
 
+## 📚 Documentation Index
+- **This file:** Basic tutorial and getting started
+- **`nvim_keybindings.md`:** Quick keybinding reference
+- **`nvim-complete-guide.md`:** Comprehensive guide with all features
+
+## 🎯 Your Leader Key = SPACE
+Most custom commands start with pressing the spacebar (your leader key).
+
 ## Quick Start
 
 ### Opening Files & Directories
