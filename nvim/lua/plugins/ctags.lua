@@ -4,8 +4,9 @@ return {
   {
     "ludovicchabant/vim-gutentags",
     config = function()
-      -- Enable gutentags
-      vim.g.gutentags_enabled = 1
+      -- Disable gutentags by default (was causing hanging)
+      -- Re-enable with :let g:gutentags_enabled = 1
+      vim.g.gutentags_enabled = 0
       
       -- Define ctags executable (uses universal-ctags if available, falls back to ctags)
       vim.g.gutentags_ctags_executable = 'ctags'

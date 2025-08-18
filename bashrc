@@ -647,6 +647,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
+alias cldc='cld --continue'
 
 # Claude code review tool
 alias cr='claude-review'
