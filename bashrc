@@ -256,6 +256,24 @@ alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias gdfa='git --no-pager diff -p'
 alias gdfac='git --no-pager diff -p --cached'
+
+# guna - Show all git changes including untracked files, with directory support
+function guna {
+    local path="${1:-.}"
+    
+    # Show untracked files
+    echo "=== UNTRACKED FILES ==="
+    git ls-files --others --exclude-standard "$path" 2>/dev/null | while read -r file; do
+        if [ -f "$file" ]; then
+            echo -e "\n--- New file: $file ---"
+            head -50 "$file" 2>/dev/null
+        fi
+    done
+    
+    # Show modified files (both staged and unstaged)
+    echo -e "\n=== MODIFIED FILES ==="
+    git diff HEAD "$path" 2>/dev/null
+}
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
