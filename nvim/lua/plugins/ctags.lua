@@ -14,8 +14,12 @@ return {
       -- Project root markers (gutentags will look for these to determine project root)
       vim.g.gutentags_project_root = {'.git', '.hg', '.svn', 'go.mod', 'package.json', 'Cargo.toml', 'pyproject.toml', 'setup.py', 'Gemfile', 'pom.xml', 'build.gradle'}
       
-      -- Where to store tag files
+      -- Where to store tag files (centralized, outside project directories)
       vim.g.gutentags_cache_dir = vim.fn.expand('~/.cache/nvim/ctags/')
+      
+      -- IMPORTANT: Don't create tags files in project directories
+      vim.g.gutentags_add_default_project_roots = 0
+      vim.g.gutentags_generate_on_empty_buffer = 0
       
       -- Integrate with .gitignore - respect git's ignore rules
       vim.g.gutentags_ctags_exclude_wildignore = 1
@@ -133,20 +137,19 @@ return {
       -- Extra args for ctags with performance optimizations
       vim.g.gutentags_ctags_extra_args = {
         '--tag-relative=yes',
-        '--fields=+ailmnS',
-        '--extras=+q',
         '--sort=yes',  -- Sort tags for better performance
         '--append=no', -- Don't append, regenerate
+        '--extras=+q',
         
-        -- Language-specific settings
-        '--kinds-go=+p+f+v+t+c',     -- Go: packages, functions, variables, types, constants
-        '--kinds-python=+cfmvi',      -- Python: classes, functions, methods, variables, imports
-        '--kinds-javascript=+cfmvp',  -- JS: classes, functions, methods, variables, properties
-        '--kinds-typescript=+cfmvipe', -- TS: classes, functions, methods, variables, interfaces, properties, enums
-        '--kinds-rust=+fsmtgMei',     -- Rust: functions, structs, modules, traits, enums, etc
-        '--kinds-c++=+pcfgnsutm',     -- C++: comprehensive kinds
-        '--kinds-java=+pcifgm',       -- Java: packages, classes, interfaces, fields, methods
-        '--kinds-ruby=+cfmF',         -- Ruby: classes, methods, functions, singleton methods
+        -- Language-specific settings (using long names for universal ctags)
+        '--Go-kinds=+p+f+v+t+c',     -- Go: packages, functions, variables, types, constants
+        '--Python-kinds=+cfmvi',      -- Python: classes, functions, methods, variables, imports
+        '--JavaScript-kinds=+cfmvp',  -- JS: classes, functions, methods, variables, properties
+        '--TypeScript-kinds=+cfmvipe', -- TS: classes, functions, methods, variables, interfaces, properties, enums
+        '--Rust-kinds=+fsmtgMei',     -- Rust: functions, structs, modules, traits, enums, etc
+        '--C++-kinds=+pcfgnsutm',     -- C++: comprehensive kinds
+        '--Java-kinds=+pcifgm',       -- Java: packages, classes, interfaces, fields, methods
+        '--Ruby-kinds=+cfmF',         -- Ruby: classes, methods, functions, singleton methods
       }
       
       -- Use git ls-files when in git repository for better performance
@@ -207,16 +210,24 @@ return {
       -- Jump to definition under cursor (using tags)
       vim.keymap.set('n', '<C-]>', function()
         -- Try LSP first, fall back to tags
-        local params = vim.lsp.util.make_position_params()
-        vim.lsp.buf_request(0, 'textDocument/definition', params, function(err, result, ctx, config)
-          if err or not result or vim.tbl_isempty(result) then
-            -- LSP failed, use tags
-            vim.cmd('tag ' .. vim.fn.expand('<cword>'))
-          else
-            -- LSP succeeded
-            vim.lsp.buf.definition()
-          end
-        end)
+        local clients = vim.lsp.get_active_clients({ bufnr = 0 })
+        if #clients > 0 then
+          -- Use the first active client's encoding
+          local client = clients[1]
+          local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
+          vim.lsp.buf_request(0, 'textDocument/definition', params, function(err, result, ctx, config)
+            if err or not result or vim.tbl_isempty(result) then
+              -- LSP failed, use tags
+              vim.cmd('tag ' .. vim.fn.expand('<cword>'))
+            else
+              -- LSP succeeded
+              vim.lsp.buf.definition()
+            end
+          end)
+        else
+          -- No LSP client, use tags directly
+          vim.cmd('tag ' .. vim.fn.expand('<cword>'))
+        end
       end, { desc = "Go to definition (LSP/tags)" })
       
       -- Alternative keybinding for go to definition
