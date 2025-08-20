@@ -110,14 +110,43 @@ vim.api.nvim_create_autocmd("FileType", {
   pattern = { "go", "python", "javascript", "typescript", "rust", "c", "cpp" },
   desc = "Configure tags for programming languages",
   callback = function()
-    -- Set tags to look in current directory and parent directories
-    vim.opt_local.tags = "./tags;,tags"
+    -- Look for tags in the central cache directory
+    local cache_dir = vim.fn.expand("~/.cache/nvim/ctags/")
+    
+    -- Try to find project root
+    local markers = {'.git', 'go.mod', 'package.json', 'Cargo.toml', 'pyproject.toml', 'setup.py', 'Gemfile', 'pom.xml', 'build.gradle'}
+    local project_root = nil
+    
+    for _, marker in ipairs(markers) do
+      local found = vim.fn.findfile(marker, ".;")
+      if found == "" then
+        found = vim.fn.finddir(marker, ".;")
+      end
+      if found ~= "" then
+        project_root = vim.fn.fnamemodify(found, ":h")
+        break
+      end
+    end
+    
+    if project_root then
+      local project_name = vim.fn.fnamemodify(project_root, ":t")
+      -- Look for cached tags file
+      local possible_tag_files = vim.fn.glob(cache_dir .. project_name .. "-*.tags", false, true)
+      
+      if #possible_tag_files > 0 then
+        -- Use the first matching tag file
+        vim.opt_local.tags = possible_tag_files[1]
+      else
+        -- Fallback to standard locations (shouldn't be in project dir anymore)
+        vim.opt_local.tags = cache_dir .. "*.tags"
+      end
+    end
     
     -- For Go specifically, add GOPATH tags if available
     if vim.bo.filetype == "go" then
       local gopath = vim.fn.system("go env GOPATH"):gsub("\n", "")
       if gopath ~= "" then
-        vim.opt_local.tags:append(gopath .. "/tags")
+        vim.opt_local.tags:append(cache_dir .. "gopath.tags")
       end
     end
   end,
@@ -135,15 +164,27 @@ vim.api.nvim_create_autocmd("BufWritePost", {
       local root = vim.fn.findfile("go.mod", ".;")
       if root ~= "" then
         local project_dir = vim.fn.fnamemodify(root, ":h")
-        -- Run ctags asynchronously
+        local project_name = vim.fn.fnamemodify(project_dir, ":t")
+        local cache_dir = vim.fn.expand("~/.cache/nvim/ctags/")
+        
+        -- Create cache directory if it doesn't exist
+        vim.fn.system("mkdir -p " .. cache_dir)
+        
+        -- Generate unique tag filename based on project path
+        local tag_file = cache_dir .. project_name .. "-" .. vim.fn.sha256(project_dir) .. ".tags"
+        
+        -- Run ctags asynchronously to central cache
         vim.fn.jobstart(
           string.format(
-            'ctags -R --languages=go --kinds-go=+p+f+v+t+c --fields=+ailmnS --extras=+q -f %s/tags %s',
-            project_dir,
+            'ctags -R --languages=go --Go-kinds=+p+f+v+t+c --extras=+q -f %s %s',
+            tag_file,
             project_dir
           ),
           { detach = true }
         )
+        
+        -- Set the tags option to use the cached file
+        vim.opt_local.tags = tag_file
       end
     end
   end,
