@@ -173,8 +173,10 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# Source git aliases
-if [ -f ~/.git_aliases ]; then
+# Source git aliases from dotfiles
+if [ -f ~/code/dotfiles/lib/git_aliases ]; then
+    . ~/code/dotfiles/lib/git_aliases
+elif [ -f ~/.git_aliases ]; then
     . ~/.git_aliases
 fi
 
@@ -1057,6 +1059,23 @@ alias y="yarn"
 
 function ali { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
 function alis { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
+
+# Function to add aliases to bashrc
+function gali {
+    if [ $# -eq 0 ]; then
+        echo "Usage: gali alias_name='command'"
+        echo "Example: gali bb='bun run build'"
+        return 1
+    fi
+    
+    # Add the alias to bashrc
+    echo "alias $@" >> $HOME/.bashrc
+    
+    # Source bashrc to make it immediately available
+    source $HOME/.bashrc
+    
+    echo "Alias added: $@"
+}
 
 alias reswap='sudo swapoff -a && sudo swapon -a'
 
