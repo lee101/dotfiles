@@ -173,6 +173,11 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
+# Source git aliases
+if [ -f ~/.git_aliases ]; then
+    . ~/.git_aliases
+fi
+
 
 if [ -n "$BASH_VERSION" ]; then
 
@@ -257,22 +262,47 @@ alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias gdfa='git --no-pager diff -p'
 alias gdfac='git --no-pager diff -p --cached'
 
-# guna - Show all git changes including untracked files, with directory support
+# Git untracked/new files - show content of new files
+function gun {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            echo -e "\033[1;32m+++ $file\033[0m"
+            cat "$file" | head -100
+            echo
+        fi
+    done
+}
+
+# Git untracked files list only
+function gunl {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null
+}
+
+# Git diff all (modified + untracked)
 function guna {
     local path="${1:-.}"
     
-    # Show untracked files
-    echo "=== UNTRACKED FILES ==="
-    git ls-files --others --exclude-standard "$path" 2>/dev/null | while read -r file; do
-        if [ -f "$file" ]; then
-            echo -e "\n--- New file: $file ---"
-            head -50 "$file" 2>/dev/null
-        fi
-    done
+    # Show modified files diff
+    local has_modified=$(git diff HEAD --name-only "$path" 2>/dev/null)
+    if [ -n "$has_modified" ]; then
+        echo -e "\033[1;33m=== MODIFIED FILES ===\033[0m"
+        git diff HEAD --color "$path" 2>/dev/null
+    fi
     
-    # Show modified files (both staged and unstaged)
-    echo -e "\n=== MODIFIED FILES ==="
-    git diff HEAD "$path" 2>/dev/null
+    # Show new/untracked files
+    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
+    if [ -n "$has_untracked" ]; then
+        echo -e "\n\033[1;32m=== NEW/UNTRACKED FILES ===\033[0m"
+        git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+            if [ -f "$file" ]; then
+                echo -e "\033[1;32m+++ $file\033[0m"
+                cat "$file" | head -50
+                echo
+            fi
+        done
+    fi
 }
 alias glg='git log'
 alias glglee='git log --author=lee'
@@ -386,6 +416,15 @@ git-tools-debug() {
 alias gdfb='git diff master...'
 alias gdfbm='git diff main...'
 alias gdfbd='git diff develop...'
+
+# Quick git status variations
+alias gsu='git status -uno'  # Hide untracked files
+alias gss='git status -s'    # Short format
+alias gsl='git status --long' # Long format (default)
+
+# Git diff shortcuts for specific file states
+alias gdfn='gun'  # Show new/untracked files content (alias to gun function)
+alias gdfu='git ls-files --others --exclude-standard'  # List untracked files only
 
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
