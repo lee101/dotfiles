@@ -240,9 +240,26 @@ require("lazy").setup({
         { "saadparwaiz1/cmp_luasnip", commit = "05a9ab28b53f71d1aece421ef32fee2cb857a843" },
       },
       config = function()
-        -- Simple mason setup
+        -- Enhanced mason setup for Windows
         require("mason").setup({
-          ui = { border = "rounded" }
+          ui = { 
+            border = "rounded",
+            icons = {
+              package_installed = "✓",
+              package_pending = "➜",
+              package_uninstalled = "✗"
+            }
+          },
+          install_root_dir = vim.fn.stdpath("data") .. "/mason",
+          pip = {
+            upgrade_pip = true,
+            install_args = {},
+          },
+          log_level = vim.log.levels.INFO,
+          max_concurrent_installers = 4,
+          github = {
+            download_url_template = "https://github.com/%s/releases/download/%s/%s",
+          },
         })
         
         -- Basic lspconfig setup without mason-lspconfig auto-setup
@@ -490,6 +507,25 @@ require("lazy").setup({
       lazy = false,
       priority = 1000,
       config = function()
+        require("tokyonight").setup({
+          style = "night",
+          light_style = "day",
+          transparent = false,
+          terminal_colors = true,
+          styles = {
+            comments = { italic = true },
+            keywords = { italic = true },
+            functions = {},
+            variables = {},
+            sidebars = "dark",
+            floats = "dark",
+          },
+          sidebars = { "qf", "help" },
+          day_brightness = 0.3,
+          hide_inactive_statusline = false,
+          dim_inactive = false,
+          lualine_bold = false,
+        })
         vim.cmd([[colorscheme tokyonight]])
       end
     },
@@ -722,7 +758,65 @@ require("lazy").setup({
       "folke/which-key.nvim",
       event = "VeryLazy",
       config = function()
-        require("which-key").setup()
+        require("which-key").setup({
+          window = {
+            border = "rounded",
+            position = "bottom",
+            margin = { 1, 0, 1, 0 },
+            padding = { 2, 2, 2, 2 },
+            winblend = 0
+          },
+          layout = {
+            height = { min = 4, max = 25 },
+            width = { min = 20, max = 50 },
+            spacing = 3,
+            align = "left"
+          },
+          show_help = true,
+          show_keys = true,
+          triggers = "auto",
+        })
+      end
+    },
+    {
+      "folke/trouble.nvim",
+      dependencies = { "nvim-tree/nvim-web-devicons" },
+      config = function()
+        require("trouble").setup({
+          position = "bottom",
+          height = 10,
+          width = 50,
+          icons = false,
+          mode = "workspace_diagnostics",
+          fold_open = "v",
+          fold_closed = ">",
+          group = true,
+          padding = true,
+          action_keys = {
+            close = "q",
+            cancel = "<esc>",
+            refresh = "r",
+            jump = { "<cr>", "<tab>" },
+            open_split = { "<c-x>" },
+            open_vsplit = { "<c-v>" },
+            open_tab = { "<c-t>" },
+            jump_close = {"o"},
+            toggle_mode = "m",
+            toggle_preview = "P",
+            hover = "K",
+            preview = "p",
+            close_folds = {"zM", "zm"},
+            open_folds = {"zR", "zr"},
+            toggle_fold = {"zA", "za"},
+            previous = "k",
+            next = "j"
+          },
+        })
+        vim.keymap.set("n", "<leader>xx", ":Trouble<CR>", { silent = true, desc = "Toggle Trouble" })
+        vim.keymap.set("n", "<leader>xw", ":Trouble workspace_diagnostics<CR>", { silent = true, desc = "Workspace diagnostics" })
+        vim.keymap.set("n", "<leader>xd", ":Trouble document_diagnostics<CR>", { silent = true, desc = "Document diagnostics" })
+        vim.keymap.set("n", "<leader>xl", ":Trouble loclist<CR>", { silent = true, desc = "Location list" })
+        vim.keymap.set("n", "<leader>xq", ":Trouble quickfix<CR>", { silent = true, desc = "Quickfix" })
       end
     },
     {
@@ -780,6 +874,7 @@ require("lazy").setup({
           }),
         })
       end,
+  },
   },
   install = { 
     colorscheme = { "tokyonight" },
@@ -896,3 +991,21 @@ vim.keymap.set("n", "zk", "O<Esc>", { desc = "Create blank line above" })
 
 -- Terminal mode escape
 vim.keymap.set("t", "<Esc>", "<C-\\><C-n>")
+
+-- Performance optimizations for Windows
+vim.opt.shell = "powershell"
+vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+vim.opt.shellredir = "-RedirectStandardOutput %s -NoNewWindow -Wait"
+vim.opt.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
+vim.opt.shellquote = ""
+vim.opt.shellxquote = ""
+
+-- Auto-format on save for specific filetypes (optional)
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = { "*.lua", "*.py", "*.js", "*.ts", "*.jsx", "*.tsx" },
+  callback = function()
+    if vim.lsp.buf.format then
+      vim.lsp.buf.format({ async = false })
+    end
+  end,
+})
