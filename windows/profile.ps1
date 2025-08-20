@@ -171,6 +171,13 @@ function gsp1 { git stash pop stash@{0} }
 function gsp2 { git stash pop stash@{1} }
 function gsp3 { git stash pop stash@{2} }
 
+# Hub functions (GitHub CLI)
+function hcl { hub clone $args }
+function hcr { hub create $args }
+function hpr { hub pull-request $args }
+function hbr { hub browse $args }
+function hfork { hub fork $args }
+
 # Additional utility functions from bashrc
 function findn {
     param($pattern)
@@ -340,9 +347,13 @@ function local-ip {
     Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notlike "*Loopback*" } | Select-Object IPAddress, InterfaceAlias
 }
 
-# Enhanced pip with uv (if you use uv)
+# Enhanced pip with uv (Python package installer and resolver)
 function piuv { uv pip install $args }
 function pinuv { uv pip install $args }
+function piuvg { uv tool install $args }
+function puvg { uv tool install $args }
+function uvls { uv tool list }
+function uvun { uv tool uninstall $args }
 
 # Alias management functions
 function ali {
@@ -393,6 +404,8 @@ $env:EDITOR = "code"
 
 # PATH Configuration - Add common development tool paths
 $pathsToAdd = @(
+    # uv (Python package installer)
+    "$env:USERPROFILE\.local\bin",
     # Node.js global modules
     "$env:APPDATA\npm",
     # Yarn global binaries
@@ -448,10 +461,19 @@ function usager {
 }
 
 function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function o { explorer.exe . }
 function oo { explorer.exe $args }
 
 # Environment management
+function reload {
+    Write-Host "Reloading PowerShell profile..." -ForegroundColor Cyan
+    . $PROFILE
+    Write-Host "Profile reloaded!" -ForegroundColor Green
+}
+
 function refresh-env {
     Write-Host "Refreshing environment variables..." -ForegroundColor Cyan
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
@@ -459,12 +481,12 @@ function refresh-env {
 }
 
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "code", "nvim", "python", "pip", "fzf")
+    $tools = @("node", "npm", "yarn", "git", "gh", "hub", "code", "nvim", "python", "pip", "uv", "fzf")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
-            Write-Host "ok: $tool" -ForegroundColor Green
+            Write-Host "✓ $tool" -ForegroundColor Green
         } else {
-            Write-Host "x: $tool" -ForegroundColor Red
+            Write-Host "✗ $tool" -ForegroundColor Red
         }
     }
 }
@@ -508,13 +530,25 @@ function lsg {
 }
 
 
-# Import modules
-Import-Module posh-git
-Import-Module Terminal-Icons
-Import-Module PSFzf
+# Import modules - make conditional to avoid errors
+if (Get-Module -ListAvailable -Name posh-git) {
+    Import-Module posh-git
+}
 
-# FZF config
-Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
+if (Get-Module -ListAvailable -Name Terminal-Icons) {
+    Import-Module Terminal-Icons
+}
+
+# PSFzf - only import if fzf binary is available
+if (Get-Command fzf -ErrorAction SilentlyContinue) {
+    if (Get-Module -ListAvailable -Name PSFzf) {
+        Import-Module PSFzf
+        # FZF config
+        Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
+    }
+} else {
+    Write-Host "Note: fzf not found in PATH. Install with: choco install fzf" -ForegroundColor Yellow
+}
 
 # Better tab completion
 Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete 
