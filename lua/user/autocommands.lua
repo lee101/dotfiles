@@ -54,7 +54,7 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 -- Jinja2 file type associations
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
   group = group,
-  pattern = { "*.j2", "*.jinja", "*.jinja2", "*.html.j2", "*.htm.j2" },
+  pattern = { "*.j2", "*.jinja", "*.jinja2", "*.html.j2", "*.htm.j2", "*.pongo" },
   desc = "Set filetype for Jinja2 templates",
   callback = function()
     vim.bo.filetype = "htmljinja"
@@ -72,6 +72,79 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
       vim.bo.filetype = "htmljinja"
     else
       vim.bo.filetype = "jinja"
+    end
+  end,
+})
+
+-- Suppress treesitter decoration errors
+vim.api.nvim_create_autocmd("User", {
+  group = group,
+  pattern = "TSError",
+  desc = "Suppress treesitter errors",
+  callback = function()
+    -- Just return to suppress the error
+    return true
+  end,
+})
+
+-- Override vim.notify for treesitter errors
+local original_notify = vim.notify
+vim.notify = function(msg, level, opts)
+  -- Filter out treesitter highlighter errors
+  if type(msg) == "string" and (
+    msg:match("Error in decoration provider") or
+    msg:match("treesitter/highlighter") or
+    msg:match("Invalid 'end_col'") or
+    msg:match("out of range")
+  ) then
+    -- Silently ignore treesitter highlighting errors
+    return
+  end
+  -- Pass through all other notifications
+  return original_notify(msg, level, opts)
+end
+
+-- Configure tags for Go and other languages
+vim.api.nvim_create_autocmd("FileType", {
+  group = group,
+  pattern = { "go", "python", "javascript", "typescript", "rust", "c", "cpp" },
+  desc = "Configure tags for programming languages",
+  callback = function()
+    -- Set tags to look in current directory and parent directories
+    vim.opt_local.tags = "./tags;,tags"
+    
+    -- For Go specifically, add GOPATH tags if available
+    if vim.bo.filetype == "go" then
+      local gopath = vim.fn.system("go env GOPATH"):gsub("\n", "")
+      if gopath ~= "" then
+        vim.opt_local.tags:append(gopath .. "/tags")
+      end
+    end
+  end,
+})
+
+-- Auto-generate tags on save for Go files (backup in case gutentags fails)
+vim.api.nvim_create_autocmd("BufWritePost", {
+  group = group,
+  pattern = "*.go",
+  desc = "Generate tags for Go files on save",
+  callback = function()
+    -- Only run if gutentags is not working
+    if not vim.g.gutentags_enabled or vim.fn.exists('*gutentags#statusline') == 0 then
+      -- Find project root (go.mod)
+      local root = vim.fn.findfile("go.mod", ".;")
+      if root ~= "" then
+        local project_dir = vim.fn.fnamemodify(root, ":h")
+        -- Run ctags asynchronously
+        vim.fn.jobstart(
+          string.format(
+            'ctags -R --languages=go --kinds-go=+p+f+v+t+c --fields=+ailmnS --extras=+q -f %s/tags %s',
+            project_dir,
+            project_dir
+          ),
+          { detach = true }
+        )
+      end
     end
   end,
 })

@@ -33,6 +33,9 @@ export HISTFILE=~/.bash_eternal_history
 # http://superuser.com/questions/20900/bash-history-loss
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
+# Chrome profile path for js-error-checker
+export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
+
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 if [ -n "$BASH_VERSION" ]; then
@@ -220,6 +223,13 @@ alias had='hg add'
 
 function hcmep { hg commit -m "$@" ; hg push; }
 function findn { find . -name "$@"; }
+
+# Append arguments to .gitignore
+function gi {
+    for arg in "$@"; do
+        echo "$arg" >> .gitignore
+    done
+}
 
 alias gpr='hub pull-request'
 alias hpr='gpr'
@@ -644,8 +654,8 @@ alias pip='uv pip'
 export NODE_OPTIONS="--max-old-space-size=8192"
 
 
-alias cla='claude'
-alias cld='claude --dangerously-skip-permissions'
+alias cla='ANTHROPIC_API_KEY="" claude'
+alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
 
 # Claude code review tool
 alias cr='claude-review'
@@ -654,15 +664,18 @@ alias claude-rev='claude-review'
 alias crc='claude-review --staged'  # review cached/staged changes
 alias crw='claude-review'           # review working directory (default)
 
+alias ca='cursor-agent-bun -f'
+alias cap='cursor-agent-bun -f -p'
+
 # Claude Git workflow tools
 alias cldcmt='cldcmt'               # Claude commit with cleanup
-alias cldgcmep='cldgcmep'           # Claude add+commit+push workflow  
+alias cldgcmep='cldgcmep'           # Claude add+commit+push workflow
 alias cldfix='cldfix'               # Claude fix issues in changes
 alias cldpr='cldpr'                 # Claude pull request generator
 
 # Additional Claude Git aliases
 alias ccmt='cldcmt'                 # Short alias for cldcmt
-alias cgcmep='cldgcmep'             # Short alias for cldgcmep  
+alias cgcmep='cldgcmep'             # Short alias for cldgcmep
 alias cfix='cldfix'                 # Short alias for cldfix
 alias cpr='cldpr'                   # Short alias for cldpr
 
@@ -677,11 +690,20 @@ function my_ipe() # Get IP adress on ethernet.
     echo ${MY_IP:-"Not connected"}
 }
 
-function my_ip() # Get IP adress on wireless.
+function my_ip() # Get local IP address (any interface)
 {
-    MY_IP=$(/sbin/ifconfig wlan | awk '/inet/ { print $2 } ' |
-      sed -e s/addr://)
+    MY_IP=$(ip route get 8.8.8.8 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
     echo ${MY_IP:-"Not connected"}
+}
+
+function my_ip_all() # Get all IP addresses
+{
+    ip addr show | grep -E 'inet [0-9]' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1
+}
+
+function public_ip() # Get public/external IP address
+{
+    curl -s ifconfig.me || curl -s icanhazip.com || curl -s ipecho.net/plain
 }
 
 
@@ -996,6 +1018,20 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
 
+# Interactive history search with fzf
+fh() {
+  local cmd
+  cmd=$( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac --no-sort --query "$*" | sed 's/ *[0-9]* *//' | sed 's/\[[^]]*\] //')
+  if [ -n "$cmd" ]; then
+    echo "$cmd"
+    # Copy to clipboard if xclip is available
+    if command -v xclip &> /dev/null; then
+      echo -n "$cmd" | xclip -selection clipboard
+      echo "(Copied to clipboard)"
+    fi
+  fi
+}
+
 # pnpm
 export PNPM_HOME="/home/lee/.local/share/pnpm"
 case ":$PATH:" in
@@ -1004,6 +1040,7 @@ case ":$PATH:" in
 esac
 # pnpm end
 alias ni=nvim
+alias v=nvim
 
 
 # Find the existing 'o' alias and replace/add this instead
@@ -1044,4 +1081,25 @@ export aided='aider --model deepseek/deepseek-reasoner'
 alias pip='uv pip'
 export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
 # Chrome profile environment variable
+
+# JavaScript Error Checker alias
+alias jscheck='/home/lee/code/dotfiles/tools/jscheck'
+alias jserrors='/home/lee/code/dotfiles/tools/jscheck'
+# Add tools directory to PATH if not already there
+if [[ ":$PATH:" != *":/home/lee/code/dotfiles/tools:"* ]]; then
+    export PATH="$PATH:/home/lee/code/dotfiles/tools"
+fi
 export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
+
+# Claude timeout configurations - Never timeout
+export BASH_DEFAULT_TIMEOUT_MS=1800000  # 30 minutes default
+export BASH_MAX_TIMEOUT_MS=1800000      # 30 minutes max (highest allowed)
+export MCP_TIMEOUT=1800000              # 30 minutes for MCP server startup
+export MCP_TOOL_TIMEOUT=1800000         # 30 minutes for MCP tool execution
+export MAX_MCP_OUTPUT_TOKENS=100000     # Increase MCP output token limit
+
+# Additional Claude configurations to prevent interruptions
+export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might interrupt
+export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
+
+export PATH="$HOME/.local/bin:$PATH"
