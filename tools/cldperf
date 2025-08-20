@@ -1,0 +1,330 @@
+#!/bin/bash
+# Claude Performance Profiling Tool
+# Usage: cldperf [command] [options]
+
+show_help() {
+    cat << EOF
+Claude Performance Tool - AI-powered performance analysis and optimization
+
+Usage: cldperf [command] [options]
+
+Commands:
+    profile [path]      Profile code performance and identify bottlenecks
+    optimize [path]     Suggest optimizations for slow code
+    benchmark           Run and analyze benchmarks
+    memory              Analyze memory usage and leaks
+    compare             Compare performance between commits/branches
+    monitor             Real-time performance monitoring suggestions
+
+Options:
+    --lang, -l          Specify language (auto-detected by default)
+    --verbose, -v       Show detailed analysis
+    --fix, -f           Apply suggested optimizations automatically
+    --output, -o        Output format (text/json/markdown)
+    --threshold, -t     Performance threshold for alerts (ms)
+
+Examples:
+    cldperf profile                  # Profile current directory
+    cldperf profile src/api.go       # Profile specific file
+    cldperf optimize --fix           # Auto-apply optimizations
+    cldperf benchmark                # Run and analyze benchmarks
+    cldperf memory --verbose         # Detailed memory analysis
+    cldperf compare main feature     # Compare branch performance
+
+Performance Tools Available:
+    - Go: pprof, trace, benchmarks
+    - Python: cProfile, memory_profiler, line_profiler
+    - Node.js: clinic, 0x, autocannon
+    - Rust: cargo bench, flamegraph
+    - Java: JMH, async-profiler
+
+EOF
+}
+
+# Parse command
+COMMAND=$1
+shift
+
+# Default values
+VERBOSE=false
+AUTO_FIX=false
+OUTPUT="text"
+THRESHOLD=""
+LANG=""
+TARGET_PATH="."
+
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --lang|-l)
+            LANG="$2"
+            shift 2
+            ;;
+        --verbose|-v)
+            VERBOSE=true
+            shift
+            ;;
+        --fix|-f)
+            AUTO_FIX=true
+            shift
+            ;;
+        --output|-o)
+            OUTPUT="$2"
+            shift 2
+            ;;
+        --threshold|-t)
+            THRESHOLD="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            TARGET_PATH="$1"
+            shift
+            ;;
+    esac
+done
+
+# Check if cld command exists
+if ! command -v cld &> /dev/null; then
+    echo "Error: 'cld' command not found."
+    echo "Please install Claude CLI: https://claude.ai/cli"
+    exit 1
+fi
+
+# Detect language if not specified
+detect_language() {
+    if [[ -n "$LANG" ]]; then
+        echo "$LANG"
+        return
+    fi
+    
+    if [[ -f "go.mod" ]] || [[ "$TARGET_PATH" == *.go ]]; then
+        echo "go"
+    elif [[ -f "requirements.txt" ]] || [[ -f "pyproject.toml" ]] || [[ "$TARGET_PATH" == *.py ]]; then
+        echo "python"
+    elif [[ -f "package.json" ]] || [[ "$TARGET_PATH" == *.js ]] || [[ "$TARGET_PATH" == *.ts ]]; then
+        echo "javascript"
+    elif [[ -f "Cargo.toml" ]] || [[ "$TARGET_PATH" == *.rs ]]; then
+        echo "rust"
+    elif [[ -f "pom.xml" ]] || [[ -f "build.gradle" ]] || [[ "$TARGET_PATH" == *.java ]]; then
+        echo "java"
+    else
+        echo "unknown"
+    fi
+}
+
+# Profile command
+run_profile() {
+    local lang=$(detect_language)
+    echo "🔍 Profiling performance ($lang)..."
+    
+    PROFILE_PROMPT="You are a performance profiling expert. Analyze the code for performance bottlenecks and provide detailed insights.
+
+**Target**: $TARGET_PATH
+**Language**: $lang
+**Current Directory**: $(pwd)
+
+Please:
+1. **Identify Hotspots**: Find performance-critical code sections
+2. **Analyze Complexity**: Check algorithmic complexity (O(n), O(n²), etc.)
+3. **Resource Usage**: Identify expensive operations (I/O, network, CPU)
+4. **Memory Patterns**: Look for memory leaks, excessive allocations
+5. **Concurrency**: Check for race conditions, lock contention
+6. **Database/API**: Analyze query patterns, N+1 problems
+
+For $lang specifically, check for:
+$(case $lang in
+    go)
+        echo "- Goroutine leaks
+- Channel bottlenecks  
+- Inefficient string concatenation
+- Missing defer statements
+- Unnecessary allocations"
+        ;;
+    python)
+        echo "- GIL bottlenecks
+- List comprehension vs loops
+- Generator opportunities
+- Caching opportunities
+- Numpy/pandas optimizations"
+        ;;
+    javascript)
+        echo "- Event loop blocking
+- Promise/async patterns
+- Memory leaks in closures
+- DOM manipulation efficiency
+- Bundle size issues"
+        ;;
+    rust)
+        echo "- Unnecessary clones
+- Arc/Mutex contention
+- Iterator vs loop efficiency
+- Allocation patterns
+- Unsafe optimizations"
+        ;;
+    java)
+        echo "- GC pressure
+- Thread pool sizing
+- Synchronization overhead
+- Stream vs loop performance
+- Caching opportunities"
+        ;;
+esac)
+
+Provide:
+1. Top 5 performance issues ranked by impact
+2. Specific code locations with problems
+3. Estimated performance impact
+4. Concrete optimization suggestions
+5. Benchmarking recommendations
+
+Use profiling tools if available:
+- Go: \`go test -bench -cpuprofile\`
+- Python: \`python -m cProfile\`
+- Node.js: \`node --prof\`
+- Rust: \`cargo bench\`
+- Java: JMH benchmarks"
+
+    echo "$PROFILE_PROMPT" | cld
+}
+
+# Optimize command
+run_optimize() {
+    local lang=$(detect_language)
+    echo "⚡ Analyzing optimization opportunities ($lang)..."
+    
+    OPTIMIZE_PROMPT="You are a performance optimization expert. Analyze the code and suggest specific optimizations.
+
+**Target**: $TARGET_PATH
+**Language**: $lang
+**Auto-fix**: $AUTO_FIX
+
+Please provide:
+1. **Quick Wins**: Easy optimizations with high impact
+2. **Algorithmic Improvements**: Better algorithms/data structures
+3. **Caching Strategies**: Where to add caching
+4. **Parallel Processing**: Opportunities for concurrency
+5. **Resource Management**: Better resource utilization
+
+For each optimization:
+- Show before/after code
+- Explain performance impact
+- Provide benchmarks if possible
+- Note any trade-offs
+
+Focus on:
+- Reducing time complexity
+- Minimizing memory allocations
+- Improving cache efficiency
+- Reducing I/O operations
+- Optimizing hot paths
+
+$(if [[ $AUTO_FIX == true ]]; then
+    echo "**AUTO-FIX MODE**: Apply the optimizations directly to the code."
+fi)"
+
+    echo "$OPTIMIZE_PROMPT" | cld
+}
+
+# Benchmark command
+run_benchmark() {
+    local lang=$(detect_language)
+    echo "📊 Running performance benchmarks ($lang)..."
+    
+    BENCHMARK_PROMPT="Set up and run performance benchmarks for this codebase.
+
+**Language**: $lang
+**Directory**: $(pwd)
+
+Tasks:
+1. **Identify** critical code paths to benchmark
+2. **Create** benchmark tests if missing
+3. **Run** existing benchmarks
+4. **Analyze** results and trends
+5. **Recommend** performance targets
+
+Benchmark focus areas:
+- API endpoint response times
+- Database query performance
+- Algorithm efficiency
+- Memory allocation rates
+- Concurrent operation throughput
+
+Use appropriate tools:
+- Go: \`go test -bench\`
+- Python: \`pytest-benchmark\`
+- Node.js: \`benchmark.js\`
+- Rust: \`cargo bench\`
+- Java: JMH
+
+Provide:
+- Benchmark results with analysis
+- Performance regression risks
+- Optimization opportunities
+- Recommended performance SLAs"
+
+    echo "$BENCHMARK_PROMPT" | cld
+}
+
+# Memory analysis command
+run_memory() {
+    local lang=$(detect_language)
+    echo "🧠 Analyzing memory usage ($lang)..."
+    
+    MEMORY_PROMPT="Perform detailed memory analysis of the codebase.
+
+**Target**: $TARGET_PATH
+**Language**: $lang
+
+Analyze:
+1. **Memory Leaks**: Identify potential leaks
+2. **Allocation Patterns**: Find excessive allocations
+3. **Object Lifetimes**: Check for long-lived objects
+4. **Collection Pressure**: GC/allocation stress
+5. **Memory Efficiency**: Struct/class sizing
+
+Tools to use:
+- Go: \`go tool pprof -alloc_space\`
+- Python: \`memory_profiler\`, \`tracemalloc\`
+- Node.js: \`--inspect\`, heap snapshots
+- Rust: \`valgrind\`, \`heaptrack\`
+- Java: \`jmap\`, \`jhat\`
+
+Report:
+- Memory hotspots
+- Leak risks with locations
+- Optimization suggestions
+- Memory usage patterns
+- Best practices violations"
+
+    echo "$MEMORY_PROMPT" | cld
+}
+
+# Execute command
+case $COMMAND in
+    profile)
+        run_profile
+        ;;
+    optimize)
+        run_optimize
+        ;;
+    benchmark)
+        run_benchmark
+        ;;
+    memory)
+        run_memory
+        ;;
+    compare)
+        echo "🔄 Performance comparison not yet implemented"
+        ;;
+    monitor)
+        echo "📡 Real-time monitoring not yet implemented"
+        ;;
+    *)
+        show_help
+        exit 1
+        ;;
+esac

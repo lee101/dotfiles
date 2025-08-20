@@ -10,6 +10,15 @@ return {
     end,
   },
 
+  -- Mini icons (for which-key compatibility)
+  {
+    "echasnovski/mini.icons",
+    version = false,
+    config = function()
+      require("mini.icons").setup()
+    end,
+  },
+
   -- File explorer
   {
     "nvim-tree/nvim-tree.lua",
@@ -77,11 +86,29 @@ return {
         },
         highlight = {
           enable = true,
+          -- Disable error notifications for highlighting
+          disable = function(lang, buf)
+            -- You can add specific conditions here if needed
+            return false
+          end,
+          additional_vim_regex_highlighting = false,
         },
         indent = {
           enable = true,
         },
       })
+      
+      -- Suppress treesitter errors from interrupting editing
+      vim.treesitter.language.register = (function()
+        local register = vim.treesitter.language.register
+        return function(lang, filetype)
+          local ok, err = pcall(register, lang, filetype)
+          if not ok and err then
+            -- Silently ignore the error instead of showing it
+            return
+          end
+        end
+      end)()
     end,
   },
 
@@ -216,7 +243,63 @@ return {
       vim.o.timeout = true
       vim.o.timeoutlen = 300
     end,
-    config = true,
+    config = function()
+      require("which-key").setup({
+        -- Add any specific configuration here if needed
+      })
+      
+      -- Register key groups using new spec format
+      require("which-key").add({
+        -- File/find group with specific mappings
+        { "<leader>f", group = "file/find" },
+        { "<leader>ff", desc = "Find files" },
+        { "<leader>fg", desc = "Live grep" },
+        { "<leader>fb", desc = "Buffers" },
+        { "<leader>fh", desc = "Help tags" },
+        { "<leader>fc", desc = "Find config" },
+        { "<leader>fr", desc = "Recent files" },
+        
+        -- Code group
+        { "<leader>c", group = "code" },
+        
+        -- Git group
+        { "<leader>g", group = "git" },
+        
+        -- Git hunks group
+        { "<leader>h", group = "git hunks" },
+        
+        -- Rename group
+        { "<leader>r", group = "rename" },
+        
+        -- Workspace group with specific mappings
+        { "<leader>w", group = "workspace" },
+        { "<leader>wa", desc = "Add workspace folder" },
+        { "<leader>wr", desc = "Remove workspace folder" },
+        
+        -- Individual mappings
+        { "<leader>e", desc = "Toggle file tree" },
+        { "<leader>ev", desc = "Edit nvim config" },
+        { "<leader>u", desc = "Open URL under cursor" },
+        { "<leader>z", desc = "Toggle fold" },
+        { "<leader>par", desc = "Fix email paragraphs" },
+        
+        -- LSP mappings to avoid gr conflicts
+        { "grr", desc = "References" },
+        { "gra", desc = "Code actions" }, 
+        { "grn", desc = "Rename" },
+        { "gri", desc = "Implementation" },
+        { "grt", desc = "Type definition" },
+        
+        -- Comment mappings to avoid gc/gb conflicts
+        { "gc", desc = "Comment toggle linewise" },
+        { "gcc", desc = "Comment toggle current line" },
+        { "gcO", desc = "Comment insert above" },
+        { "gcA", desc = "Comment insert end of line" },
+        { "gco", desc = "Comment insert below" },
+        { "gb", desc = "Comment toggle blockwise" },
+        { "gbc", desc = "Comment toggle current block" },
+      })
+    end,
   },
 
   -- LSP Support
@@ -275,7 +358,7 @@ return {
         mapping = cmp.mapping.preset.insert({
           ['<C-Space>'] = cmp.mapping.complete(),
           ['<CR>'] = cmp.mapping.confirm({select = false}),
-        }),
+        })
       })
     end,
   },
