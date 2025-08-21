@@ -1180,3 +1180,7 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
+
+
+alias br='bun run'
+alias v=nvim
