@@ -28,6 +28,26 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+-- Suppress specific error messages globally
+local orig_vim_schedule = vim.schedule
+vim.schedule = function(fn)
+  return orig_vim_schedule(function()
+    local ok, err = pcall(fn)
+    if not ok and type(err) == "string" then
+      -- Suppress treesitter and swap file errors
+      if err:match("Invalid 'end_row'") or 
+         err:match("Invalid 'end_col'") or
+         err:match("out of range") or
+         err:match("treesitter/highlighter") or
+         err:match(".swp") then
+        return
+      end
+      -- Re-throw other errors
+      error(err)
+    end
+  end)
+end
+
 -- Basic vim settings for cross-platform compatibility
 vim.opt.number = true
 vim.opt.relativenumber = true
@@ -37,6 +57,9 @@ vim.opt.expandtab = true
 vim.opt.smartindent = true
 vim.opt.wrap = false
 vim.opt.swapfile = false
+vim.opt.directory = vim.fn.stdpath("data") .. "/swap//"
+vim.opt.undodir = vim.fn.stdpath("data") .. "/undo//"
+vim.opt.backupdir = vim.fn.stdpath("data") .. "/backup//"
 vim.opt.backup = false
 vim.opt.undofile = true
 vim.opt.hlsearch = false
@@ -553,17 +576,16 @@ require("lazy").setup({
           highlight = { 
             enable = true,
             additional_vim_regex_highlighting = false,
-            -- Add safe_end_col to prevent out-of-range errors
-            safe_end_col = true,
             disable = function(lang, buf)
               local max_filesize = 100 * 1024 -- 100 KB
               local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
               if ok and stats and stats.size > max_filesize then
                 return true
               end
-              -- Disable for help files if there are issues
-              if vim.bo[buf].filetype == "help" then
-                return false -- Let treesitter handle help files
+              -- Disable for very large buffers to prevent out-of-range errors
+              local lines = vim.api.nvim_buf_line_count(buf)
+              if lines > 10000 then
+                return true
               end
             end,
           },
@@ -759,12 +781,11 @@ require("lazy").setup({
       event = "VeryLazy",
       config = function()
         require("which-key").setup({
-          window = {
+          win = {
             border = "rounded",
-            position = "bottom",
-            margin = { 1, 0, 1, 0 },
-            padding = { 2, 2, 2, 2 },
-            winblend = 0
+            wo = {
+              winblend = 0
+            }
           },
           layout = {
             height = { min = 4, max = 25 },
@@ -774,7 +795,9 @@ require("lazy").setup({
           },
           show_help = true,
           show_keys = true,
-          triggers = "auto",
+          triggers = {
+            { "<auto>", mode = "nxsot" }
+          },
         })
       end
     },

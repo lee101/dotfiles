@@ -87,17 +87,40 @@ vim.api.nvim_create_autocmd("User", {
   end,
 })
 
--- Override vim.notify for treesitter errors
+-- Auto-handle swap files
+vim.api.nvim_create_autocmd("SwapExists", {
+  group = group,
+  desc = "Auto-handle swap files",
+  callback = function()
+    vim.v.swapchoice = 'e'  -- Edit anyway, ignoring the swap file
+  end,
+})
+
+-- Suppress error messages for treesitter on buffer changes
+vim.api.nvim_create_autocmd({"BufEnter", "BufWrite", "TextChanged", "InsertLeave"}, {
+  group = group,
+  desc = "Suppress treesitter errors on buffer events",
+  callback = function()
+    -- Clear any error messages that might have appeared
+    pcall(vim.api.nvim_command, "silent! redraw")
+  end,
+})
+
+-- Override vim.notify for treesitter errors and swap file warnings
 local original_notify = vim.notify
 vim.notify = function(msg, level, opts)
   -- Filter out treesitter highlighter errors
   if type(msg) == "string" and (
     msg:match("Error in decoration provider") or
     msg:match("treesitter/highlighter") or
+    msg:match("Invalid 'end_row'") or
     msg:match("Invalid 'end_col'") or
-    msg:match("out of range")
+    msg:match("out of range") or
+    msg:match("\.swp") or
+    msg:match("Swap file") or
+    msg:match("E325")
   ) then
-    -- Silently ignore treesitter highlighting errors
+    -- Silently ignore treesitter highlighting errors and swap file warnings
     return
   end
   -- Pass through all other notifications
