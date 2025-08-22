@@ -149,6 +149,9 @@ alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
 
+# Safe trash alias - moves files to trash instead of permanent deletion
+alias rr='trash-put'
+
 # some more ls aliases
 alias ll='ls -alF'
 alias lt='ls -lttra'
@@ -571,8 +574,30 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
   alias ni="nvim"
 fi
 
+# NVIDIA SMI aliases
 alias smi='nvidia-smi'
 alias wsmi='watch -n 1 nvidia-smi'
+
+# GPU monitoring with detailed metrics
+# sm: streaming multiprocessor utilization, mem: memory controller utilization 
+# enc: encoder utilization, dec: decoder utilization, jpg: JPEG engine utilization
+# ofa: optical flow accelerator utilization, fb: framebuffer memory usage
+# bar1: BAR1 memory usage, ccpm: compute capability memory usage
+alias smidmon='nvidia-smi dmon -s um -d 1'
+
+# Additional useful nvidia-smi aliases
+alias smiq='nvidia-smi -q'                    # Query detailed GPU information
+alias smil='nvidia-smi -L'                    # List all GPUs
+alias smip='nvidia-smi pmon -i 0'             # Process monitoring for GPU 0
+alias smipm='nvidia-smi pmon'                 # Process monitoring for all GPUs
+alias smit='nvidia-smi -q -d TEMPERATURE'     # Temperature monitoring
+alias smic='nvidia-smi -q -d CLOCK'           # Clock speeds
+alias smim='nvidia-smi -q -d MEMORY'          # Memory details
+alias smip='nvidia-smi -q -d POWER'           # Power consumption details
+
+# nvtop aliases (if nvtop is installed)
+alias nt='nvtop'
+alias ntop='nvtop'
 
 
 alias dps='docker ps'
