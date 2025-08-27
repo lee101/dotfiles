@@ -149,6 +149,9 @@ alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
 alias r='rm -rf'
 
+# Safe trash alias - moves files to trash instead of permanent deletion
+alias rr='trash-put'
+
 # some more ls aliases
 alias ll='ls -alF'
 alias lt='ls -lttra'
@@ -171,6 +174,13 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
+fi
+
+# Source git aliases from dotfiles
+if [ -f ~/code/dotfiles/lib/git_aliases ]; then
+    . ~/code/dotfiles/lib/git_aliases
+elif [ -f ~/.git_aliases ]; then
+    . ~/.git_aliases
 fi
 
 
@@ -224,6 +234,13 @@ alias had='hg add'
 function hcmep { hg commit -m "$@" ; hg push; }
 function findn { find . -name "$@"; }
 
+# Append arguments to .gitignore
+function gi {
+    for arg in "$@"; do
+        echo "$arg" >> .gitignore
+    done
+}
+
 alias gpr='hub pull-request'
 alias hpr='gpr'
 alias hprs='hub pr show'
@@ -249,6 +266,49 @@ alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias gdfa='git --no-pager diff -p'
 alias gdfac='git --no-pager diff -p --cached'
+# Git untracked/new files - show content of new files
+function gun {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            echo -e "\033[1;32m+++ $file\033[0m"
+            cat "$file" | head -100
+            echo
+        fi
+    done
+}
+
+# Git untracked files list only
+function gunl {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null
+}
+
+# Git diff all (modified + untracked)
+function guna {
+    local path="${1:-.}"
+    
+    # Show modified files diff
+    local has_modified=$(git diff HEAD --name-only "$path" 2>/dev/null)
+    if [ -n "$has_modified" ]; then
+        echo -e "\033[1;33m=== MODIFIED FILES ===\033[0m"
+        git diff HEAD --color "$path" 2>/dev/null
+    fi
+    
+    # Show new/untracked files
+    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
+    if [ -n "$has_untracked" ]; then
+        echo -e "\n\033[1;32m=== NEW/UNTRACKED FILES ===\033[0m"
+        git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+            if [ -f "$file" ]; then
+                echo -e "\033[1;32m+++ $file\033[0m"
+                cat "$file" | head -50
+                echo
+            fi
+        done
+    fi
+}
+
 alias gdfaa='gunaa'
 alias glg='git log'
 alias glglee='git log --author=lee'
@@ -363,19 +423,14 @@ alias gdfb='git diff master...'
 alias gdfbm='git diff main...'
 alias gdfbd='git diff develop...'
 
-# Git untracked files aliases
-alias gun='git ls-files --others --exclude-standard'  # Show untracked files
-alias guns='git status --porcelain | grep "^??"'      # Show untracked files (porcelain)
-alias gund='git diff --no-index /dev/null'            # Show diff for untracked file
+# Quick git status variations
+alias gsu='git status -uno'  # Hide untracked files
+alias gss='git status -s'    # Short format
+alias gsl='git status --long' # Long format (default)
 
-# Function to show git diff style for all untracked files
-function guna() {
-    git ls-files --others --exclude-standard | while read -r file; do
-        echo "=== Untracked file: $file ==="
-        git diff --no-index /dev/null "$file" || true
-        echo
-    done
-}
+# Git diff shortcuts for specific file states
+alias gdfn='gun'  # Show new/untracked files content (alias to gun function)
+alias gdfu='git ls-files --others --exclude-standard'  # List untracked files only
 
 # Function to show all changes (tracked + untracked) in git diff format for LLMs
 function gunaa() {
@@ -392,7 +447,6 @@ function gunaa() {
         echo
     done
 }
-
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
     git branch --set-upstream-to=origin/$current_branch $current_branch
@@ -435,9 +489,19 @@ function gswf {
   gsw "$@" | grep '\-\-\- a/' | cut -b 6-;
 }
 
-if [ "$machine" = "Cygwin" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+# Source Windows-specific configurations for Git Bash and similar environments
+if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [ "$machine" = "Cygwin" ] || [ "$machine" = "MinGw" ]; then
+  # Get the directory where this bashrc is located
+  BASHRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  
+  # Source the Windows-specific bashrc if it exists
+  if [ -f "$BASHRC_DIR/lib/winbashrc" ]; then
+    . "$BASHRC_DIR/lib/winbashrc"
+  elif [ -f ~/code/dotfiles/lib/winbashrc ]; then
+    . ~/code/dotfiles/lib/winbashrc
+  fi
 
-   export GOROOT="/c/Program Files/Go"
+  export GOROOT="/c/Program Files/Go"
 else
    export DOCKER_HOST=tcp://127.0.0.1:2376
    alias docker='sudo docker'
@@ -493,7 +557,6 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
     echo "PATH contains:"
     echo "$PATH" | tr ':' '\n' | grep -i nvim || echo "No nvim paths found in PATH"
   }
-
   # WSL2 integration for Git Bash
   alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
   alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
@@ -527,8 +590,30 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
   alias ni="nvim"
 fi
 
+# NVIDIA SMI aliases
 alias smi='nvidia-smi'
 alias wsmi='watch -n 1 nvidia-smi'
+
+# GPU monitoring with detailed metrics
+# sm: streaming multiprocessor utilization, mem: memory controller utilization 
+# enc: encoder utilization, dec: decoder utilization, jpg: JPEG engine utilization
+# ofa: optical flow accelerator utilization, fb: framebuffer memory usage
+# bar1: BAR1 memory usage, ccpm: compute capability memory usage
+alias smidmon='nvidia-smi dmon -s um -d 1'
+
+# Additional useful nvidia-smi aliases
+alias smiq='nvidia-smi -q'                    # Query detailed GPU information
+alias smil='nvidia-smi -L'                    # List all GPUs
+alias smip='nvidia-smi pmon -i 0'             # Process monitoring for GPU 0
+alias smipm='nvidia-smi pmon'                 # Process monitoring for all GPUs
+alias smit='nvidia-smi -q -d TEMPERATURE'     # Temperature monitoring
+alias smic='nvidia-smi -q -d CLOCK'           # Clock speeds
+alias smim='nvidia-smi -q -d MEMORY'          # Memory details
+alias smip='nvidia-smi -q -d POWER'           # Power consumption details
+
+# nvtop aliases (if nvtop is installed)
+alias nt='nvtop'
+alias ntop='nvtop'
 
 
 alias dps='docker ps'
@@ -671,6 +756,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
+alias cldc='cld --continue'
 
 # Claude code review tool
 alias cr='claude-review'
@@ -678,6 +764,9 @@ alias creview='claude-review'
 alias claude-rev='claude-review'
 alias crc='claude-review --staged'  # review cached/staged changes
 alias crw='claude-review'           # review working directory (default)
+
+alias ca='cursor-agent-bun -f'
+alias cap='cursor-agent-bun -f -p'
 
 # Claude Git workflow tools
 alias cldcmt='cldcmt'               # Claude commit with cleanup
@@ -1043,6 +1132,23 @@ alias y="yarn"
 function ali { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
 function alis { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
 
+# Function to add aliases to bashrc
+function gali {
+    if [ $# -eq 0 ]; then
+        echo "Usage: gali alias_name='command'"
+        echo "Example: gali bb='bun run build'"
+        return 1
+    fi
+    
+    # Add the alias to bashrc
+    echo "alias $@" >> $HOME/.bashrc
+    
+    # Source bashrc to make it immediately available
+    source $HOME/.bashrc
+    
+    echo "Alias added: $@"
+}
+
 alias reswap='sudo swapoff -a && sudo swapon -a'
 
 
@@ -1083,12 +1189,16 @@ case ":$PATH:" in
 esac
 # pnpm end
 alias ni=nvim
+alias v=nvim
 
 
 # Find the existing 'o' alias and replace/add this instead
 if [[ "$machine" = "Cygwin" || "$machine" = "MinGw" || "$OSTYPE" = "msys" || "$OSTYPE" = "win32" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
-    alias o='explorer.exe .'
-    alias oo='explorer.exe'
+    alias o='explore'
+    alias oo='explore'
+    # Keep the old direct aliases as alternatives
+    alias ox='explorer.exe .'
+    alias oox='explorer.exe'
 else
     alias o='xdg-open .'
     alias oo='xdg-open'
@@ -1142,7 +1252,6 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
-
 # SSH Agent Configuration
 # Check if SSH agent is running, start if not
 if ! pgrep -u "$USER" ssh-agent > /dev/null; then
@@ -1156,3 +1265,6 @@ elif [ -n "$SSH_AGENT_PID" ]; then
     # Use existing SSH agent
     export SSH_AUTH_SOCK="$SSH_AUTH_SOCK"
 fi
+
+alias br='bun run'
+alias v=nvim

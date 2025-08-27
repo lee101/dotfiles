@@ -1,0 +1,64 @@
+#!/bin/bash
+# Git aliases for viewing untracked and modified files
+
+# Git untracked/new files - show content of new files
+gun() {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            echo -e "\033[1;32m+++ $file\033[0m"
+            cat "$file" | head -100
+            echo
+        fi
+    done
+}
+
+# Git untracked files list only
+gunl() {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null
+}
+
+# Git diff all (modified + untracked)
+guna() {
+    local path="${1:-.}"
+    
+    # Show modified files diff
+    local has_modified=$(git diff HEAD --name-only "$path" 2>/dev/null)
+    if [ -n "$has_modified" ]; then
+        echo -e "\033[1;33m=== MODIFIED FILES ===\033[0m"
+        git diff HEAD --color "$path" 2>/dev/null
+    fi
+    
+    # Show new/untracked files
+    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
+    if [ -n "$has_untracked" ]; then
+        echo -e "\n\033[1;32m=== NEW/UNTRACKED FILES ===\033[0m"
+        git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+            if [ -f "$file" ]; then
+                echo -e "\033[1;32m+++ $file\033[0m"
+                cat "$file" | head -50
+                echo
+            fi
+        done
+    fi
+}
+
+# Git untracked files with full content
+gunf() {
+    local path="${1:-.}"
+    git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            echo -e "\033[1;32m+++ $file\033[0m"
+            cat "$file"
+            echo
+        fi
+    done
+}
+
+# Quick aliases
+alias gsu='git status -uno'  # Hide untracked files
+alias gss='git status -s'    # Short format
+alias gsl='git status --long' # Long format (default)
+alias gdfn='gun'  # Show new/untracked files content (alias to gun function)
+alias gdfu='git ls-files --others --exclude-standard'  # List untracked files only

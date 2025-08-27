@@ -40,7 +40,7 @@
     paging = never
 [merge]
     conflictstyle = diff3
-	tool = delta
+	tool = nvimdiff
 [mergetool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [diff]

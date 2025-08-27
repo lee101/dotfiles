@@ -1,0 +1,8 @@
+--recurse=yes
+--tag-relative=yes
+--fields=+l
+--extras=+q
+--sort=yes
+
+--python-kinds=+cfmvi
+--go-kinds=+p+f+v+t+c
