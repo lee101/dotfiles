@@ -158,11 +158,29 @@ export HISTTIMEFORMAT="[%F %T] "
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
 export HISTFILE=~/.zsh_eternal_history
-#setopt INC_APPEND_HISTORY_TIME
-setopt SHARE_HISTORY
-# Force prompt to write history after every command.
-# http://superuser.com/questions/20900/bash-history-loss
-PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
+
+# Better history sharing: local priority with global sharing
+# INC_APPEND_HISTORY appends commands as they are entered
+# EXTENDED_HISTORY saves timestamp information
+# HIST_IGNORE_DUPS ignores duplicate commands in succession
+# HIST_FIND_NO_DUPS doesn't show duplicates when searching
+# HIST_REDUCE_BLANKS removes extra whitespace from commands
+setopt INC_APPEND_HISTORY
+setopt EXTENDED_HISTORY
+setopt HIST_IGNORE_DUPS
+setopt HIST_FIND_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+
+# Don't use SHARE_HISTORY - this causes immediate sharing which overrides local history
+# unsetopt SHARE_HISTORY
+
+# Function to merge history from other sessions when desired
+merge_history() {
+    fc -R
+}
+
+# Alias for easy history merging
+alias mh='merge_history'
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -202,6 +220,7 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 alias gpr='hub pull-request' #'gh pr create'
 alias gcm='git commit -m'
 alias gsw='git show'
+alias gpl='git pull'
 
 # Modern Git tools
 alias lg='lazygit'
