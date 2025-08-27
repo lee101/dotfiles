@@ -1209,3 +1209,5 @@ export PATH="$HOME/.local/bin:$PATH"
 
 alias br='bun run'
 alias v=nvim
+
+. "$HOME/.local/bin/env"
