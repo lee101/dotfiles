@@ -20,7 +20,7 @@
 # # The config file consists of simple key-value pairs,
 # # separated by equals signs.
 # font-family = Iosevka
-# window-padding-x = 2
+window-padding-x = 0
 #
 # # Spacing around the equals sign does not matter.
 # # All of these are identical:
@@ -48,8 +48,8 @@ font-feature = calt
 font-feature = liga
 
 # Window configuration
-window-padding-x = 12
-window-padding-y = 12
+window-padding-x = 0
+window-padding-y = 0
 window-theme = dark
 window-decoration = false
 window-save-state = always
@@ -89,7 +89,7 @@ selection-background = #979eab
 
 # Terminal behavior
 # scrollback-lines = 10000 (removed - unknown field)
-mouse-hide-while-typing = true
+mouse-hide-while-typing = false
 confirm-close-surface = false
 #unsafe-paste = always
 
