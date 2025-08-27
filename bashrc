@@ -249,6 +249,7 @@ alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias gdfa='git --no-pager diff -p'
 alias gdfac='git --no-pager diff -p --cached'
+alias gdfaa='gunaa'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -1141,4 +1142,17 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
+
+# SSH Agent Configuration
+# Check if SSH agent is running, start if not
+if ! pgrep -u "$USER" ssh-agent > /dev/null; then
+    eval "$(ssh-agent -s)" > /dev/null
+fi
+
+# Try to use gnome-keyring SSH agent if available
+if [ -S "/run/user/$UID/keyring/ssh" ]; then
+    export SSH_AUTH_SOCK="/run/user/$UID/keyring/ssh"
+elif [ -n "$SSH_AGENT_PID" ]; then
+    # Use existing SSH agent
+    export SSH_AUTH_SOCK="$SSH_AUTH_SOCK"
+fi
