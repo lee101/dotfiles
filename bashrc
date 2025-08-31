@@ -36,6 +36,12 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 # Chrome profile path for js-error-checker
 export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
 
+# SSH Agent auto-start
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+    ssh-add ~/.ssh/id_ed25519 2>/dev/null
+fi
+
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 if [ -n "$BASH_VERSION" ]; then
