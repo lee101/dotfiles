@@ -7,61 +7,54 @@ This directory contains PowerShell profiles with feature parity to the bash/zsh 
 ### 1. `profile.ps1` - Full Feature Profile
 The comprehensive profile with complete bash feature parity including:
 - **Git aliases** - All bash git aliases (gst, gco, gcm, gph, etc.)
-- **Mercurial aliases** - hg commands (hcl, hst, hdf, etc.)
 - **Docker aliases** - Complete docker management (dps, dim, dklall, etc.)
-- **Python tools** - pip/uv integration (pin, pinu, pfr, etc.)
+- **Python tools** - pip/uv integration (pin, pinu, pfr, piuv, etc.)
 - **Node.js tools** - npm/yarn/pnpm aliases (ni, yi, pn, etc.)
-- **Kubernetes** - kubectl aliases (k, kbash, etc.)
 - **Utility functions** - extract, compress, findn, usage, etc.
-- **Network tools** - my-ip, local-ip functions
-- **WSL integration** - Windows Subsystem for Linux commands
-- **Advanced history** - Enhanced PowerShell history settings
+- **Advanced features** - FZF integration, enhanced history, smart imports
 
 ### 2. `simple-profile.ps1` - Simple Profile
 A lighter version with common development tools:
 - Basic git aliases
 - Essential navigation functions
-- Docker basics
-- Python/Node.js essentials
+- Python/uv basics
 - Tool checking function
 
-### 3. `minimal-profile.ps1` - Minimal Profile
-Just the bare essentials:
-- Core git commands (gst, gco, gcm, gpl, gph)
-- Basic navigation (u, c)
-- File operations (o, usager)
-- Editor shortcuts (vi, n)
+### 3. `minimal-safe-profile.ps1` - Minimal Safe Profile
+Safe version that handles missing dependencies gracefully:
+- Core git commands (gst, gco, gcm, gpl, gph, gcmep)
+- Basic navigation (u, c, o)
+- uv/Python tools (piuv, uvls, uvun)
+- Safe module imports that won't fail
+- Essential utilities (usager, reload, check-tools)
+
+### 4. `setup-uv-profile.ps1` - Setup Script
+Automated setup script that:
+- Installs uv if not present
+- Adds uv to user PATH
+- Installs required PowerShell modules
+- Installs fzf
+- Verifies tool installation
 
 ## Installation
 
-### Quick Install (Recommended)
+### Quick Install with uv Setup (Recommended)
 ```powershell
-# Install full profile
-.\install-profile.ps1
+# Run the setup script first
+.\setup-uv-profile.ps1
 
-# Install simple profile
-.\install-profile.ps1 -ProfileType simple
-
-# Install minimal profile
-.\install-profile.ps1 -ProfileType minimal
-
-# Force install (overwrite existing)
-.\install-profile.ps1 -Force
+# Then install your preferred profile
+.\install-profile.ps1 -ProfileType minimal-safe
 ```
 
 ### Manual Install
-1. Choose your profile (e.g., `profile.ps1`)
-2. Copy to your PowerShell profile location:
-   ```powershell
-   # Find your profile location
-   $PROFILE
-   
-   # Copy the profile
-   Copy-Item profile.ps1 $PROFILE
-   
-   # Reload profile
-   . $PROFILE
-   ```
+```powershell
+# Choose your profile (e.g., minimal-safe-profile.ps1)
+Copy-Item minimal-safe-profile.ps1 $PROFILE
+
+# Reload profile
+reload  # or . $PROFILE
+```
 
 ## Key Features
 

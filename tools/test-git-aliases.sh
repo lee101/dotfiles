@@ -1,0 +1,23 @@
+#!/bin/bash
+# Test script for git aliases
+
+echo "Git Aliases Test Script"
+echo "======================"
+echo ""
+echo "Available git aliases for untracked/modified files:"
+echo ""
+echo "  gun [dir]  - Show content of new/untracked files (first 100 lines)"
+echo "  gunf [dir] - Show full content of new/untracked files"
+echo "  gunl [dir] - List untracked files only"
+echo "  guna [dir] - Show ALL changes: modified diffs + new file contents"
+echo "  gsu        - Git status without untracked files"
+echo "  gss        - Git status in short format"
+echo ""
+echo "Examples:"
+echo "  gun              # Show new files in current directory"
+echo "  gun cmd/         # Show new files in cmd/ directory"
+echo "  gunl             # List all untracked files"
+echo "  guna             # Show all changes (modified + new)"
+echo ""
+echo "To use these aliases, make sure you've sourced ~/.bashrc"
+echo "or run: source ~/.git_aliases"

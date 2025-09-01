@@ -20,7 +20,7 @@
 # # The config file consists of simple key-value pairs,
 # # separated by equals signs.
 # font-family = Iosevka
-# window-padding-x = 2
+window-padding-x = 0
 #
 # # Spacing around the equals sign does not matter.
 # # All of these are identical:
@@ -41,18 +41,25 @@
 # # which is explained in the docs for that config option.
 # # Just for example:
 # resize-overlay-duration = 4s 200ms
-# Font configuration
+# Font configuration - optimized for pro usage
 font-family = JetBrains Mono
-font-size = 9
-font-feature = calt
-font-feature = liga
+font-size = 8
+font-feature = -calt
+font-feature = -liga
+font-feature = -dlig
+adjust-cell-width = -1
+adjust-cell-height = -1
 
-# Window configuration
-window-padding-x = 12
-window-padding-y = 12
+# Window configuration - performance optimized
+window-padding-x = 0
+window-padding-y = 0
 window-theme = dark
 window-decoration = false
 window-save-state = always
+window-vsync = false
+window-step-resize = true
+resize-overlay = never
+# focus-follows-mouse = true
 
 # Color scheme - Neutral Pastel Theme with improved contrast
 background = #282c34
@@ -64,7 +71,7 @@ palette = 1=#e06c75
 palette = 2=#98c379
 palette = 3=#e5c07b
 # Improved blue color for better contrast against green backgrounds - made more distinct from green
-palette = 4=#61afef
+palette = 4=#87ceeb
 palette = 5=#c678dd
 palette = 6=#56b6c2
 palette = 7=#abb2bf
@@ -75,7 +82,7 @@ palette = 9=#e06c75
 palette = 10=#98c379
 palette = 11=#e5c07b
 # Brighter blue with better contrast from green for 777 permissions
-palette = 12=#88c0ff
+palette = 12=#b3d9ff
 palette = 13=#c678dd
 palette = 14=#56b6c2
 palette = 15=#ffffff
@@ -87,12 +94,99 @@ cursor-color = #61afef
 selection-foreground = #282c34
 selection-background = #979eab
 
-# Terminal behavior
-# scrollback-lines = 10000 (removed - unknown field)
-mouse-hide-while-typing = true
+# Terminal behavior - speed focused
+scrollback-limit = 100000000
+mouse-hide-while-typing = false
+mouse-scroll-multiplier = 3
 confirm-close-surface = false
-#unsafe-paste = always
+clipboard-paste-protection = false
+clipboard-trim-trailing-spaces = true
+copy-on-select = true
+click-repeat-interval = 300
 
-# Performance optimizations
-# rendering-backend = auto (removed - unknown field)
+# Performance optimizations - maximum speed
 shell-integration = detect
+shell-integration-features = cursor,sudo,title
+custom-shader-animation = false
+image-storage-limit = 50000000
+
+# Keyboard Shortcuts - Linux-friendly (avoiding system conflicts)
+# Common Linux system shortcuts to avoid:
+# - Alt+Tab (window switching)
+# - Ctrl+Alt+arrows (workspace switching)
+# - Super+arrows (window tiling)
+# - Alt+F4 (close window)
+# - Ctrl+Alt+T (terminal)
+# - Ctrl+Alt+L (lock screen)
+
+# Window & Tab Management (using Ctrl+Shift to avoid conflicts)
+keybind = ctrl+shift+n=new_window
+keybind = ctrl+shift+t=new_tab
+keybind = ctrl+shift+w=close_tab
+keybind = ctrl+tab=next_tab
+keybind = ctrl+shift+tab=previous_tab
+keybind = ctrl+shift+l=last_tab
+keybind = ctrl+1=goto_tab:1
+keybind = ctrl+2=goto_tab:2
+keybind = ctrl+3=goto_tab:3
+keybind = ctrl+4=goto_tab:4
+keybind = ctrl+5=goto_tab:5
+keybind = ctrl+6=goto_tab:6
+keybind = ctrl+7=goto_tab:7
+keybind = ctrl+8=goto_tab:8
+keybind = ctrl+9=goto_tab:9
+
+# Split Management (using Super/Cmd or Ctrl+Shift)
+keybind = ctrl+shift+backslash=new_split:right
+keybind = ctrl+shift+minus=new_split:down
+keybind = ctrl+shift+enter=new_split:auto
+
+# Split Navigation (using Ctrl+Shift to avoid Ctrl+Alt conflicts)
+keybind = ctrl+shift+h=goto_split:left
+keybind = ctrl+shift+j=goto_split:down
+keybind = ctrl+shift+k=goto_split:up
+keybind = ctrl+shift+l=goto_split:right
+keybind = ctrl+shift+bracket_left=goto_split:previous
+keybind = ctrl+shift+bracket_right=goto_split:next
+
+# Split Resizing (using Ctrl+Shift+Alt to be unique)
+keybind = ctrl+shift+alt+h=resize_split:left,10
+keybind = ctrl+shift+alt+j=resize_split:down,10
+keybind = ctrl+shift+alt+k=resize_split:up,10
+keybind = ctrl+shift+alt+l=resize_split:right,10
+keybind = ctrl+shift+z=toggle_split_zoom
+keybind = ctrl+shift+equal=equalize_splits
+
+# Text & Clipboard
+keybind = ctrl+shift+c=copy_to_clipboard
+keybind = ctrl+shift+v=paste_from_clipboard
+keybind = ctrl+shift+a=select_all
+keybind = shift+escape=clear
+
+# Scrolling & Navigation
+keybind = shift+page_up=scroll_page_up
+keybind = shift+page_down=scroll_page_down
+keybind = shift+home=scroll_to_top
+keybind = shift+end=scroll_to_bottom
+keybind = ctrl+shift+up=scroll_up
+keybind = ctrl+shift+down=scroll_down
+
+# Font Size
+keybind = ctrl+plus=increase_font_size:1
+keybind = ctrl+minus=decrease_font_size:1
+keybind = ctrl+0=reset_font_size
+
+# Search
+keybind = ctrl+shift+f=show_search_overlay
+keybind = ctrl+shift+g=search_prev
+
+# Window Controls
+keybind = f11=toggle_fullscreen
+keybind = ctrl+shift+m=toggle_maximize
+
+# Configuration
+keybind = ctrl+comma=open_config
+keybind = ctrl+shift+r=reload_config
+
+# Development
+keybind = ctrl+shift+i=inspector:toggle
