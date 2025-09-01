@@ -1,4 +1,6 @@
 #!/bin/bash
+alias grmtr='git remote remove'
+alias cru="cd /media/lee/crucial/code/"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
@@ -1064,7 +1066,7 @@ export LD_LIBRARY_PATH="/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH"
 
 
 
-
+export PATH="/home/lee/.pixi/bin:$PATH"
 
 alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 
@@ -1209,3 +1211,14 @@ export PATH="$HOME/.local/bin:$PATH"
 
 alias br='bun run'
 alias v=nvim
+nvm use node
+export PATH="/home/lee/.pixi/bin:$PATH"
+
+# Start SSH agent and add key automatically
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)"
+    ssh-add ~/.ssh/id_ed25519 2>/dev/null
+else
+    # Ensure key is loaded in existing agent
+    ssh-add -l | grep -q "id_ed25519" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+fi
