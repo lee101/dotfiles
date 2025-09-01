@@ -201,39 +201,39 @@ return {
     end,
   },
 
-  -- GitHub Copilot
-  {
-    "github/copilot.vim",
-    event = "InsertEnter",
-    config = function()
-      -- Copilot settings
-      vim.g.copilot_no_tab_map = true
-      vim.g.copilot_assume_mapped = true
-      vim.g.copilot_tab_fallback = ""
-      
-      -- Enable Copilot for specific filetypes
-      vim.g.copilot_filetypes = {
-        ["*"] = true,
-        ["TelescopePrompt"] = false,
-        ["TelescopeResults"] = false,
-      }
-      
-      -- Key mappings for Copilot
-      vim.keymap.set("i", "<C-l>", 'copilot#Accept("\\<CR>")', {
-        expr = true,
-        replace_keycodes = false,
-        desc = "Accept Copilot suggestion"
-      })
-      vim.keymap.set("i", "<C-j>", "<Plug>(copilot-next)", { desc = "Next Copilot suggestion" })
-      vim.keymap.set("i", "<C-k>", "<Plug>(copilot-previous)", { desc = "Previous Copilot suggestion" })
-      vim.keymap.set("i", "<C-d>", "<Plug>(copilot-dismiss)", { desc = "Dismiss Copilot suggestion" })
-      
-      -- Add a command to check Copilot status
-      vim.api.nvim_create_user_command("CopilotStatus", function()
-        vim.cmd("Copilot status")
-      end, { desc = "Check Copilot status" })
-    end,
-  },
+  -- GitHub Copilot (commented out - no longer paying for subscription)
+  -- {
+  --   "github/copilot.vim",
+  --   event = "InsertEnter",
+  --   config = function()
+  --     -- Copilot settings
+  --     vim.g.copilot_no_tab_map = true
+  --     vim.g.copilot_assume_mapped = true
+  --     vim.g.copilot_tab_fallback = ""
+  --     
+  --     -- Enable Copilot for specific filetypes
+  --     vim.g.copilot_filetypes = {
+  --       ["*"] = true,
+  --       ["TelescopePrompt"] = false,
+  --       ["TelescopeResults"] = false,
+  --     }
+  --     
+  --     -- Key mappings for Copilot
+  --     vim.keymap.set("i", "<C-l>", 'copilot#Accept("\\<CR>")', {
+  --       expr = true,
+  --       replace_keycodes = false,
+  --       desc = "Accept Copilot suggestion"
+  --     })
+  --     vim.keymap.set("i", "<C-j>", "<Plug>(copilot-next)", { desc = "Next Copilot suggestion" })
+  --     vim.keymap.set("i", "<C-k>", "<Plug>(copilot-previous)", { desc = "Previous Copilot suggestion" })
+  --     vim.keymap.set("i", "<C-d>", "<Plug>(copilot-dismiss)", { desc = "Dismiss Copilot suggestion" })
+  --     
+  --     -- Add a command to check Copilot status
+  --     vim.api.nvim_create_user_command("CopilotStatus", function()
+  --       vim.cmd("Copilot status")
+  --     end, { desc = "Check Copilot status" })
+  --   end,
+  -- },
 
   -- Which-key for keybinding help
   {

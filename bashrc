@@ -1,8 +1,6 @@
 #!/bin/bash
-# ~/.bashrc: executed by bash(1) for non-login shells.
+alias pip='uv pip'
 
-# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
-# for examples
 
 # If not running interactively, don't do anything
 case $- in
@@ -20,7 +18,6 @@ if [ -n "$BASH_VERSION" ]; then
 fi
 
 # Eternal bash history.
-# ---------------------
 # Undocumented feature which sets the size to "unlimited".
 # http://stackoverflow.com/questions/9457233/unlimited-bash-history
 export HISTFILESIZE=99999999
@@ -234,6 +231,12 @@ alias gpr='hub pull-request'
 alias hpr='gpr'
 alias hprs='hub pr show'
 alias gprs='hub pr show'
+
+alias brb='bun run build'
+alias brl='bun run lint'
+alias brf='bun run format'
+alias brt='bun run typecheck'
+alias brt='bun run test'
 
 alias gst='git status'
 alias gstt='git status -uno'
