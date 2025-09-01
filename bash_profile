@@ -35,3 +35,5 @@ export PATH="/home/lee/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
 
 
 export PATH="$PATH:/home/lee/.modular/bin"
+
+. "$HOME/.local/bin/env"
