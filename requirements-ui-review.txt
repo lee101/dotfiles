@@ -1,0 +1,5 @@
+# Requirements for UI Review Tools
+pillow>=10.0.0
+openai>=1.0.0
+mss>=9.0.0
+selenium>=4.0.0

@@ -56,6 +56,34 @@ for filename in files:
 
 print('Done.')
 
+# Handle lib directory files (like git_aliases)
+lib_source = os.path.join(cwd, 'lib')
+if os.path.exists(lib_source):
+    print('Linking lib directory files...')
+    for filename in os.listdir(lib_source):
+        # Skip winbashrc as it's Windows-specific
+        if filename == 'winbashrc':
+            continue
+        
+        source = os.path.join(lib_source, filename)
+        if os.path.isfile(source):
+            destination = os.path.join(homedir, '.' + filename)
+            
+            if os.path.lexists(destination):
+                if options.force:
+                    print('Deleting %s' % destination)
+                    try:
+                        os.remove(destination)
+                    except OSError:
+                        print('Failed to delete %s' % destination)
+                        continue
+                else:
+                    print('Not overwriting %s since the file exists already and force (-f) is not in effect' % destination)
+                    continue
+            
+            print('Creating a link to %s at %s.' % (source, destination))
+            os.symlink(source, destination)
+
 # Handle Neovim configuration separately
 nvim_source_init = os.path.join(cwd, 'init.lua')
 nvim_source_lua = os.path.join(cwd, 'lua')

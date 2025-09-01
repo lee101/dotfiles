@@ -7,9 +7,22 @@ function gcm { git commit -m $args }
 function gpl { git pull }
 function gph { git push }
 
+# Hub aliases (GitHub CLI)
+function hcl { hub clone $args }
+function hpr { hub pull-request $args }
+
 # Navigation
 function u { Set-Location .. }
 function c { Set-Location ~/code }
+
+# Editor aliases
+function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+
+# Python/uv aliases
+function piuv { uv pip install $args }
+function uvls { uv tool list }
 
 # The usager function you wanted
 function usager {
@@ -36,7 +49,7 @@ function o { explorer.exe . }
 
 # Check if tools are available
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "code")
+    $tools = @("uv", "git", "gh", "hub", "node", "npm", "code", "nvim")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
             Write-Host "✓ $tool" -ForegroundColor Green
@@ -46,8 +59,17 @@ function check-tools {
     }
 }
 
+# Reload profile function (consistent with bash)
+function reload {
+    Write-Host "Reloading PowerShell profile..." -ForegroundColor Cyan
+    . $PROFILE
+    Write-Host "Profile reloaded!" -ForegroundColor Green
+}
+
 # Add common paths to PATH
 $paths = @(
+    # uv (Python package installer)
+    "$env:USERPROFILE\.local\bin",
     "$env:APPDATA\npm",
     "$env:LOCALAPPDATA\Yarn\bin",
     "$env:ALLUSERSPROFILE\chocolatey\bin"
