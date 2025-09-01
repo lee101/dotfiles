@@ -268,7 +268,6 @@ alias gdfx='git diff --cached'
 alias gdfm='git diff --diff-filter=M --ignore-space-change'
 alias gdfa='git --no-pager diff -p'
 alias gdfac='git --no-pager diff -p --cached'
-
 # Git untracked/new files - show content of new files
 function gun {
     local path="${1:-.}"
@@ -311,6 +310,8 @@ function guna {
         done
     fi
 }
+
+alias gdfaa='gunaa'
 alias glg='git log'
 alias glglee='git log --author=lee'
 alias glgme='git log --author=lee'
@@ -433,6 +434,21 @@ alias gsl='git status --long' # Long format (default)
 alias gdfn='gun'  # Show new/untracked files content (alias to gun function)
 alias gdfu='git ls-files --others --exclude-standard'  # List untracked files only
 
+# Function to show all changes (tracked + untracked) in git diff format for LLMs
+function gunaa() {
+    echo "=== TRACKED FILE CHANGES ==="
+    git --no-pager diff -p
+    echo
+    echo "=== STAGED FILE CHANGES ==="
+    git --no-pager diff -p --cached
+    echo
+    echo "=== UNTRACKED FILES ==="
+    git ls-files --others --exclude-standard | while read -r file; do
+        echo "=== New file: $file ==="
+        git diff --no-index /dev/null "$file" || true
+        echo
+    done
+}
 function gbsu {
     current_branch=`git rev-parse --abbrev-ref HEAD`
     git branch --set-upstream-to=origin/$current_branch $current_branch
@@ -765,6 +781,37 @@ alias ccmt='cldcmt'                 # Short alias for cldcmt
 alias cgcmep='cldgcmep'             # Short alias for cldgcmep
 alias cfix='cldfix'                 # Short alias for cldfix
 alias cpr='cldpr'                   # Short alias for cldpr
+
+# Claude + Git diff functions
+function cldgdfaa() {
+    if [ -z "$1" ]; then
+        echo "Usage: cldgdfaa 'your prompt text'"
+        echo "Example: cldgdfaa 'fix these changes and improve the code'"
+        return 1
+    fi
+    {
+        echo "$1"
+        echo ""
+        echo "Here are all the changes in the repository:"
+        echo ""
+        gunaa
+    } | claude
+}
+
+function cldgdf() {
+    if [ -z "$1" ]; then
+        echo "Usage: cldgdf 'your prompt text'"
+        echo "Example: cldgdf 'review these changes'"
+        return 1
+    fi
+    {
+        echo "$1"
+        echo ""
+        echo "Here are the git changes:"
+        echo ""
+        git --no-pager diff -p
+    } | claude
+}
 
 alias refresh='source ~/.bashrc'
 alias reload='source ~/.bashrc'
@@ -1207,10 +1254,23 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
+# SSH Agent Configuration
+# Check if SSH agent is running, start if not
+if ! pgrep -u "$USER" ssh-agent > /dev/null; then
+    eval "$(ssh-agent -s)" > /dev/null
+fi
 
+# Try to use gnome-keyring SSH agent if available
+if [ -S "/run/user/$UID/keyring/ssh" ]; then
+    export SSH_AUTH_SOCK="/run/user/$UID/keyring/ssh"
+elif [ -n "$SSH_AGENT_PID" ]; then
+    # Use existing SSH agent
+    export SSH_AUTH_SOCK="$SSH_AUTH_SOCK"
+fi
 
 alias br='bun run'
 alias v=nvim
+
 nvm use node
 export PATH="/home/lee/.pixi/bin:$PATH"
 
@@ -1222,3 +1282,5 @@ else
     # Ensure key is loaded in existing agent
     ssh-add -l | grep -q "id_ed25519" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
 fi
+
+. "$HOME/.local/bin/env"
