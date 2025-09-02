@@ -1015,10 +1015,12 @@ if command -v direnv >/dev/null 2>&1; then
   eval "$(direnv hook bash 2>/dev/null)" || true
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
+if command -v pyenv >/dev/null 2>&1; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+fi
 
 # Guard kubectl completion
 # if command -v kubectl >/dev/null 2>&1; then
@@ -1071,7 +1073,7 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-. "$HOME/.cargo/env"
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
@@ -1210,4 +1212,4 @@ export PATH="$HOME/.local/bin:$PATH"
 alias br='bun run'
 alias v=nvim
 
-. "$HOME/.local/bin/env"
+[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
