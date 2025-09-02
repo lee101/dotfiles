@@ -63,6 +63,11 @@ sudo apt install nasm
 sudo apt install zile plocate hstr
 sudo snap install nvim
 
+# Install Helix editor
+sudo add-apt-repository ppa:maveonair/helix-editor -y
+sudo apt update
+sudo apt install helix -y
+
 
 # ffmpeg
 # First remove any existing FFmpeg installation
@@ -252,3 +257,70 @@ gh auth login
 gh extension install github/gh-copilot
 
 sudo apt install -y ripgrep
+
+# Install lynx text-based web browser
+echo "Installing lynx browser..."
+sudo apt-get update
+sudo apt-get install -y lynx
+
+# Create lynx configuration directory
+mkdir -p ~/.lynx
+
+# Setup lynx configuration for better browsing experience
+cat > ~/.lynxrc << 'EOF'
+# Lynx configuration file
+
+# Accept cookies automatically without prompting
+SET_COOKIES:TRUE
+ACCEPT_ALL_COOKIES:TRUE
+PERSISTENT_COOKIES:TRUE
+COOKIE_FILE:~/.lynx/cookies
+COOKIE_ACCEPT_DOMAINS:ALL
+COOKIE_REJECT_DOMAINS:
+COOKIE_QUERY_INVALID_DOMAINS:FALSE
+COOKIE_LOOSE_INVALID_DOMAINS:TRUE
+FORCE_COOKIE_PROMPT:FALSE
+
+# Enable color
+SHOW_COLOR:TRUE
+
+# Set vi-like key bindings
+VI_KEYS_ALWAYS_ON:TRUE
+
+# Enable mouse support
+USE_MOUSE:TRUE
+
+# Set default editor
+DEFAULT_EDITOR:vim
+
+# Character set
+CHARACTER_SET:utf-8
+ASSUME_CHARSET:utf-8
+
+# Enable SSL/TLS
+SSL_CERT_FILE:/etc/ssl/certs/ca-certificates.crt
+
+# User agent string (some sites work better with a standard browser UA)
+USERAGENT:Lynx/2.9.0 (compatible; text browser)
+
+# Number links for easy navigation
+NUMBER_LINKS:TRUE
+
+# Save bookmarks file
+DEFAULT_BOOKMARK_FILE:~/.lynx/bookmarks.html
+
+# History settings
+MAXHIST:200
+
+# Display settings
+VERBOSE_IMAGES:TRUE
+MAKE_LINKS_FOR_ALL_IMAGES:TRUE
+
+# Enable justified text
+JUSTIFY:TRUE
+
+# Show transfer rate
+SHOW_KB_RATE:TRUE
+EOF
+
+echo "Lynx browser installed and configured successfully"

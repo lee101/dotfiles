@@ -22,3 +22,6 @@ idea/*
 bin/ssh-daisy
 bin/ssh-lee3090ti
 bin/setup-ssh-keys.sh
+
+# Screenshots directory
+screenshots/
