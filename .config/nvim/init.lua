@@ -329,8 +329,8 @@ require("lazy").setup({
             ["<Tab>"] = cmp.mapping(function(fallback)
               if cmp.visible() then
                 cmp.select_next_item()
-              elseif vim.fn["copilot#GetDisplayedSuggestion"]().text ~= "" then
-                vim.fn.feedkeys(vim.api.nvim_replace_termcodes(vim.fn["copilot#Accept"](), true, true, true), "")
+              -- elseif vim.fn["copilot#GetDisplayedSuggestion"]().text ~= "" then
+              --   vim.fn.feedkeys(vim.api.nvim_replace_termcodes(vim.fn["copilot#Accept"](), true, true, true), "")
               else
                 fallback()
               end
@@ -352,34 +352,34 @@ require("lazy").setup({
         })
       end
     },
-    {
-      "github/copilot.vim", -- GitHub Copilot
-      event = "InsertEnter",
-      config = function()
-        -- Disable default tab mapping to avoid conflicts
-        vim.g.copilot_no_tab_map = true
-        vim.g.copilot_assume_mapped = true
-        vim.g.copilot_tab_fallback = ""
-        
-        -- Set up Copilot keymaps after VimEnter to ensure they work
-        vim.api.nvim_create_autocmd("VimEnter", {
-          callback = function()
-            -- Accept suggestion with Ctrl+J (Git Bash friendly)
-            vim.keymap.set("i", "<C-j>", 'copilot#Accept("\\<CR>")', {
-              expr = true,
-              replace_keycodes = false,
-              silent = true,
-              desc = "Accept Copilot suggestion"
-            })
-            
-            -- Navigate suggestions
-            vim.keymap.set("i", "<C-]>", "<Plug>(copilot-next)", { silent = true, desc = "Next Copilot suggestion" })
-            vim.keymap.set("i", "<C-[>", "<Plug>(copilot-previous)", { silent = true, desc = "Previous Copilot suggestion" })
-            vim.keymap.set("i", "<C-\\>", "<Plug>(copilot-dismiss)", { silent = true, desc = "Dismiss Copilot suggestion" })
-          end,
-        })
-      end,
-    },
+    -- {
+    --   "github/copilot.vim", -- GitHub Copilot (commented out - no longer paying for subscription)
+    --   event = "InsertEnter",
+    --   config = function()
+    --     -- Disable default tab mapping to avoid conflicts
+    --     vim.g.copilot_no_tab_map = true
+    --     vim.g.copilot_assume_mapped = true
+    --     vim.g.copilot_tab_fallback = ""
+    --     
+    --     -- Set up Copilot keymaps after VimEnter to ensure they work
+    --     vim.api.nvim_create_autocmd("VimEnter", {
+    --       callback = function()
+    --         -- Accept suggestion with Ctrl+J (Git Bash friendly)
+    --         vim.keymap.set("i", "<C-j>", 'copilot#Accept("\\<CR>")', {
+    --           expr = true,
+    --           replace_keycodes = false,
+    --           silent = true,
+    --           desc = "Accept Copilot suggestion"
+    --         })
+    --         
+    --         -- Navigate suggestions
+    --         vim.keymap.set("i", "<C-]>", "<Plug>(copilot-next)", { silent = true, desc = "Next Copilot suggestion" })
+    --         vim.keymap.set("i", "<C-[>", "<Plug>(copilot-previous)", { silent = true, desc = "Previous Copilot suggestion" })
+    --         vim.keymap.set("i", "<C-\\>", "<Plug>(copilot-dismiss)", { silent = true, desc = "Dismiss Copilot suggestion" })
+    --       end,
+    --     })
+    --   end,
+    -- },
     {
       "tpope/vim-repeat", -- Repeat plugin commands
     },
@@ -937,22 +937,22 @@ vim.keymap.set("i", "jj", "<Esc>", { desc = "Exit insert mode with jj" })
 vim.keymap.set("n", ";", ":", { desc = "Use semicolon for command mode" })
 vim.keymap.set("n", ":", ";", { desc = "Use colon for repeat find" })
 
--- Copilot configuration (after plugins are loaded)
-vim.g.copilot_no_tab_map = true
-vim.g.copilot_assume_mapped = true
-
--- Map Tab to accept Copilot suggestions
-vim.keymap.set("i", "<Tab>", 'copilot#Accept("\\<CR>")', {
-  expr = true,
-  replace_keycodes = false,
-  silent = true
-})
--- Alternative mapping
-vim.keymap.set("i", "<C-J>", 'copilot#Accept("\\<CR>")', {
-  expr = true,
-  replace_keycodes = false,
-  silent = true
-})
+-- Copilot configuration (after plugins are loaded) - commented out, no longer paying for subscription
+-- vim.g.copilot_no_tab_map = true
+-- vim.g.copilot_assume_mapped = true
+-- 
+-- -- Map Tab to accept Copilot suggestions
+-- vim.keymap.set("i", "<Tab>", 'copilot#Accept("\\<CR>")', {
+--   expr = true,
+--   replace_keycodes = false,
+--   silent = true
+-- })
+-- -- Alternative mapping
+-- vim.keymap.set("i", "<C-J>", 'copilot#Accept("\\<CR>")', {
+--   expr = true,
+--   replace_keycodes = false,
+--   silent = true
+-- })
 
 -- Use a different key for fold toggle since space is leader
 vim.keymap.set("n", "za", "za", { desc = "Toggle fold" })

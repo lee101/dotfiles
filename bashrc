@@ -1,10 +1,9 @@
 #!/bin/bash
+alias pip='uv pip'
 alias grmtr='git remote remove'
 alias cru="cd /media/lee/crucial/code/"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
-# for examples
 
 # If not running interactively, don't do anything
 case $- in
@@ -22,7 +21,6 @@ if [ -n "$BASH_VERSION" ]; then
 fi
 
 # Eternal bash history.
-# ---------------------
 # Undocumented feature which sets the size to "unlimited".
 # http://stackoverflow.com/questions/9457233/unlimited-bash-history
 export HISTFILESIZE=99999999
@@ -37,6 +35,12 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 # Chrome profile path for js-error-checker
 export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
+
+# SSH Agent auto-start
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+    ssh-add ~/.ssh/id_ed25519 2>/dev/null
+fi
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -248,6 +252,12 @@ alias hpr='gpr'
 alias hprs='hub pr show'
 alias gprs='hub pr show'
 
+alias brb='bun run build'
+alias brl='bun run lint'
+alias brf='bun run format'
+alias brt='bun run typecheck'
+alias brt='bun run test'
+
 alias gst='git status'
 alias gstt='git status -uno'
 alias gco='git checkout'
@@ -289,14 +299,14 @@ function gunl {
 # Git diff all (modified + untracked)
 function guna {
     local path="${1:-.}"
-    
+
     # Show modified files diff
     local has_modified=$(git diff HEAD --name-only "$path" 2>/dev/null)
     if [ -n "$has_modified" ]; then
         echo -e "\033[1;33m=== MODIFIED FILES ===\033[0m"
         git diff HEAD --color "$path" 2>/dev/null
     fi
-    
+
     # Show new/untracked files
     local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
     if [ -n "$has_untracked" ]; then
@@ -495,7 +505,7 @@ function gswf {
 if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [ "$machine" = "Cygwin" ] || [ "$machine" = "MinGw" ]; then
   # Get the directory where this bashrc is located
   BASHRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  
+
   # Source the Windows-specific bashrc if it exists
   if [ -f "$BASHRC_DIR/lib/winbashrc" ]; then
     . "$BASHRC_DIR/lib/winbashrc"
@@ -603,7 +613,7 @@ alias smi='nvidia-smi'
 alias wsmi='watch -n 1 nvidia-smi'
 
 # GPU monitoring with detailed metrics
-# sm: streaming multiprocessor utilization, mem: memory controller utilization 
+# sm: streaming multiprocessor utilization, mem: memory controller utilization
 # enc: encoder utilization, dec: decoder utilization, jpg: JPEG engine utilization
 # ofa: optical flow accelerator utilization, fb: framebuffer memory usage
 # bar1: BAR1 memory usage, ccpm: compute capability memory usage
@@ -1073,10 +1083,12 @@ if command -v direnv >/dev/null 2>&1; then
   eval "$(direnv hook bash 2>/dev/null)" || true
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
+if command -v pyenv >/dev/null 2>&1; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+fi
 
 # Guard kubectl completion
 # if command -v kubectl >/dev/null 2>&1; then
@@ -1129,7 +1141,7 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-. "$HOME/.cargo/env"
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
@@ -1150,13 +1162,13 @@ function gali {
         echo "Example: gali bb='bun run build'"
         return 1
     fi
-    
+
     # Add the alias to bashrc
     echo "alias $@" >> $HOME/.bashrc
-    
+
     # Source bashrc to make it immediately available
     source $HOME/.bashrc
-    
+
     echo "Alias added: $@"
 }
 
@@ -1284,6 +1296,10 @@ alias v=nvim
 if command -v nvm >/dev/null 2>&1; then
     nvm use node >/dev/null 2>&1
 fi
+# Source local environment if it exists
+if [ -f "$HOME/.local/bin/env" ]; then
+    . "$HOME/.local/bin/env"
+fi
 export PATH="/home/lee/.pixi/bin:$PATH"
 
 # Start SSH agent and add key automatically
@@ -1295,7 +1311,3 @@ else
     ssh-add -l | grep -q "id_ed25519" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
 fi
 
-# Source local environment if it exists
-if [ -f "$HOME/.local/bin/env" ]; then
-    . "$HOME/.local/bin/env"
-fi
