@@ -405,4 +405,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Chrome profile environment variable
 export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
 
-. "$HOME/.local/bin/env"
+# Source local environment if it exists
+if [ -f "$HOME/.local/bin/env" ]; then
+    . "$HOME/.local/bin/env"
+fi
