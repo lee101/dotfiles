@@ -8,6 +8,7 @@
 	default = upstream
 [color]
 	ui = true
+	diff = auto
 [alias]
     st = status
     ci = commit
@@ -45,6 +46,7 @@
     cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [diff]
     tool = nvimdiff
+	mnemonicprefix = false
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
 [credential]
@@ -91,3 +93,5 @@
 	directory = *
 [pull]
 	rebase = false
+[pager]
+	diff = less -FRX

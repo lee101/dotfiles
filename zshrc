@@ -412,10 +412,11 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Chrome profile environment variable
 export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
 
+# Source local environment if it exists
 [[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
 
-# Custom aliases (placed at end to avoid overrides)
+# Custom aliases (placed at end to avoid overrides) 
 alias reload='source ~/.zshrc'
-alias refresh='source ~/.zshrc' 
+alias refresh='source ~/.zshrc'
 alias cld='bun run $(which claude) --dangerously-skip-permissions'
 alias gd='git diff'
