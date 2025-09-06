@@ -37,10 +37,7 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
 
 # SSH Agent auto-start
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" > /dev/null
-    ssh-add ~/.ssh/id_ed25519 2>/dev/null
-fi
+# SSH agent setup moved to end of file to avoid duplicates
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -525,7 +522,10 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias pbcopy="clip"
   alias pbpaste="powershell.exe -command 'Get-Clipboard'"
   # Cntrl+] to copy current command to clipboard for Git Bash
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi
 
   # Windows Git Bash open setup
   alias open="explorer.exe"
@@ -591,7 +591,10 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
   alias say='echo "$1" | espeak -s 120'
 
   # Cntrl+] to copy current command to clipboard for Linux
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi
 
   # Linux nvim setup
   export EDITOR="nvim"
@@ -1038,7 +1041,10 @@ export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 # Only use bind if we're in bash
 if [ -n "$BASH_VERSION" ]; then
   # Cntrl+] to copy current command to clipboard
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi 2>/dev/null || true
 fi
 
 alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
@@ -1127,10 +1133,12 @@ if command -v direnv >/dev/null 2>&1; then
   eval "$(direnv hook bash 2>/dev/null)" || true
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
+if command -v pyenv >/dev/null 2>&1; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+fi
 
 # Guard kubectl completion
 # if command -v kubectl >/dev/null 2>&1; then
@@ -1183,7 +1191,7 @@ alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-. "$HOME/.cargo/env"
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
@@ -1334,16 +1342,32 @@ fi
 alias br='bun run'
 alias v=nvim
 
-nvm use node
+# Use default node version silently
+if command -v nvm >/dev/null 2>&1; then
+    nvm use node >/dev/null 2>&1
+fi
+# Source local environment if it exists
+if [ -f "$HOME/.local/bin/env" ]; then
+    . "$HOME/.local/bin/env"
+fi
 export PATH="/home/lee/.pixi/bin:$PATH"
 
-# Start SSH agent and add key automatically
+# Start SSH agent and add key automatically (safe version - allows passphrase prompts)
 if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)"
-    ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    eval "$(ssh-agent -s)" >/dev/null 2>&1
+    # Check if key is already loaded, if not, add it (allows passphrase prompt)
+    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+    fi
 else
-    # Ensure key is loaded in existing agent
-    ssh-add -l | grep -q "id_ed25519" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    # Ensure key is loaded in existing agent (allows passphrase prompt)
+    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+    fi
 fi
 
-. "$HOME/.local/bin/env"
+alias gdfs='git diff --ext-diff'
+
+# Lynx browser with auto-accept cookies
+alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
+export PATH=/usr/local/go/bin:$PATH

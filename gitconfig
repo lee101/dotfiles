@@ -8,6 +8,7 @@
 	default = upstream
 [color]
 	ui = true
+	diff = auto
 [alias]
     st = status
     ci = commit
@@ -28,6 +29,7 @@
     excludesfile = ~/.gitignore_global
     pager = diff-so-fancy | less --tabs=4 -RFX
     autocrlf = input
+	mergeoptions = --no-edit
 [interactive]
     diffFilter = diff-so-fancy --strip-leading-symbols
 [delta]
@@ -45,6 +47,7 @@
     cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [diff]
     tool = nvimdiff
+	mnemonicprefix = false
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
 [credential]
@@ -91,3 +94,7 @@
 	directory = *
 [pull]
 	rebase = false
+[pager]
+	diff = less -FRX
+[merge "commit"]
+	cleanup = strip

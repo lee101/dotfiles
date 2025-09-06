@@ -3,7 +3,10 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(ln:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Read(//Users/leepenkman/**)",
+      "Read(//Users/leepenkman/**)",
+      "Read(//Users/leepenkman/**)"
     ],
     "deny": []
   },
