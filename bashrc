@@ -1312,3 +1312,7 @@ else
 fi
 
 alias gdfs='git diff --ext-diff'
+
+# Lynx browser with auto-accept cookies
+alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
+export PATH=/usr/local/go/bin:$PATH
