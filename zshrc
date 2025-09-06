@@ -220,6 +220,8 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 
 alias gpr='hub pull-request' #'gh pr create'
 alias gcm='git commit -m'
+alias gcmtm='git commit --no-edit'
+alias gcmtmp='git commit --no-edit && git push'
 alias gsw='git show'
 alias gpl='git pull'
 alias gd='git diff'
@@ -257,8 +259,8 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" >/dev/null 2>&1  # This loads nvm silently
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" >/dev/null 2>&1  # This loads nvm bash_completion silently
 
 
 alias usag='du -sh * * | sort -h'
