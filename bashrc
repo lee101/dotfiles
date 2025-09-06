@@ -522,7 +522,10 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias pbcopy="clip"
   alias pbpaste="powershell.exe -command 'Get-Clipboard'"
   # Cntrl+] to copy current command to clipboard for Git Bash
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi
 
   # Windows Git Bash open setup
   alias open="explorer.exe"
@@ -588,7 +591,10 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
   alias say='echo "$1" | espeak -s 120'
 
   # Cntrl+] to copy current command to clipboard for Linux
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi
 
   # Linux nvim setup
   export EDITOR="nvim"
@@ -982,7 +988,10 @@ export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 # Only use bind if we're in bash
 if [ -n "$BASH_VERSION" ]; then
   # Cntrl+] to copy current command to clipboard
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi 2>/dev/null || true
 fi
 
 alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
@@ -1280,8 +1289,14 @@ fi
 alias br='bun run'
 alias v=nvim
 
-[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
-nvm use node
+# Use default node version silently
+if command -v nvm >/dev/null 2>&1; then
+    nvm use node >/dev/null 2>&1
+fi
+# Source local environment if it exists
+if [ -f "$HOME/.local/bin/env" ]; then
+    . "$HOME/.local/bin/env"
+fi
 export PATH="/home/lee/.pixi/bin:$PATH"
 
 # Start SSH agent and add key automatically (safe version - allows passphrase prompts)
@@ -1298,3 +1313,4 @@ else
     fi
 fi
 
+alias gdfs='git diff --ext-diff'
