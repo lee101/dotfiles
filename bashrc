@@ -37,10 +37,7 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
 
 # SSH Agent auto-start
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" > /dev/null
-    ssh-add ~/.ssh/id_ed25519 2>/dev/null
-fi
+# SSH agent setup moved to end of file to avoid duplicates
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -1287,12 +1284,17 @@ alias v=nvim
 nvm use node
 export PATH="/home/lee/.pixi/bin:$PATH"
 
-# Start SSH agent and add key automatically
+# Start SSH agent and add key automatically (safe version - allows passphrase prompts)
 if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)"
-    ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    eval "$(ssh-agent -s)" >/dev/null 2>&1
+    # Check if key is already loaded, if not, add it (allows passphrase prompt)
+    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+    fi
 else
-    # Ensure key is loaded in existing agent
-    ssh-add -l | grep -q "id_ed25519" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    # Ensure key is loaded in existing agent (allows passphrase prompt)
+    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+    fi
 fi
 
