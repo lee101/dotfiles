@@ -299,14 +299,14 @@ function gunl {
 # Git diff all (modified + untracked)
 function guna {
     local path="${1:-.}"
-    
+
     # Show modified files diff
     local has_modified=$(git diff HEAD --name-only "$path" 2>/dev/null)
     if [ -n "$has_modified" ]; then
         echo -e "\033[1;33m=== MODIFIED FILES ===\033[0m"
         git diff HEAD --color "$path" 2>/dev/null
     fi
-    
+
     # Show new/untracked files
     local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
     if [ -n "$has_untracked" ]; then
@@ -505,7 +505,7 @@ function gswf {
 if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [ "$machine" = "Cygwin" ] || [ "$machine" = "MinGw" ]; then
   # Get the directory where this bashrc is located
   BASHRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  
+
   # Source the Windows-specific bashrc if it exists
   if [ -f "$BASHRC_DIR/lib/winbashrc" ]; then
     . "$BASHRC_DIR/lib/winbashrc"
@@ -607,7 +607,7 @@ alias smi='nvidia-smi'
 alias wsmi='watch -n 1 nvidia-smi'
 
 # GPU monitoring with detailed metrics
-# sm: streaming multiprocessor utilization, mem: memory controller utilization 
+# sm: streaming multiprocessor utilization, mem: memory controller utilization
 # enc: encoder utilization, dec: decoder utilization, jpg: JPEG engine utilization
 # ofa: optical flow accelerator utilization, fb: framebuffer memory usage
 # bar1: BAR1 memory usage, ccpm: compute capability memory usage
@@ -684,7 +684,7 @@ pins() {
 
 eval "$(hub alias -s)" 2>/dev/null || true
 
-alias cx='codex'
+alias cx='codex --dangerously-bypass-approvals-and-sandbox'
 alias cxa='codex --auto-edit'
 alias cxf='codex --full-auto'
 
@@ -791,6 +791,59 @@ alias ccmt='cldcmt'                 # Short alias for cldcmt
 alias cgcmep='cldgcmep'             # Short alias for cldgcmep
 alias cfix='cldfix'                 # Short alias for cldfix
 alias cpr='cldpr'                   # Short alias for cldpr
+
+# Codex CLI aliases
+alias cdx='codex'
+alias cdxd='codex --dangerously-bypass-approvals-and-sandbox'
+alias cdxf='codex --full-auto'                              # Convenience for sandboxed auto (-a on-failure, --sandbox workspace-write)
+alias cdxr='codex --sandbox read-only'                      # Read-only sandbox mode
+alias cdxw='codex --sandbox workspace-write'                # Workspace write sandbox mode
+alias cdxa='codex apply'                                    # Apply latest diff as git apply
+alias cdxe='codex exec'                                     # Run non-interactively
+alias cdxs='codex --search'                                 # Enable web search
+alias cdxo='codex --oss'                                    # Use local OSS model (Ollama)
+alias cdxed='codex exec --dangerously-bypass-approvals-and-sandbox'  # Exec with no sandbox
+
+# Function to run multiple codex prompts in sequence
+function cdxm() {
+    # Run multiple codex exec commands in sequence
+    # Usage: cdxm "first prompt" "second prompt" "third prompt"
+    
+    local dangerous_mode=""
+    if [[ "$1" == "-d" ]]; then
+        dangerous_mode="--dangerously-bypass-approvals-and-sandbox"
+        shift
+    fi
+    
+    for prompt in "$@"; do
+        echo -e "\n\033[1;36m=== Executing: $prompt ===\033[0m"
+        codex exec $dangerous_mode "$prompt"
+        if [ $? -ne 0 ]; then
+            echo -e "\033[1;31mCommand failed, stopping sequence\033[0m"
+            return 1
+        fi
+        echo -e "\033[1;32m=== Completed ===\033[0m\n"
+    done
+}
+
+# Function to pipe prompts to codex interactively (experimental)
+function cdxi() {
+    # Interactive codex with initial prompt
+    # Usage: cdxi "initial prompt"
+    # Then type additional prompts interactively
+    
+    local dangerous_mode=""
+    if [[ "$1" == "-d" ]]; then
+        dangerous_mode="--dangerously-bypass-approvals-and-sandbox"
+        shift
+    fi
+    
+    if [ -n "$1" ]; then
+        codex $dangerous_mode "$1"
+    else
+        codex $dangerous_mode
+    fi
+}
 
 # Claude + Git diff functions
 function cldgdfaa() {
@@ -1151,13 +1204,13 @@ function gali {
         echo "Example: gali bb='bun run build'"
         return 1
     fi
-    
+
     # Add the alias to bashrc
     echo "alias $@" >> $HOME/.bashrc
-    
+
     # Source bashrc to make it immediately available
     source $HOME/.bashrc
-    
+
     echo "Alias added: $@"
 }
 

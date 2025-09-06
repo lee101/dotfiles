@@ -1,0 +1,11 @@
+# Python formatter and linter requirements
+ruff>=0.8.0
+black>=24.0.0
+pip-tools>=7.4.0
+
+# Other Python tools
+mypy>=1.0.0
+pylint>=3.0.0
+isort>=5.13.0
+flake8>=7.0.0
+autopep8>=2.0.0
