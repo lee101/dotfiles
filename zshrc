@@ -418,3 +418,6 @@ alias reload='source ~/.zshrc'
 alias refresh='source ~/.zshrc'
 alias cld='bun run $(which claude) --dangerously-skip-permissions'
 alias gd='git diff'
+
+# Lynx browser with auto-accept cookies
+alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
