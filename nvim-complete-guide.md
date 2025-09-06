@@ -298,6 +298,28 @@ Examples:
 | `<Ctrl-\>` | Toggle floating terminal |
 | `<Esc>` | Exit terminal mode |
 
+#### Tips
+- Floating terminal opens large by default; run any CLI tool right inside Nvim.
+- Use multiple terminals with `:ToggleTerm` (each buffer keeps its own cwd).
+- Press `<Esc>` to get to Normal mode, then window-nav with your usual keys.
+
+### Git TUI (LazyGit)
+| Keybinding | Action |
+|------------|--------|
+| `<leader>lg` | Open LazyGit in floating terminal |
+
+#### Prerequisite
+- Install `lazygit` on your system and make sure it’s on `PATH`.
+
+#### Common workflow
+- Stage/unstage, commit, and rebase from LazyGit; press `q` to exit.
+- Works in the repo of the current file; opens detached from your edit buffers.
+
+### CLI Inside Nvim
+- Use the floating terminal to run `rg`, `gh`, `docker`, `npm`, etc., without leaving Nvim.
+- Long-running commands keep running even if you switch back to editing.
+- For quick Git reviews use `<leader>lg` (LazyGit) or `:Git` (Fugitive) as needed.
+
 ### Autopairs
 Automatically closes brackets/quotes:
 - Type `(` → `()`

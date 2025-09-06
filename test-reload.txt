@@ -1,0 +1,5 @@
+Line 1: Original content
+Line 2: This is a test file
+Line 3: For testing smart reload
+Line 4: In Neovim
+Line 5: End of file
