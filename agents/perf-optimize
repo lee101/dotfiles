@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+# Performance Optimization Agent Launcher
+# Analyzes and fixes performance issues in applications
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Configuration
+AGENT_DIR="$(dirname "$0")"
+PROMPT_FILE="$AGENT_DIR/performance-optimizer.md"
+TRACE_TOOLKIT="$AGENT_DIR/../tools/trace-toolkit.sh"
+
+# Help function
+show_help() {
+    cat << EOF
+Performance Optimization Agent
+==============================
+
+USAGE:
+    perf-optimize <target>           Analyze and optimize a running application
+    perf-optimize --pid <pid>        Analyze specific PID
+    perf-optimize --name <name>      Find and analyze process by name
+    perf-optimize --exec <command>   Start and analyze a command
+    perf-optimize --codebase <path>  Optimize code in directory
+    perf-optimize --help             Show this help
+
+EXAMPLES:
+    perf-optimize myapp              # Find and optimize 'myapp'
+    perf-optimize --pid 1234         # Optimize process 1234
+    perf-optimize --exec "npm start" # Start and optimize npm
+    perf-optimize --codebase .       # Optimize current directory
+
+MODES:
+    --quick     Quick analysis (5 seconds of tracing)
+    --deep      Deep analysis (30 seconds of tracing)
+    --fix       Auto-fix issues found (dangerous!)
+    --report    Generate performance report only
+
+The agent will:
+1. Profile the application using system tracing
+2. Identify performance bottlenecks
+3. Analyze the source code
+4. Implement optimizations
+5. Verify improvements
+
+EOF
+}
+
+# Check dependencies
+check_deps() {
+    echo -e "${CYAN}Checking dependencies...${NC}"
+    
+    if ! command -v claude &> /dev/null; then
+        echo -e "${RED}Error: claude CLI not found${NC}"
+        echo "Install with: npm install -g @anthropic/claude-cli"
+        exit 1
+    fi
+    
+    if [[ ! -f "$TRACE_TOOLKIT" ]]; then
+        echo -e "${YELLOW}Warning: trace-toolkit.sh not found${NC}"
+        echo "Some tracing features may not work"
+    else
+        source "$TRACE_TOOLKIT"
+        echo -e "${GREEN}✓ Trace toolkit loaded${NC}"
+    fi
+    
+    # Check for tracing tools
+    if [[ "$(uname)" == "Linux" ]]; then
+        command -v strace &> /dev/null && echo -e "${GREEN}✓ strace available${NC}" || echo -e "${YELLOW}⚠ strace not found${NC}"
+        command -v perf &> /dev/null && echo -e "${GREEN}✓ perf available${NC}" || echo -e "${YELLOW}⚠ perf not found${NC}"
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        command -v dtruss &> /dev/null && echo -e "${GREEN}✓ dtruss available${NC}" || echo -e "${YELLOW}⚠ dtruss not found${NC}"
+    fi
+}
+
+# Parse arguments
+TARGET=""
+MODE="analyze"
+PID=""
+NAME=""
+EXEC=""
+CODEBASE=""
+FIX_MODE=false
+TRACE_DURATION=10
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --pid)
+            PID="$2"
+            shift 2
+            ;;
+        --name)
+            NAME="$2"
+            shift 2
+            ;;
+        --exec)
+            EXEC="$2"
+            shift 2
+            ;;
+        --codebase)
+            CODEBASE="$2"
+            shift 2
+            ;;
+        --quick)
+            TRACE_DURATION=5
+            shift
+            ;;
+        --deep)
+            TRACE_DURATION=30
+            shift
+            ;;
+        --fix)
+            FIX_MODE=true
+            shift
+            ;;
+        --report)
+            MODE="report"
+            shift
+            ;;
+        *)
+            TARGET="$1"
+            shift
+            ;;
+    esac
+done
+
+# Main execution
+main() {
+    check_deps
+    
+    # Build the context for Claude
+    CONTEXT=""
+    
+    # Add target information
+    if [[ -n "$PID" ]]; then
+        CONTEXT="Analyze process with PID $PID"
+    elif [[ -n "$NAME" ]]; then
+        CONTEXT="Find and analyze process named '$NAME'"
+    elif [[ -n "$EXEC" ]]; then
+        CONTEXT="Execute and analyze command: $EXEC"
+    elif [[ -n "$TARGET" ]]; then
+        CONTEXT="Analyze application: $TARGET"
+    elif [[ -n "$CODEBASE" ]]; then
+        CONTEXT="Optimize codebase at: $CODEBASE"
+    else
+        echo -e "${RED}Error: No target specified${NC}"
+        show_help
+        exit 1
+    fi
+    
+    # Add mode information
+    if [[ "$FIX_MODE" == true ]]; then
+        CONTEXT="$CONTEXT\n\nMODE: Auto-fix performance issues found (implement optimizations directly)"
+    fi
+    
+    CONTEXT="$CONTEXT\n\nTrace Duration: ${TRACE_DURATION} seconds"
+    CONTEXT="$CONTEXT\nWorking Directory: $(pwd)"
+    
+    # Add system info
+    CONTEXT="$CONTEXT\n\nSystem Info:"
+    CONTEXT="$CONTEXT\n- OS: $(uname -s)"
+    CONTEXT="$CONTEXT\n- CPU: $(nproc 2>/dev/null || sysctl -n hw.ncpu) cores"
+    CONTEXT="$CONTEXT\n- Memory: $(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo 'N/A')"
+    
+    # Prepare the full prompt
+    FULL_PROMPT="You are a performance optimization specialist. Your task is to analyze and optimize application performance.
+
+$CONTEXT
+
+Instructions:
+1. First, identify the target process (use proc-find if needed)
+2. Run initial profiling with proc-watch to understand resource usage
+3. Use appropriate tracing tools based on the bottleneck type:
+   - CPU bound: trace-cpu, trace-syscalls
+   - I/O bound: trace-io, trace-files
+   - Memory issues: proc-memory
+4. Analyze the trace output to identify specific bottlenecks
+5. Locate the problematic code in the codebase
+6. Implement optimizations if --fix mode is enabled
+7. Generate a performance report with findings and recommendations
+
+Available tools are loaded from: $TRACE_TOOLKIT
+Use 'source $TRACE_TOOLKIT' if you need to reload them.
+
+Remember to be thorough but efficient. Focus on the most impactful optimizations first."
+
+    # Add the agent prompt
+    if [[ -f "$PROMPT_FILE" ]]; then
+        FULL_PROMPT="$FULL_PROMPT
+
+$(cat "$PROMPT_FILE")"
+    fi
+    
+    echo -e "${CYAN}Launching Performance Optimization Agent...${NC}"
+    echo -e "${YELLOW}Target: $CONTEXT${NC}"
+    echo
+    
+    # Launch Claude with dangerous permissions for system tracing
+    if [[ "$FIX_MODE" == true ]]; then
+        echo -e "${RED}WARNING: Running in auto-fix mode with full permissions${NC}"
+        echo -e "${RED}The agent will modify your code automatically!${NC}"
+        read -p "Continue? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 1
+        fi
+    fi
+    
+    # Run Claude
+    echo "$FULL_PROMPT" | claude
+}
+
+# Run main
+main

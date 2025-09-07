@@ -895,6 +895,27 @@ require("lazy").setup({
         end
 
         vim.keymap.set('n', '<leader>lg', '<cmd>lua _LAZYGIT_TOGGLE()<CR>', { desc = 'LazyGit (float)' })
+        
+        -- Additional terminal shortcuts
+        -- Ctrl+` for floating terminal (already set via open_mapping)
+        -- Leader+t for different terminal directions
+        vim.keymap.set('n', '<leader>tf', '<cmd>ToggleTerm direction=float<CR>', { desc = 'Floating terminal' })
+        vim.keymap.set('n', '<leader>th', '<cmd>ToggleTerm direction=horizontal<CR>', { desc = 'Horizontal terminal' })
+        vim.keymap.set('n', '<leader>tv', '<cmd>ToggleTerm direction=vertical<CR>', { desc = 'Vertical terminal' })
+        vim.keymap.set('n', '<leader>tt', '<cmd>ToggleTerm direction=tab<CR>', { desc = 'Terminal in new tab' })
+        
+        -- Ctrl+` also works in terminal mode to toggle back
+        vim.keymap.set('n', '<C-`>', '<cmd>ToggleTerm<CR>', { desc = 'Toggle terminal' })
+        vim.keymap.set('i', '<C-`>', '<cmd>ToggleTerm<CR>', { desc = 'Toggle terminal' })
+        
+        -- Multiple terminals with number prefix
+        vim.keymap.set('n', '<leader>t1', '<cmd>1ToggleTerm<CR>', { desc = 'Terminal 1' })
+        vim.keymap.set('n', '<leader>t2', '<cmd>2ToggleTerm<CR>', { desc = 'Terminal 2' })
+        vim.keymap.set('n', '<leader>t3', '<cmd>3ToggleTerm<CR>', { desc = 'Terminal 3' })
+        
+        -- Send current line or selection to terminal
+        vim.keymap.set('n', '<leader>ts', '<cmd>ToggleTermSendCurrentLine<CR>', { desc = 'Send line to terminal' })
+        vim.keymap.set('v', '<leader>ts', '<cmd>ToggleTermSendVisualSelection<CR>', { desc = 'Send selection to terminal' })
       end
     },
     {
