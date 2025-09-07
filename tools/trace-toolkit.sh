@@ -650,8 +650,6 @@ if [[ "$OS" == "Linux" ]] && [ -n "$BASH_VERSION" ]; then
     export -f trace-bpf
 fi
 
-# Show help if sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     trace_help
 fi
-# Silent loading when sourced
