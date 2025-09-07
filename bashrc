@@ -263,9 +263,12 @@ alias gcom='git checkout master'
 alias gcl='git clone --recurse-submodules'
 alias gclo='git clone'
 alias gcm='git commit -m'
+alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
+alias gcmtn='git commit --no-verify'
 alias gcmts='git commit -n '
 alias gcma='git commit -a -m'
+alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
 alias gcmamd='git commit --amend -C HEAD'
 alias gbr='git branch'
@@ -484,14 +487,21 @@ function gsp2 { git stash pop -p stash@{1}; }
 function gsp3 { git stash pop -p stash@{2}; }
 
 function gcmp { git commit -m "$@" ; gpsh; }
+function gcmpn { git commit --no-verify -m "$@" ; gpsh; }
 function gcmps { git commit -n -m "$@" ; gpsh; }
 function gcmpf { git commit -m "$@" ; git push -f; }
+function gcmpfn { git commit --no-verify -m "$@" ; git push -f; }
 function gcmap { git commit -a -m "$@" ; git push; }
+function gcmapn { git commit -a --no-verify -m "$@" ; git push; }
 function gcmapf { git commit -a -m "$@" ; git push -f; }
+function gcmapfn { git commit -a --no-verify -m "$@" ; git push -f; }
 function gcme { git add -A; git commit -a -m "$@" ; }
+function gcmen { git add -A; git commit -a --no-verify -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; gpsh; }
+function gcmepn { git add -A; git commit -a --no-verify -m "$@" ; gpsh; }
 function gcmeps { git add -A; git commit -a -n -m "$@" ; gpsh; }
 function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
+function gcmepfn { git add -A; git commit -a --no-verify -m "$@" ; git push -f; }
 
 
 function gswf {
@@ -698,13 +708,11 @@ else
     alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
 fi
 
-# Claude CLI wrapper with reliable file watching (CHOKIDAR polling)
 function cld {
   CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
-# Codex CLI wrapper to propagate CHOKIDAR polling when watchers are used  
 function codex_wrapper {
   CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   command codex "$@"
@@ -1385,7 +1393,6 @@ parse_git_branch() {
     fi
 }
 
-# Smart git functions
 function gsp {
     # Git smart push - handles upstream automatically
     branch=$(git branch --show-current)
@@ -1428,7 +1435,6 @@ function gsync {
     gsp
 }
 
-# Quick status check
 function gcheck {
     echo "=== Branch Info ==="
     git branch -vv | grep "^*"
@@ -1444,7 +1450,6 @@ function gcheck {
 alias gpu='gsp'
 alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
 
-# Override gst to show better info
 function gst {
     echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
     

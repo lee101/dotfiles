@@ -1,8 +1,4 @@
 #!/bin/bash
-
-# File watcher utilities for managing inotify watches
-
-# Check current watcher usage
 watcher_status() {
     echo "=== File Watcher Status ==="
     echo ""
@@ -87,7 +83,6 @@ alias wm='watcher_monitor'
 alias wi='watcher_increase'
 alias wd='watcher_dirs'
 
-# Export functions
 export -f watcher_status
 export -f watcher_cleanup
 export -f watcher_reset
