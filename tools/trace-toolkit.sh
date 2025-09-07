@@ -622,28 +622,30 @@ fi
 # MAIN COMMAND DISPATCHER
 # ==============================================================================
 
-# Export all functions for use in shell
-export -f trace-syscalls
-export -f trace-files
-export -f trace-network
-export -f trace-exec
-export -f proc-watch
-export -f proc-find
-export -f proc-tree
-export -f proc-files
-export -f proc-memory
-export -f proc-threads
-export -f trace-cpu
-export -f trace-io
-export -f trace_help
-export -f trace_examples
-
-if [[ "$OS" == "Darwin" ]]; then
-    export -f dtrace-malloc
-    export -f dtrace-latency
+# Export all functions for use in shell (bash only, not zsh)
+if [ -n "$BASH_VERSION" ]; then
+    export -f trace-syscalls
+    export -f trace-files
+    export -f trace-network
+    export -f trace-exec
+    export -f proc-watch
+    export -f proc-find
+    export -f proc-tree
+    export -f proc-files
+    export -f proc-memory
+    export -f proc-threads
+    export -f trace-cpu
+    export -f trace-io
+    export -f trace_help
+    export -f trace_examples
+    
+    if [[ "$OS" == "Darwin" ]]; then
+        export -f dtrace-malloc
+        export -f dtrace-latency
+    fi
 fi
 
-if [[ "$OS" == "Linux" ]]; then
+if [[ "$OS" == "Linux" ]] && [ -n "$BASH_VERSION" ]; then
     export -f trace-kernel
     export -f trace-bpf
 fi
@@ -651,6 +653,5 @@ fi
 # Show help if sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     trace_help
-else
-    echo -e "${GREEN}Trace toolkit loaded. Type 'trace_help' for commands.${NC}"
 fi
+# Silent loading when sourced
