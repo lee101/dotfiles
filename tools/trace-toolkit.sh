@@ -622,7 +622,6 @@ fi
 # MAIN COMMAND DISPATCHER
 # ==============================================================================
 
-# Export all functions for use in shell (bash only, not zsh)
 if [ -n "$BASH_VERSION" ]; then
     export -f trace-syscalls
     export -f trace-files
