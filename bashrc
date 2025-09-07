@@ -255,7 +255,7 @@ alias brf='bun run format'
 alias brt='bun run typecheck'
 alias brt='bun run test'
 
-alias gst='git status'
+# alias gst='git status'  # Commented out - using gst() function instead
 alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
@@ -1457,3 +1457,8 @@ alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-ve
 
 # Git helpers
 [ -f ~/.git-helpers.sh ] && source ~/.git-helpers.sh
+
+# Trace toolkit for system debugging
+if [ -f ~/code/dotfiles/tools/trace-toolkit.sh ]; then
+    source ~/code/dotfiles/tools/trace-toolkit.sh
+fi
