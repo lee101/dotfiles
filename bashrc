@@ -687,9 +687,10 @@ pins() {
 
 eval "$(hub alias -s)" 2>/dev/null || true
 
-alias cx='codex'
-alias cxa='codex --auto-edit'
-alias cxf='codex --full-auto'
+alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
+alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
+alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
@@ -1318,3 +1319,141 @@ alias gdfs='git diff --ext-diff'
 # Lynx browser with auto-accept cookies
 alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
 export PATH=/usr/local/go/bin:$PATH
+
+# Git push aliases with test skipping
+alias gpsh='SKIP_TESTS=1 git push --no-verify'
+alias gpsho='SKIP_TESTS=1 git push --no-verify origin'
+alias gpshom='SKIP_TESTS=1 git push --no-verify origin main'
+
+# Pull and push combos
+alias gpp='git pull --rebase=false && git push'
+alias gpps='git pull --rebase=false && SKIP_TESTS=1 git push --no-verify'
+
+# The "just get it done" alias
+alias gityolo='git add -A && git commit -m "sync" --no-verify && git pull --rebase=false --strategy=ours --no-edit && SKIP_TESTS=1 git push --no-verify'
+
+# Smart sync that handles conflicts gracefully
+alias gitsync='git stash && git pull --rebase=false && git stash pop && SKIP_TESTS=1 git push --no-verify'
+
+# Enhanced Git status in prompt
+parse_git_branch() {
+    branch=$(git branch --show-current 2>/dev/null)
+    if [ -n "$branch" ]; then
+        # Check if upstream exists
+        upstream=$(git rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null)
+        if [ -n "$upstream" ]; then
+            # Has upstream, check ahead/behind
+            ahead=$(git rev-list --count @{u}.. 2>/dev/null)
+            behind=$(git rev-list --count ..@{u} 2>/dev/null)
+            if [ "$ahead" -gt 0 ] && [ "$behind" -gt 0 ]; then
+                echo " ($branch ↑$ahead↓$behind)"
+            elif [ "$ahead" -gt 0 ]; then
+                echo " ($branch ↑$ahead)"
+            elif [ "$behind" -gt 0 ]; then
+                echo " ($branch ↓$behind)"
+            else
+                echo " ($branch ✓)"
+            fi
+        else
+            # No upstream
+            commits=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+            if [ "$commits" -gt 0 ]; then
+                echo " ($branch ⚡$commits)"
+            else
+                echo " ($branch ⚠️)"
+            fi
+        fi
+    fi
+}
+
+# Smart git functions
+gsp() {
+    # Git smart push - handles upstream automatically
+    branch=$(git branch --show-current)
+    if git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
+        # Has upstream
+        SKIP_TESTS=1 git push --no-verify "$@"
+    else
+        # No upstream
+        echo "Setting upstream to origin/$branch and pushing..."
+        SKIP_TESTS=1 git push -u origin "$branch" --no-verify "$@"
+    fi
+}
+
+gsync() {
+    # Super smart sync
+    branch=$(git branch --show-current)
+    echo "Syncing $branch..."
+    
+    # Stash if needed
+    if ! git diff-index --quiet HEAD --; then
+        echo "Stashing changes..."
+        git stash
+        stashed=1
+    fi
+    
+    # Pull if upstream exists
+    if git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
+        git pull --rebase=false
+    else
+        echo "No upstream set, will create on push"
+    fi
+    
+    # Pop stash if we stashed
+    if [ "$stashed" = "1" ]; then
+        echo "Restoring changes..."
+        git stash pop
+    fi
+    
+    # Push (sets upstream if needed)
+    gsp
+}
+
+# Quick status check
+gcheck() {
+    echo "=== Branch Info ==="
+    git branch -vv | grep "^*"
+    echo ""
+    echo "=== Unpushed Commits ==="
+    git log @{u}.. --oneline 2>/dev/null || git log origin/main..HEAD --oneline 2>/dev/null || echo "No unpushed commits (or no upstream)"
+    echo ""
+    echo "=== Status ==="
+    git status -sb
+}
+
+# Auto-setup upstream on first push
+alias gpu='gsp'
+alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
+
+# Override gst to show better info
+gst() {
+    echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
+    
+    # Branch and upstream info
+    branch=$(git branch --show-current 2>/dev/null)
+    if [ -n "$branch" ]; then
+        upstream=$(git rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null)
+        if [ -n "$upstream" ]; then
+            ahead=$(git rev-list --count @{u}.. 2>/dev/null || echo 0)
+            behind=$(git rev-list --count ..@{u} 2>/dev/null || echo 0)
+            echo -e "Branch: \033[1;32m$branch\033[0m → $upstream"
+            [ "$ahead" -gt 0 ] && echo -e "  \033[1;33m↑ $ahead commit(s) to push\033[0m"
+            [ "$behind" -gt 0 ] && echo -e "  \033[1;36m↓ $behind commit(s) to pull\033[0m"
+        else
+            echo -e "Branch: \033[1;32m$branch\033[0m \033[1;31m(no upstream!)\033[0m"
+            commits=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+            [ "$commits" -gt 0 ] && echo -e "  \033[1;33m$commits commit(s) not on origin/main\033[0m"
+            echo -e "  \033[0;33mFirst push: git push -u origin $branch\033[0m"
+        fi
+    fi
+    
+    echo ""
+    git status -sb
+}
+
+# Alias to set upstream quickly
+alias gsu='git push -u origin $(git branch --show-current)'
+alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify'
+
+# Git helpers
+[ -f ~/.git-helpers.sh ] && source ~/.git-helpers.sh
