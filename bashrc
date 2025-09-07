@@ -687,10 +687,29 @@ pins() {
 
 eval "$(hub alias -s)" 2>/dev/null || true
 
-alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
-alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
-alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
-alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+# Codex wrappers with better permission handling
+if [ -f ~/code/dotfiles/tools/codex-wrapper.sh ]; then
+    source ~/code/dotfiles/tools/codex-wrapper.sh
+else
+    # Fallback to simple aliases if wrapper not found
+    alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
+    alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+    alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
+    alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+fi
+
+# Claude CLI wrapper with reliable file watching (CHOKIDAR polling)
+function cld {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  bun run "$(which claude)" --dangerously-skip-permissions "$@"
+}
+
+# Codex CLI wrapper to propagate CHOKIDAR polling when watchers are used  
+function codex_wrapper {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  command codex "$@"
+}
+alias codex='codex_wrapper'
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
@@ -771,7 +790,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cla='ANTHROPIC_API_KEY="" claude'
-alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
+# Use function 'cld' defined above for Claude with CHOKIDAR polling
 alias cldc='cld --continue'
 
 # Claude code review tool
@@ -1367,7 +1386,7 @@ parse_git_branch() {
 }
 
 # Smart git functions
-gsp() {
+function gsp {
     # Git smart push - handles upstream automatically
     branch=$(git branch --show-current)
     if git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
@@ -1380,7 +1399,7 @@ gsp() {
     fi
 }
 
-gsync() {
+function gsync {
     # Super smart sync
     branch=$(git branch --show-current)
     echo "Syncing $branch..."
@@ -1410,7 +1429,7 @@ gsync() {
 }
 
 # Quick status check
-gcheck() {
+function gcheck {
     echo "=== Branch Info ==="
     git branch -vv | grep "^*"
     echo ""
@@ -1426,7 +1445,7 @@ alias gpu='gsp'
 alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
 
 # Override gst to show better info
-gst() {
+function gst {
     echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
     
     # Branch and upstream info
@@ -1461,4 +1480,9 @@ alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-ve
 # Trace toolkit for system debugging
 if [ -f ~/code/dotfiles/tools/trace-toolkit.sh ]; then
     source ~/code/dotfiles/tools/trace-toolkit.sh
+fi
+
+# File watcher management utilities
+if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
+    source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
 fi
