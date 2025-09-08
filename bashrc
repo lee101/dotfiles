@@ -273,7 +273,7 @@ alias gcm='git commit -m'
 alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
 alias gcmtn='git commit --no-verify'
-alias gcmts='git commit -n '
+alias gcmts='git commit --no-edit'
 alias gcma='git commit -a -m'
 alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
@@ -716,7 +716,7 @@ else
 fi
 
 function cld {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  ANTHROPIC_API_KEY="" CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
