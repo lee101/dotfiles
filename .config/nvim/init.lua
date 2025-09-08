@@ -76,6 +76,9 @@ vim.opt.smartcase = true
 vim.opt.hidden = false
 vim.opt.laststatus = 2
 
+-- Auto-reload settings for external file changes
+vim.opt.autoread = true  -- Automatically read file when changed outside of vim
+
 -- Cross-platform clipboard setup
 if is_wsl then
   vim.g.clipboard = {
@@ -846,10 +849,73 @@ require("lazy").setup({
       "akinsho/toggleterm.nvim",
       version = "*",
       config = function()
-        require("toggleterm").setup({
+        local ok, toggleterm = pcall(require, "toggleterm")
+        if not ok then return end
+        toggleterm.setup({
+          -- Quick toggle
           open_mapping = [[<c-\>]],
+          insert_mappings = true,
+          terminal_mappings = true,
+          start_in_insert = true,
+          persist_size = true,
+          shade_terminals = true,
+          close_on_exit = true,
+          -- Use floating by default with roomy size
           direction = "float",
+          size = 20,
+          float_opts = {
+            border = "curved",
+            winblend = 0,
+            width = function()
+              return math.floor(vim.o.columns * 0.9)
+            end,
+            height = function()
+              return math.floor(vim.o.lines * 0.85)
+            end,
+          },
+          -- Respect user's shell; we set platform-specific default below
+          shell = vim.o.shell,
         })
+
+        -- Lazygit integration via ToggleTerm (no extra plugin required)
+        local Terminal = require('toggleterm.terminal').Terminal
+        local lazygit = Terminal:new({
+          cmd = "lazygit",
+          dir = "git_dir",
+          direction = "float",
+          hidden = true,
+          on_open = function(term)
+            -- Make <Esc> drop to Normal, then 'q' quits lazygit and hides terminal
+            vim.api.nvim_buf_set_keymap(term.bufnr, 't', '<Esc>', [[<C-\><C-n>]], { noremap = true, silent = true })
+          end,
+        })
+
+        function _LAZYGIT_TOGGLE()
+          lazygit:toggle()
+        end
+
+        vim.keymap.set('n', '<leader>lg', '<cmd>lua _LAZYGIT_TOGGLE()<CR>', { desc = 'LazyGit (float)' })
+        
+        -- Additional terminal shortcuts
+        -- Ctrl+` for floating terminal (already set via open_mapping)
+        -- Leader+t for different terminal directions
+        vim.keymap.set('n', '<leader>tf', '<cmd>ToggleTerm direction=float<CR>', { desc = 'Floating terminal' })
+        vim.keymap.set('n', '<leader>th', '<cmd>ToggleTerm direction=horizontal<CR>', { desc = 'Horizontal terminal' })
+        vim.keymap.set('n', '<leader>tv', '<cmd>ToggleTerm direction=vertical<CR>', { desc = 'Vertical terminal' })
+        vim.keymap.set('n', '<leader>tt', '<cmd>ToggleTerm direction=tab<CR>', { desc = 'Terminal in new tab' })
+        
+        -- Ctrl+` also works in terminal mode to toggle back
+        vim.keymap.set('n', '<C-`>', '<cmd>ToggleTerm<CR>', { desc = 'Toggle terminal' })
+        vim.keymap.set('i', '<C-`>', '<cmd>ToggleTerm<CR>', { desc = 'Toggle terminal' })
+        
+        -- Multiple terminals with number prefix
+        vim.keymap.set('n', '<leader>t1', '<cmd>1ToggleTerm<CR>', { desc = 'Terminal 1' })
+        vim.keymap.set('n', '<leader>t2', '<cmd>2ToggleTerm<CR>', { desc = 'Terminal 2' })
+        vim.keymap.set('n', '<leader>t3', '<cmd>3ToggleTerm<CR>', { desc = 'Terminal 3' })
+        
+        -- Send current line or selection to terminal
+        vim.keymap.set('n', '<leader>ts', '<cmd>ToggleTermSendCurrentLine<CR>', { desc = 'Send line to terminal' })
+        vim.keymap.set('v', '<leader>ts', '<cmd>ToggleTermSendVisualSelection<CR>', { desc = 'Send selection to terminal' })
       end
     },
     {
@@ -1023,13 +1089,57 @@ vim.keymap.set("n", "zk", "O<Esc>", { desc = "Create blank line above" })
 -- Terminal mode escape
 vim.keymap.set("t", "<Esc>", "<C-\\><C-n>")
 
--- Performance optimizations for Windows
-vim.opt.shell = "powershell"
-vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
-vim.opt.shellredir = "-RedirectStandardOutput %s -NoNewWindow -Wait"
-vim.opt.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
-vim.opt.shellquote = ""
-vim.opt.shellxquote = ""
+-- Smart Git-based file auto-reload with automatic merging
+-- This intelligently merges external changes with local changes
+-- Similar to "accept both changes" in git conflicts
+local smart_reload_ok, smart_reload = pcall(require, 'smart-reload')
+if smart_reload_ok then
+  smart_reload.setup()
+  vim.notify('Smart reload enabled - auto-merges external changes', vim.log.levels.INFO)
+else
+  -- Fallback to basic auto-reload if smart-reload module not found
+  vim.api.nvim_create_augroup('AutoReload', { clear = true })
+  
+  vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter', 'CursorHold', 'CursorHoldI' }, {
+    group = 'AutoReload',
+    pattern = '*',
+    callback = function()
+      if vim.fn.mode() ~= 'c' and vim.fn.getcmdwintype() == '' then
+        vim.cmd('checktime')
+      end
+    end,
+  })
+  
+  vim.api.nvim_create_autocmd('FileChangedShell', {
+    group = 'AutoReload',
+    pattern = '*',
+    callback = function(args)
+      local bufnr = args.buf
+      local modified = vim.bo[bufnr].modified
+      
+      if not modified then
+        vim.v.fcs_choice = 'reload'
+      else
+        vim.v.fcs_choice = 'keep'
+        vim.notify('File changed externally but you have local changes - keeping local', vim.log.levels.WARN)
+      end
+    end,
+  })
+end
+
+-- Watch for file changes more frequently
+vim.opt.updatetime = 1000  -- Check for changes every 1000ms (more reasonable)
+vim.opt.autoread = true   -- Enable autoread
+
+-- Performance optimizations for Windows (guarded)
+if is_windows then
+  vim.opt.shell = "powershell"
+  vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+  vim.opt.shellredir = "-RedirectStandardOutput %s -NoNewWindow -Wait"
+  vim.opt.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
+  vim.opt.shellquote = ""
+  vim.opt.shellxquote = ""
+end
 
 -- Auto-format on save for specific filetypes (optional)
 vim.api.nvim_create_autocmd("BufWritePre", {

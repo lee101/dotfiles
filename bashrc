@@ -37,10 +37,7 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
 
 # SSH Agent auto-start
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" > /dev/null
-    ssh-add ~/.ssh/id_ed25519 2>/dev/null
-fi
+# SSH agent setup moved to end of file to avoid duplicates
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -258,7 +255,7 @@ alias brf='bun run format'
 alias brt='bun run typecheck'
 alias brt='bun run test'
 
-alias gst='git status'
+# alias gst='git status'  # Commented out - using gst() function instead
 alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
@@ -266,9 +263,12 @@ alias gcom='git checkout master'
 alias gcl='git clone --recurse-submodules'
 alias gclo='git clone'
 alias gcm='git commit -m'
+alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
+alias gcmtn='git commit --no-verify'
 alias gcmts='git commit -n '
 alias gcma='git commit -a -m'
+alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
 alias gcmamd='git commit --amend -C HEAD'
 alias gbr='git branch'
@@ -487,14 +487,21 @@ function gsp2 { git stash pop -p stash@{1}; }
 function gsp3 { git stash pop -p stash@{2}; }
 
 function gcmp { git commit -m "$@" ; gpsh; }
+function gcmpn { git commit --no-verify -m "$@" ; gpsh; }
 function gcmps { git commit -n -m "$@" ; gpsh; }
 function gcmpf { git commit -m "$@" ; git push -f; }
+function gcmpfn { git commit --no-verify -m "$@" ; git push -f; }
 function gcmap { git commit -a -m "$@" ; git push; }
+function gcmapn { git commit -a --no-verify -m "$@" ; git push; }
 function gcmapf { git commit -a -m "$@" ; git push -f; }
+function gcmapfn { git commit -a --no-verify -m "$@" ; git push -f; }
 function gcme { git add -A; git commit -a -m "$@" ; }
+function gcmen { git add -A; git commit -a --no-verify -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; gpsh; }
+function gcmepn { git add -A; git commit -a --no-verify -m "$@" ; gpsh; }
 function gcmeps { git add -A; git commit -a -n -m "$@" ; gpsh; }
 function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
+function gcmepfn { git add -A; git commit -a --no-verify -m "$@" ; git push -f; }
 
 
 function gswf {
@@ -525,7 +532,10 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
   alias pbcopy="clip"
   alias pbpaste="powershell.exe -command 'Get-Clipboard'"
   # Cntrl+] to copy current command to clipboard for Git Bash
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi
 
   # Windows Git Bash open setup
   alias open="explorer.exe"
@@ -591,7 +601,10 @@ elif [[ ! $(uname -s) = "Darwin" ]]; then
   alias say='echo "$1" | espeak -s 120'
 
   # Cntrl+] to copy current command to clipboard for Linux
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi
 
   # Linux nvim setup
   export EDITOR="nvim"
@@ -684,9 +697,27 @@ pins() {
 
 eval "$(hub alias -s)" 2>/dev/null || true
 
-alias cx='codex'
-alias cxa='codex --auto-edit'
-alias cxf='codex --full-auto'
+# Codex wrappers with better permission handling
+if [ -f ~/code/dotfiles/tools/codex-wrapper.sh ]; then
+    source ~/code/dotfiles/tools/codex-wrapper.sh
+else
+    # Fallback to simple aliases if wrapper not found
+    alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
+    alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+    alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
+    alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+fi
+
+function cld {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  bun run "$(which claude)" --dangerously-skip-permissions "$@"
+}
+
+function codex_wrapper {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  command codex "$@"
+}
+alias codex='codex_wrapper'
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
@@ -767,7 +798,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cla='ANTHROPIC_API_KEY="" claude'
-alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
+# Use function 'cld' defined above for Claude with CHOKIDAR polling
 alias cldc='cld --continue'
 
 # Claude code review tool
@@ -985,7 +1016,10 @@ export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
 # Only use bind if we're in bash
 if [ -n "$BASH_VERSION" ]; then
   # Cntrl+] to copy current command to clipboard
-  bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
+  # Only use bind in bash (not zsh)
+  if [ -n "$BASH_VERSION" ]; then
+    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"'
+  fi 2>/dev/null || true
 fi
 
 alias pbcopy='DISPLAY=:0 xclip -selection clipboard'
@@ -1283,16 +1317,177 @@ fi
 alias br='bun run'
 alias v=nvim
 
-[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
-nvm use node
+# Use default node version silently
+if command -v nvm >/dev/null 2>&1; then
+    nvm use node >/dev/null 2>&1
+fi
+# Source local environment if it exists
+if [ -f "$HOME/.local/bin/env" ]; then
+    . "$HOME/.local/bin/env"
+fi
 export PATH="/home/lee/.pixi/bin:$PATH"
 
-# Start SSH agent and add key automatically
+# Start SSH agent and add key automatically (safe version - allows passphrase prompts)
 if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)"
-    ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    eval "$(ssh-agent -s)" >/dev/null 2>&1
+    # Check if key is already loaded, if not, add it (allows passphrase prompt)
+    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+    fi
 else
-    # Ensure key is loaded in existing agent
-    ssh-add -l | grep -q "id_ed25519" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    # Ensure key is loaded in existing agent (allows passphrase prompt)
+    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+    fi
 fi
 
+alias gdfs='git diff --ext-diff'
+
+# Lynx browser with auto-accept cookies
+alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
+export PATH=/usr/local/go/bin:$PATH
+
+# Git push aliases with test skipping
+alias gpsh='SKIP_TESTS=1 git push --no-verify'
+alias gpsho='SKIP_TESTS=1 git push --no-verify origin'
+alias gpshom='SKIP_TESTS=1 git push --no-verify origin main'
+
+# Pull and push combos
+alias gpp='git pull --rebase=false && git push'
+alias gpps='git pull --rebase=false && SKIP_TESTS=1 git push --no-verify'
+
+# The "just get it done" alias
+alias gityolo='git add -A && git commit -m "sync" --no-verify && git pull --rebase=false --strategy=ours --no-edit && SKIP_TESTS=1 git push --no-verify'
+
+# Smart sync that handles conflicts gracefully
+alias gitsync='git stash && git pull --rebase=false && git stash pop && SKIP_TESTS=1 git push --no-verify'
+
+# Enhanced Git status in prompt
+parse_git_branch() {
+    branch=$(git branch --show-current 2>/dev/null)
+    if [ -n "$branch" ]; then
+        # Check if upstream exists
+        upstream=$(git rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null)
+        if [ -n "$upstream" ]; then
+            # Has upstream, check ahead/behind
+            ahead=$(git rev-list --count @{u}.. 2>/dev/null)
+            behind=$(git rev-list --count ..@{u} 2>/dev/null)
+            if [ "$ahead" -gt 0 ] && [ "$behind" -gt 0 ]; then
+                echo " ($branch ↑$ahead↓$behind)"
+            elif [ "$ahead" -gt 0 ]; then
+                echo " ($branch ↑$ahead)"
+            elif [ "$behind" -gt 0 ]; then
+                echo " ($branch ↓$behind)"
+            else
+                echo " ($branch ✓)"
+            fi
+        else
+            # No upstream
+            commits=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+            if [ "$commits" -gt 0 ]; then
+                echo " ($branch ⚡$commits)"
+            else
+                echo " ($branch ⚠️)"
+            fi
+        fi
+    fi
+}
+
+function gsp {
+    # Git smart push - handles upstream automatically
+    branch=$(git branch --show-current)
+    if git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
+        # Has upstream
+        SKIP_TESTS=1 git push --no-verify "$@"
+    else
+        # No upstream
+        echo "Setting upstream to origin/$branch and pushing..."
+        SKIP_TESTS=1 git push -u origin "$branch" --no-verify "$@"
+    fi
+}
+
+function gsync {
+    # Super smart sync
+    branch=$(git branch --show-current)
+    echo "Syncing $branch..."
+    
+    # Stash if needed
+    if ! git diff-index --quiet HEAD --; then
+        echo "Stashing changes..."
+        git stash
+        stashed=1
+    fi
+    
+    # Pull if upstream exists
+    if git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
+        git pull --rebase=false
+    else
+        echo "No upstream set, will create on push"
+    fi
+    
+    # Pop stash if we stashed
+    if [ "$stashed" = "1" ]; then
+        echo "Restoring changes..."
+        git stash pop
+    fi
+    
+    # Push (sets upstream if needed)
+    gsp
+}
+
+function gcheck {
+    echo "=== Branch Info ==="
+    git branch -vv | grep "^*"
+    echo ""
+    echo "=== Unpushed Commits ==="
+    git log @{u}.. --oneline 2>/dev/null || git log origin/main..HEAD --oneline 2>/dev/null || echo "No unpushed commits (or no upstream)"
+    echo ""
+    echo "=== Status ==="
+    git status -sb
+}
+
+# Auto-setup upstream on first push
+alias gpu='gsp'
+alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
+
+function gst {
+    echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
+    
+    # Branch and upstream info
+    branch=$(git branch --show-current 2>/dev/null)
+    if [ -n "$branch" ]; then
+        upstream=$(git rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null)
+        if [ -n "$upstream" ]; then
+            ahead=$(git rev-list --count @{u}.. 2>/dev/null || echo 0)
+            behind=$(git rev-list --count ..@{u} 2>/dev/null || echo 0)
+            echo -e "Branch: \033[1;32m$branch\033[0m → $upstream"
+            [ "$ahead" -gt 0 ] && echo -e "  \033[1;33m↑ $ahead commit(s) to push\033[0m"
+            [ "$behind" -gt 0 ] && echo -e "  \033[1;36m↓ $behind commit(s) to pull\033[0m"
+        else
+            echo -e "Branch: \033[1;32m$branch\033[0m \033[1;31m(no upstream!)\033[0m"
+            commits=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+            [ "$commits" -gt 0 ] && echo -e "  \033[1;33m$commits commit(s) not on origin/main\033[0m"
+            echo -e "  \033[0;33mFirst push: git push -u origin $branch\033[0m"
+        fi
+    fi
+    
+    echo ""
+    git status -sb
+}
+
+# Alias to set upstream quickly
+alias gsu='git push -u origin $(git branch --show-current)'
+alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify'
+
+# Git helpers
+[ -f ~/.git-helpers.sh ] && source ~/.git-helpers.sh
+
+# Trace toolkit for system debugging
+if [ -f ~/code/dotfiles/tools/trace-toolkit.sh ]; then
+    source ~/code/dotfiles/tools/trace-toolkit.sh
+fi
+
+# File watcher management utilities
+if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
+    source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
+fi
