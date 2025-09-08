@@ -1,4 +1,6 @@
 #!/bin/bash
+alias bi='bun install'
+alias ba='bun add'
 alias pip='uv pip'
 alias grmtr='git remote remove'
 alias cru="cd /media/lee/crucial/code/"
@@ -1427,8 +1429,6 @@ alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-ve
 
 # Override gst to show better info
 gst() {
-    echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
-    
     # Branch and upstream info
     branch=$(git branch --show-current 2>/dev/null)
     if [ -n "$branch" ]; then
