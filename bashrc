@@ -1496,3 +1496,4 @@ fi
 if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
     source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
 fi
+export PATH="/usr/local/opt/openjdk/bin:$PATH"
