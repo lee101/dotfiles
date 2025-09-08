@@ -26,25 +26,26 @@
 [core]
     whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
     excludesfile = ~/.gitignore_global
-    pager = diff-so-fancy | less --tabs=4 -RFX
+	pager = delta
     autocrlf = input
 [interactive]
-    diffFilter = diff-so-fancy --strip-leading-symbols
+	diffFilter = delta --color-only
 [delta]
-    navigate = true
-    light = false
-    side-by-side = true
+	navigate = true
+	light = false
+	side-by-side = true
     line-numbers = true
     syntax-theme = Monokai Extended
     max-line-length = 0
     paging = never
 [merge]
-    conflictstyle = diff3
+	conflictstyle = diff3
 	tool = nvimdiff
 [mergetool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [diff]
     tool = nvimdiff
+	colorMoved = default
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
 [credential]

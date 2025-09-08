@@ -417,3 +417,5 @@ alias reload='source ~/.zshrc'
 alias refresh='source ~/.zshrc' 
 alias cld='bun run $(which claude) --dangerously-skip-permissions'
 alias gd='git diff'
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
