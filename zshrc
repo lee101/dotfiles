@@ -225,13 +225,12 @@ alias gcmtmp='git commit --no-edit && git push'
 alias gsw='git show'
 alias gpl='git pull'
 alias gd='git diff'
-alias cld='bun run $(which claude) --dangerously-skip-permissions'
 
 # Modern Git tools
 alias lg='lazygit'
 alias gti='tig status'
 alias tgi='tig status'  # Alternative alias for tig
-alias tg='tig'          # Short tig alias  
+alias tg='tig'          # Short tig alias
 alias gdiff='git difftool --no-symlinks --dir-diff'
 alias gmerge='git mergetool'
 # aliases again
@@ -415,11 +414,29 @@ export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export
 # Source local environment if it exists
 [[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
 
-# Custom aliases (placed at end to avoid overrides) 
+# Custom aliases (placed at end to avoid overrides)
 alias reload='source ~/.zshrc'
 alias refresh='source ~/.zshrc'
-alias cld='bun run $(which claude) --dangerously-skip-permissions'
+# Remove any existing aliases/functions before redefining
+unalias cld 2>/dev/null || true
+unset -f cld 2>/dev/null || true
+unalias codex 2>/dev/null || true
+unset -f codex 2>/dev/null || true
+
+# Ensure CHOKIDAR polling for Claude CLI
+cld() {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  bun run "$(which claude)" --dangerously-skip-permissions "$@"
+}
+
+# Ensure CHOKIDAR polling for Codex CLI commands too
+codex() {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  command codex "$@"
+}
 alias gd='git diff'
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
 
 # Lynx browser with auto-accept cookies
 alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'

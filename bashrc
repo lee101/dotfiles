@@ -59,43 +59,48 @@ if [ -n "$BASH_VERSION" ]; then
       debian_chroot=$(cat /etc/debian_chroot)
   fi
 
-  # set a fancy prompt (non-color, unless we know we "want" color)
-  case "$TERM" in
-      xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
-  esac
+  # Bash-specific prompt configuration
+  if [ -n "$BASH_VERSION" ]; then
+    # set a fancy prompt (non-color, unless we know we "want" color)
+    case "$TERM" in
+        xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
+    esac
 
-  # uncomment for a colored prompt, if the terminal has the capability; turned
-  # off by default to not distract the user: the focus in a terminal window
-  # should be on the output of commands, not on the prompt
-  # Enable colored prompt
-  force_color_prompt=yes
+    # uncomment for a colored prompt, if the terminal has the capability; turned
+    # off by default to not distract the user: the focus in a terminal window
+    # should be on the output of commands, not on the prompt
+    # Enable colored prompt
+    force_color_prompt=yes
 
-  if [ -n "$force_color_prompt" ]; then
-      if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-    # We have color support; assume it's compliant with Ecma-48
-    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-    # a case would tend to support setf rather than setaf.)
-    color_prompt=yes
-      else
-    color_prompt=
-      fi
+    if [ -n "$force_color_prompt" ]; then
+        if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+      # We have color support; assume it's compliant with Ecma-48
+      # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+      # a case would tend to support setf rather than setaf.)
+      color_prompt=yes
+        else
+      color_prompt=
+        fi
+    fi
+
+    if [ "$color_prompt" = yes ]; then
+        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    else
+        PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    fi
+    unset color_prompt force_color_prompt
   fi
-
-  if [ "$color_prompt" = yes ]; then
-      PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-  else
-      PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-  fi
-  unset color_prompt force_color_prompt
 fi
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
+# If this is an xterm set the title to user@host:dir (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    case "$TERM" in
+    xterm*|rxvt*)
+        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+        ;;
+    *)
+        ;;
+    esac
+fi
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -257,7 +262,7 @@ alias brf='bun run format'
 alias brt='bun run typecheck'
 alias brt='bun run test'
 
-alias gst='git status'
+alias gst='git status' 
 alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
@@ -265,9 +270,12 @@ alias gcom='git checkout master'
 alias gcl='git clone --recurse-submodules'
 alias gclo='git clone'
 alias gcm='git commit -m'
+alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
+alias gcmtn='git commit --no-verify'
 alias gcmts='git commit -n '
 alias gcma='git commit -a -m'
+alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
 alias gcmamd='git commit --amend -C HEAD'
 alias gbr='git branch'
@@ -486,14 +494,21 @@ function gsp2 { git stash pop -p stash@{1}; }
 function gsp3 { git stash pop -p stash@{2}; }
 
 function gcmp { git commit -m "$@" ; gpsh; }
+function gcmpn { git commit --no-verify -m "$@" ; gpsh; }
 function gcmps { git commit -n -m "$@" ; gpsh; }
 function gcmpf { git commit -m "$@" ; git push -f; }
+function gcmpfn { git commit --no-verify -m "$@" ; git push -f; }
 function gcmap { git commit -a -m "$@" ; git push; }
+function gcmapn { git commit -a --no-verify -m "$@" ; git push; }
 function gcmapf { git commit -a -m "$@" ; git push -f; }
+function gcmapfn { git commit -a --no-verify -m "$@" ; git push -f; }
 function gcme { git add -A; git commit -a -m "$@" ; }
+function gcmen { git add -A; git commit -a --no-verify -m "$@" ; }
 function gcmep { git add -A; git commit -a -m "$@" ; gpsh; }
+function gcmepn { git add -A; git commit -a --no-verify -m "$@" ; gpsh; }
 function gcmeps { git add -A; git commit -a -n -m "$@" ; gpsh; }
 function gcmepf { git add -A; git commit -a -m "$@" ; git push -f; }
+function gcmepfn { git add -A; git commit -a --no-verify -m "$@" ; git push -f; }
 
 
 function gswf {
@@ -689,10 +704,27 @@ pins() {
 
 eval "$(hub alias -s)" 2>/dev/null || true
 
-alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
-alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
-alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
-alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+# Codex wrappers with better permission handling
+if [ -f ~/code/dotfiles/tools/codex-wrapper.sh ]; then
+    source ~/code/dotfiles/tools/codex-wrapper.sh
+else
+    # Fallback to simple aliases if wrapper not found
+    alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
+    alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+    alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
+    alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
+fi
+
+function cld {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  bun run "$(which claude)" --dangerously-skip-permissions "$@"
+}
+
+function codex_wrapper {
+  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  command codex "$@"
+}
+alias codex='codex_wrapper'
 
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
@@ -773,7 +805,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cla='ANTHROPIC_API_KEY="" claude'
-alias cld='ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions'
+# Use function 'cld' defined above for Claude with CHOKIDAR polling
 alias cldc='cld --continue'
 
 # Claude code review tool
@@ -1307,12 +1339,12 @@ if [ -z "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -s)" >/dev/null 2>&1
     # Check if key is already loaded, if not, add it (allows passphrase prompt)
     if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+        [ -f ~/.ssh/id_ed25519 ] && ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1 || true
     fi
 else
     # Ensure key is loaded in existing agent (allows passphrase prompt)
     if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+        [ -f ~/.ssh/id_ed25519 ] && ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1 || true
     fi
 fi
 
@@ -1368,8 +1400,7 @@ parse_git_branch() {
     fi
 }
 
-# Smart git functions
-gsp() {
+function gsp {
     # Git smart push - handles upstream automatically
     branch=$(git branch --show-current)
     if git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
@@ -1382,7 +1413,7 @@ gsp() {
     fi
 }
 
-gsync() {
+function gsync {
     # Super smart sync
     branch=$(git branch --show-current)
     echo "Syncing $branch..."
@@ -1411,8 +1442,7 @@ gsync() {
     gsp
 }
 
-# Quick status check
-gcheck() {
+function gcheck {
     echo "=== Branch Info ==="
     git branch -vv | grep "^*"
     echo ""
@@ -1427,8 +1457,8 @@ gcheck() {
 alias gpu='gsp'
 alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
 
-# Override gst to show better info
-gst() {
+function gstm {
+    
     # Branch and upstream info
     branch=$(git branch --show-current 2>/dev/null)
     if [ -n "$branch" ]; then
@@ -1447,7 +1477,6 @@ gst() {
         fi
     fi
     
-    echo ""
     git status -sb
 }
 
@@ -1457,3 +1486,14 @@ alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-ve
 
 # Git helpers
 [ -f ~/.git-helpers.sh ] && source ~/.git-helpers.sh
+
+# Trace toolkit for system debugging
+if [ -f ~/code/dotfiles/tools/trace-toolkit.sh ]; then
+    source ~/code/dotfiles/tools/trace-toolkit.sh
+fi
+
+# File watcher management utilities
+if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
+    source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
+fi
+export PATH="/usr/local/opt/openjdk/bin:$PATH"
