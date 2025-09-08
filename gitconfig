@@ -8,6 +8,7 @@
 	default = upstream
 [color]
 	ui = true
+	diff = auto
 [alias]
     st = status
     ci = commit
@@ -23,11 +24,18 @@
 
     # Show files ignored by git:
     ign = ls-files -o -i --exclude-standard
+	pushskip = "\\!f() { SKIP_TESTS=1 git push --no-verify \"$@\"; }; f"
+	pullpush = "\\!f() { git pull --rebase=false && git push \"$@\"; }; f"
+	forcesync = "\\!f() { git pull --rebase=false && SKIP_TESTS=1 git push --no-verify \"$@\"; }; f"
+	yolo = "\\!f() { git add -A && git commit -m \"${1:-Quick sync}\" --no-verify && git pull --rebase=false --strategy=ours --no-edit && SKIP_TESTS=1 git push --no-verify; }; f"
+	smartpush = "\\!f() { git stash && git pull --rebase=false && git stash pop && SKIP_TESTS=1 git push --no-verify \"$@\"; }; f"
+	unpushed = \\!git log @{u}.. --oneline 2>/dev/null || git log origin/main..HEAD --oneline
 [core]
     whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
     excludesfile = ~/.gitignore_global
 	pager = delta
     autocrlf = input
+	mergeoptions = --no-edit
 [interactive]
 	diffFilter = delta --color-only
 [delta]
@@ -46,6 +54,7 @@
 [diff]
     tool = nvimdiff
 	colorMoved = default
+	mnemonicprefix = false
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
 [credential]
@@ -92,3 +101,28 @@
 	directory = *
 [pull]
 	rebase = false
+[pager]
+	diff = less -FRX
+[merge "commit"]
+	cleanup = strip
+
+[alias]
+    # Branch and push status
+    bs = !git branch -vv
+    unpushed = !git log @{u}.. --oneline 2>/dev/null || git log origin/main..HEAD --oneline
+
+    # Smart push that sets upstream if needed
+    pshu = !sh -c 'git push -u origin $(git branch --show-current) ${1:+--no-verify}' -
+    pshuf = !sh -c 'SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify' -
+
+    # Check what would be pushed
+    topush = !git diff @{u}.. --stat 2>/dev/null || git diff origin/main..HEAD --stat
+
+    # Create and push branch in one go
+    newbranch = !sh -c 'git checkout -b "$1" && git push -u origin "$1"' -
+
+    # Smart status that shows upstream info
+    st = status -sb
+    stu = !sh -c 'git status -sb; echo ""; git branch -vv | grep "^*"' -
+[init]
+	templatedir = /home/lee/.git-templates
