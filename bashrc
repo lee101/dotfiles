@@ -1,4 +1,5 @@
 #!/bin/bash
+alias sni='sudo snap install --classic'
 alias bi='bun install'
 alias ba='bun add'
 alias pip='uv pip'
