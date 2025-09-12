@@ -7,7 +7,7 @@ alias grmtr='git remote remove'
 alias cru="cd /media/lee/crucial/code/"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-
+export DOCKER_BUILDKIT=1
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -1498,3 +1498,4 @@ if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
     source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
 fi
 export PATH="/usr/local/opt/openjdk/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
