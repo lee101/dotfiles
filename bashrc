@@ -1,4 +1,5 @@
 #!/bin/bash
+alias uva='source .venv/bin/activate'
 alias sni='sudo snap install --classic'
 alias bi='bun install'
 alias ba='bun add'
@@ -1499,3 +1500,5 @@ if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
 fi
 export PATH="/usr/local/opt/openjdk/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+unset DOCKER_HOST
+
