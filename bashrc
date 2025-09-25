@@ -1114,11 +1114,20 @@ if command -v direnv >/dev/null 2>&1; then
   eval "$(direnv hook bash 2>/dev/null)" || true
 fi
 
-if command -v pyenv >/dev/null 2>&1; then
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init --path)"
-    eval "$(pyenv init -)"
+# Pyenv configuration - optimized for speed
+# Set PYENV_ROOT first to avoid the warning message
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+# Only initialize pyenv if it exists and we're in an interactive shell
+if [ -d "$PYENV_ROOT" ] && [[ $- == *i* ]]; then
+    # Use lazy loading for pyenv to speed up startup
+    # Only init --path is needed for basic functionality
+    if command -v pyenv >/dev/null 2>&1; then
+        eval "$(pyenv init --path)"
+        # Defer full init to avoid slowing down startup
+        # eval "$(pyenv init -)" # Commented out for speed - uncomment if you need shims
+    fi
 fi
 
 # Guard kubectl completion
