@@ -1,10 +1,14 @@
 #!/bin/bash
+alias uva='source .venv/bin/activate'
+alias sni='sudo snap install --classic'
+alias bi='bun install'
+alias ba='bun add'
 alias pip='uv pip'
 alias grmtr='git remote remove'
 alias cru="cd /media/lee/crucial/code/"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-
+export DOCKER_BUILDKIT=1
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -57,43 +61,48 @@ if [ -n "$BASH_VERSION" ]; then
       debian_chroot=$(cat /etc/debian_chroot)
   fi
 
-  # set a fancy prompt (non-color, unless we know we "want" color)
-  case "$TERM" in
-      xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
-  esac
+  # Bash-specific prompt configuration
+  if [ -n "$BASH_VERSION" ]; then
+    # set a fancy prompt (non-color, unless we know we "want" color)
+    case "$TERM" in
+        xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
+    esac
 
-  # uncomment for a colored prompt, if the terminal has the capability; turned
-  # off by default to not distract the user: the focus in a terminal window
-  # should be on the output of commands, not on the prompt
-  # Enable colored prompt
-  force_color_prompt=yes
+    # uncomment for a colored prompt, if the terminal has the capability; turned
+    # off by default to not distract the user: the focus in a terminal window
+    # should be on the output of commands, not on the prompt
+    # Enable colored prompt
+    force_color_prompt=yes
 
-  if [ -n "$force_color_prompt" ]; then
-      if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-    # We have color support; assume it's compliant with Ecma-48
-    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-    # a case would tend to support setf rather than setaf.)
-    color_prompt=yes
-      else
-    color_prompt=
-      fi
+    if [ -n "$force_color_prompt" ]; then
+        if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+      # We have color support; assume it's compliant with Ecma-48
+      # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+      # a case would tend to support setf rather than setaf.)
+      color_prompt=yes
+        else
+      color_prompt=
+        fi
+    fi
+
+    if [ "$color_prompt" = yes ]; then
+        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    else
+        PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    fi
+    unset color_prompt force_color_prompt
   fi
-
-  if [ "$color_prompt" = yes ]; then
-      PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-  else
-      PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-  fi
-  unset color_prompt force_color_prompt
 fi
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
+# If this is an xterm set the title to user@host:dir (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    case "$TERM" in
+    xterm*|rxvt*)
+        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+        ;;
+    *)
+        ;;
+    esac
+fi
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -255,7 +264,7 @@ alias brf='bun run format'
 alias brt='bun run typecheck'
 alias brt='bun run test'
 
-# alias gst='git status'  # Commented out - using gst() function instead
+alias gst='git status' 
 alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
@@ -266,7 +275,7 @@ alias gcm='git commit -m'
 alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
 alias gcmtn='git commit --no-verify'
-alias gcmts='git commit -n '
+alias gcmts='git commit --no-edit'
 alias gcma='git commit -a -m'
 alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
@@ -709,7 +718,7 @@ else
 fi
 
 function cld {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  ANTHROPIC_API_KEY="" CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
@@ -1332,12 +1341,12 @@ if [ -z "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -s)" >/dev/null 2>&1
     # Check if key is already loaded, if not, add it (allows passphrase prompt)
     if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+        [ -f ~/.ssh/id_ed25519 ] && ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1 || true
     fi
 else
     # Ensure key is loaded in existing agent (allows passphrase prompt)
     if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
+        [ -f ~/.ssh/id_ed25519 ] && ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1 || true
     fi
 fi
 
@@ -1450,8 +1459,7 @@ function gcheck {
 alias gpu='gsp'
 alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
 
-function gst {
-    echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
+function gstm {
     
     # Branch and upstream info
     branch=$(git branch --show-current 2>/dev/null)
@@ -1471,7 +1479,6 @@ function gst {
         fi
     fi
     
-    echo ""
     git status -sb
 }
 
@@ -1491,3 +1498,7 @@ fi
 if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
     source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
 fi
+export PATH="/usr/local/opt/openjdk/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+unset DOCKER_HOST
+
