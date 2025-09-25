@@ -718,12 +718,11 @@ else
 fi
 
 function cld {
-  ANTHROPIC_API_KEY="" CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  ANTHROPIC_API_KEY="" 
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
 function codex_wrapper {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   command codex "$@"
 }
 alias codex='codex_wrapper'
@@ -807,10 +806,8 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cla='ANTHROPIC_API_KEY="" claude'
-# Use function 'cld' defined above for Claude with CHOKIDAR polling
 alias cldc='cld --continue'
 
-# Claude code review tool
 alias cr='claude-review'
 alias creview='claude-review'
 alias claude-rev='claude-review'
