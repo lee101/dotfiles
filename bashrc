@@ -1,10 +1,17 @@
 #!/bin/bash
+# Startup timing - set DEBUG_STARTUP=1 to enable
+[ -n "$DEBUG_STARTUP" ] && echo "Bashrc start: $(date +%s.%N)"
+
+alias uva='source .venv/bin/activate'
+alias sni='sudo snap install --classic'
+alias bi='bun install'
+alias ba='bun add'
 alias pip='uv pip'
 alias grmtr='git remote remove'
 alias cru="cd /media/lee/crucial/code/"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-
+export DOCKER_BUILDKIT=1
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -57,43 +64,48 @@ if [ -n "$BASH_VERSION" ]; then
       debian_chroot=$(cat /etc/debian_chroot)
   fi
 
-  # set a fancy prompt (non-color, unless we know we "want" color)
-  case "$TERM" in
-      xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
-  esac
+  # Bash-specific prompt configuration
+  if [ -n "$BASH_VERSION" ]; then
+    # set a fancy prompt (non-color, unless we know we "want" color)
+    case "$TERM" in
+        xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
+    esac
 
-  # uncomment for a colored prompt, if the terminal has the capability; turned
-  # off by default to not distract the user: the focus in a terminal window
-  # should be on the output of commands, not on the prompt
-  # Enable colored prompt
-  force_color_prompt=yes
+    # uncomment for a colored prompt, if the terminal has the capability; turned
+    # off by default to not distract the user: the focus in a terminal window
+    # should be on the output of commands, not on the prompt
+    # Enable colored prompt
+    force_color_prompt=yes
 
-  if [ -n "$force_color_prompt" ]; then
-      if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-    # We have color support; assume it's compliant with Ecma-48
-    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-    # a case would tend to support setf rather than setaf.)
-    color_prompt=yes
-      else
-    color_prompt=
-      fi
+    if [ -n "$force_color_prompt" ]; then
+        if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+      # We have color support; assume it's compliant with Ecma-48
+      # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+      # a case would tend to support setf rather than setaf.)
+      color_prompt=yes
+        else
+      color_prompt=
+        fi
+    fi
+
+    if [ "$color_prompt" = yes ]; then
+        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    else
+        PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    fi
+    unset color_prompt force_color_prompt
   fi
-
-  if [ "$color_prompt" = yes ]; then
-      PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-  else
-      PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-  fi
-  unset color_prompt force_color_prompt
 fi
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
+# If this is an xterm set the title to user@host:dir (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    case "$TERM" in
+    xterm*|rxvt*)
+        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+        ;;
+    *)
+        ;;
+    esac
+fi
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
@@ -255,7 +267,7 @@ alias brf='bun run format'
 alias brt='bun run typecheck'
 alias brt='bun run test'
 
-# alias gst='git status'  # Commented out - using gst() function instead
+alias gst='git status' 
 alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
@@ -266,7 +278,7 @@ alias gcm='git commit -m'
 alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
 alias gcmtn='git commit --no-verify'
-alias gcmts='git commit -n '
+alias gcmts='git commit --no-edit'
 alias gcma='git commit -a -m'
 alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
@@ -284,7 +296,7 @@ function gun {
     git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
         if [ -f "$file" ]; then
             echo -e "\033[1;32m+++ $file\033[0m"
-            cat "$file" | head -100
+            cat "$file" | command head -100
             echo
         fi
     done
@@ -308,13 +320,13 @@ function guna {
     fi
 
     # Show new/untracked files
-    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
+    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | command head -1)
     if [ -n "$has_untracked" ]; then
         echo -e "\n\033[1;32m=== NEW/UNTRACKED FILES ===\033[0m"
         git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
             if [ -f "$file" ]; then
                 echo -e "\033[1;32m+++ $file\033[0m"
-                cat "$file" | head -50
+                cat "$file" | command head -50
                 echo
             fi
         done
@@ -453,7 +465,7 @@ function gunaa() {
     git --no-pager diff -p --cached
     echo
     echo "=== UNTRACKED FILES ==="
-    git ls-files --others --exclude-standard | while read -r file; do
+    git ls-files --others --exclude-standard | while IFS= read -r file; do
         echo "=== New file: $file ==="
         git diff --no-index /dev/null "$file" || true
         echo
@@ -695,7 +707,11 @@ pins() {
     uv pip install $package_name --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i $package_name >> $requirements_file
 }
 
-eval "$(hub alias -s)" 2>/dev/null || true
+# Lazy load hub aliases
+hub() {
+    eval "$(command hub alias -s)" 2>/dev/null || true
+    command hub "$@"
+}
 
 # Codex aliases with dangerous mode for fast execution
 alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
@@ -714,12 +730,11 @@ else
 fi
 
 function cld {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  ANTHROPIC_API_KEY="" 
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
 function codex_wrapper {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   command codex "$@"
 }
 alias codex='codex_wrapper'
@@ -803,10 +818,8 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cla='ANTHROPIC_API_KEY="" claude'
-# Use function 'cld' defined above for Claude with CHOKIDAR polling
 alias cldc='cld --continue'
 
-# Claude code review tool
 alias cr='claude-review'
 alias creview='claude-review'
 alias claude-rev='claude-review'
@@ -1116,8 +1129,10 @@ export WORKON_HOME=$HOME/.virtualenvs
 
 export LESS="-eirMX"
 
-# The next line enables bash completion for gcloud.
-[ -f '/Users/lee/google-cloud-sdk/completion.bash.inc' ] && source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+# The next line enables bash completion for gcloud (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    [ -f '/Users/lee/google-cloud-sdk/completion.bash.inc' ] && source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+fi
 
 export RAILS_ENV=development
 
@@ -1161,16 +1176,26 @@ source ~/.secretbashrc
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
-# Check if direnv is installed before hooking
-if command -v direnv >/dev/null 2>&1; then
-  eval "$(direnv hook bash 2>/dev/null)" || true
-fi
+# Lazy load direnv for faster startup
+direnv() {
+    eval "$(command direnv hook bash 2>/dev/null)"
+    command direnv "$@"
+}
 
-if command -v pyenv >/dev/null 2>&1; then
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init --path)"
-    eval "$(pyenv init -)"
+# Pyenv configuration - optimized for speed
+# Set PYENV_ROOT first to avoid the warning message
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+# Only initialize pyenv if it exists and we're in an interactive shell
+if [ -d "$PYENV_ROOT" ] && [[ $- == *i* ]]; then
+    # Use lazy loading for pyenv to speed up startup
+    # Only init --path is needed for basic functionality
+    if command -v pyenv >/dev/null 2>&1; then
+        eval "$(pyenv init --path)"
+        # Defer full init to avoid slowing down startup
+        # eval "$(pyenv init -)" # Commented out for speed - uncomment if you need shims
+    fi
 fi
 
 # Guard kubectl completion
@@ -1189,9 +1214,19 @@ fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
+# NVM lazy loading for much faster startup
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# Don't load NVM immediately - use lazy loading
+lazy_load_nvm() {
+    unset -f nvm node npm npx 2>/dev/null
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+}
+# Stub functions that trigger NVM loading on first use
+nvm() { lazy_load_nvm; nvm "$@"; }
+node() { lazy_load_nvm; node "$@"; }
+npm() { lazy_load_nvm; npm "$@"; }
+npx() { lazy_load_nvm; npx "$@"; }
 
 
 
@@ -1202,8 +1237,10 @@ alias k='kubectl'
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/path.bash.inc'; fi
 
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
+# The next line enables shell command completion for gcloud (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ] && . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
+fi
 
 #export PATH="/usr/local/cuda-12.2/$PATH"
 export PATH="/usr/local/cuda-12/bin:$PATH"
@@ -1221,10 +1258,25 @@ export PATH="/home/lee/.pixi/bin:$PATH"
 
 alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+# SDKMAN lazy loading for faster startup
 export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+# Don't load SDKMAN immediately - use lazy loading
+lazy_load_sdkman() {
+    unset -f sdk java gradle maven 2>/dev/null
+    [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+}
+sdk() { lazy_load_sdkman; sdk "$@"; }
+# Lazy load Rust/Cargo
+cargo() {
+    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+    unset -f cargo rustc rustup 2>/dev/null
+    cargo "$@"
+}
+rustc() {
+    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+    unset -f cargo rustc rustup 2>/dev/null
+    rustc "$@"
+}
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
@@ -1358,46 +1410,28 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
-# SSH Agent Configuration
-# Check if SSH agent is running, start if not
-if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    eval "$(ssh-agent -s)" > /dev/null
-fi
-
-# Try to use gnome-keyring SSH agent if available
+# Optimized SSH Agent setup
+# Try gnome-keyring first (fastest)
 if [ -S "/run/user/$UID/keyring/ssh" ]; then
     export SSH_AUTH_SOCK="/run/user/$UID/keyring/ssh"
-elif [ -n "$SSH_AGENT_PID" ]; then
-    # Use existing SSH agent
-    export SSH_AUTH_SOCK="$SSH_AUTH_SOCK"
+elif [ -z "$SSH_AUTH_SOCK" ]; then
+    # Only start agent if really needed
+    if ! pgrep -u "$USER" ssh-agent >/dev/null 2>&1; then
+        eval "$(ssh-agent -s)" >/dev/null 2>&1
+    fi
 fi
 
 alias br='bun run'
 alias v=nvim
 
-# Use default node version silently
-if command -v nvm >/dev/null 2>&1; then
-    nvm use node >/dev/null 2>&1
-fi
-# Source local environment if it exists
-if [ -f "$HOME/.local/bin/env" ]; then
-    . "$HOME/.local/bin/env"
-fi
+# Don't auto-select node version on startup (slow)
+# Run 'nvm use node' manually when needed
+# Source local environment if it exists (fast check)
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 export PATH="/home/lee/.pixi/bin:$PATH"
 
-# Start SSH agent and add key automatically (safe version - allows passphrase prompts)
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" >/dev/null 2>&1
-    # Check if key is already loaded, if not, add it (allows passphrase prompt)
-    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
-    fi
-else
-    # Ensure key is loaded in existing agent (allows passphrase prompt)
-    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        ssh-add ~/.ssh/id_ed25519 >/dev/null || true
-    fi
-fi
+# Defer SSH key loading - only when needed
+# Run 'ssh-add ~/.ssh/id_ed25519' manually if you need the key loaded
 
 alias gdfs='git diff --ext-diff'
 
@@ -1508,8 +1542,7 @@ function gcheck {
 alias gpu='gsp'
 alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
 
-function gst {
-    echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
+function gstm {
     
     # Branch and upstream info
     branch=$(git branch --show-current 2>/dev/null)
@@ -1529,7 +1562,6 @@ function gst {
         fi
     fi
     
-    echo ""
     git status -sb
 }
 
@@ -1549,3 +1581,10 @@ fi
 if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
     source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
 fi
+export PATH="/usr/local/opt/openjdk/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+unset DOCKER_HOST
+
+# Startup timing end
+[ -n "$DEBUG_STARTUP" ] && echo "Bashrc end: $(date +%s.%N)"
+
