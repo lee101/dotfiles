@@ -42,13 +42,13 @@ window-padding-x = 0
 # # Just for example:
 # resize-overlay-duration = 4s 200ms
 # Font configuration - optimized for pro usage
-font-family = JetBrains Mono
+font-family = Ubuntu Mono
 font-size = 8
-font-feature = -calt
-font-feature = -liga
-font-feature = -dlig
-adjust-cell-width = -1
-adjust-cell-height = -1
+# font-feature = -calt
+# font-feature = -liga
+# font-feature = -dlig
+adjust-cell-width = 0
+adjust-cell-height = 0
 
 # Window configuration - performance optimized
 window-padding-x = 0
@@ -146,8 +146,8 @@ keybind = ctrl+shift+h=goto_split:left
 keybind = ctrl+shift+j=goto_split:down
 keybind = ctrl+shift+k=goto_split:up
 keybind = ctrl+shift+l=goto_split:right
-keybind = ctrl+shift+bracket_left=goto_split:previous
-keybind = ctrl+shift+bracket_right=goto_split:next
+keybind = ctrl+shift+left_bracket=goto_split:previous
+keybind = ctrl+shift+right_bracket=goto_split:next
 
 # Split Resizing (using Ctrl+Shift+Alt to be unique)
 keybind = ctrl+shift+alt+h=resize_split:left,10
@@ -161,24 +161,24 @@ keybind = ctrl+shift+equal=equalize_splits
 keybind = ctrl+shift+c=copy_to_clipboard
 keybind = ctrl+shift+v=paste_from_clipboard
 keybind = ctrl+shift+a=select_all
-keybind = shift+escape=clear
+keybind = shift+escape=clear_screen
 
 # Scrolling & Navigation
 keybind = shift+page_up=scroll_page_up
 keybind = shift+page_down=scroll_page_down
 keybind = shift+home=scroll_to_top
 keybind = shift+end=scroll_to_bottom
-keybind = ctrl+shift+up=scroll_up
-keybind = ctrl+shift+down=scroll_down
+keybind = ctrl+shift+up=scroll_page_up
+keybind = ctrl+shift+down=scroll_page_down
 
 # Font Size
 keybind = ctrl+plus=increase_font_size:1
 keybind = ctrl+minus=decrease_font_size:1
 keybind = ctrl+0=reset_font_size
 
-# Search
-keybind = ctrl+shift+f=show_search_overlay
-keybind = ctrl+shift+g=search_prev
+# Search (disabled - invalid actions)
+# keybind = ctrl+shift+f=search
+# keybind = ctrl+shift+g=search_previous
 
 # Window Controls
 keybind = f11=toggle_fullscreen

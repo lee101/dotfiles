@@ -142,6 +142,9 @@ other-lines = "disable"
 "C-s" = ":write"  # Save file
 "C-q" = ":quit"   # Quit
 
+# Format document
+"C-S-f" = ":format"
+
 # File operations
 "space" = { "f" = "file_picker", "b" = "buffer_picker", "s" = ":write", "q" = ":quit" }
 
@@ -152,9 +155,15 @@ other-lines = "disable"
 # Alt+Enter for newline without exiting insert mode (handy addition)
 "A-ret" = ["insert_newline"]
 
+# Format document
+"C-S-f" = ":format"
+
 [keys.select]
 # In select mode, maintain some familiar patterns
 ";" = "command_mode"
 
 # Additional useful select mode mappings
 "space" = { "f" = "file_picker", "b" = "buffer_picker" }
+
+# Format selection/document
+"C-S-f" = ":format"

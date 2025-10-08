@@ -6,8 +6,11 @@ if [ -z "$CHROME_PROFILE_PATH" ]; then
     export CHROME_PROFILE_PATH="$HOME/.config/google-chrome/Default"
 fi
 
+# Set the Chrome profile export path
+export CHROME_PROFILE_PATH="/home/lee/code/dotfiles/tools/chrome_profiles_export"
+
 # Let the Python script handle help and arguments
 
-# Use uvx to run the package with all arguments properly quoted
+# Run directly using Python instead of uvx to avoid caching issues
 cd /home/lee/code/dotfiles/tools/js_error_checker
-exec uvx --from . js-error-checker "$@"
+exec python -m js_error_checker.main "$@"
