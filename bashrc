@@ -718,16 +718,10 @@ alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
 alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
 alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
 
-# Codex wrappers with better permission handling
-if [ -f ~/code/dotfiles/tools/codex-wrapper.sh ]; then
-    source ~/code/dotfiles/tools/codex-wrapper.sh
-else
-    # Fallback to simple aliases if wrapper not found
-    alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
-    alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
-    alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
-    alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
-fi
+alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias cx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias cxa='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit'
+alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
 
 function cld {
   ANTHROPIC_API_KEY="" 
@@ -1587,4 +1581,3 @@ unset DOCKER_HOST
 
 # Startup timing end
 [ -n "$DEBUG_STARTUP" ] && echo "Bashrc end: $(date +%s.%N)"
-

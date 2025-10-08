@@ -425,13 +425,13 @@ unset -f codex 2>/dev/null || true
 
 # Ensure CHOKIDAR polling for Claude CLI
 cld() {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  #CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
 # Ensure CHOKIDAR polling for Codex CLI commands too
 codex() {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  #CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   command codex "$@"
 }
 alias gd='git diff'
@@ -440,3 +440,48 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # Lynx browser with auto-accept cookies
 alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
+
+# Git diffs including untracked
+# gdfa: show diff of all changes (tracked vs HEAD + untracked files)
+# gdfu: show diff of untracked files only
+gdfa() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Not a git repository" >&2
+    return 1
+  fi
+
+  # Tracked changes (staged + unstaged) vs HEAD
+  git --no-pager diff --color=always -p HEAD --
+
+  # Untracked files as diffs from /dev/null
+  local cnt=0
+  while IFS= read -r -d '' f; do
+    if (( cnt == 0 )); then
+      printf "\n# Untracked files\n"
+    fi
+    ((cnt++))
+    git --no-pager diff --color=always --no-index -- /dev/null "$f"
+  done < <(git ls-files --others --exclude-standard -z)
+
+  # If nothing printed at all, hint no changes
+  if [[ $(git status --porcelain) == "" ]]; then
+    echo "(no changes)"
+  fi
+}
+
+gdfu() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Not a git repository" >&2
+    return 1
+  fi
+
+  local cnt=0
+  while IFS= read -r -d '' f; do
+    ((cnt++))
+    git --no-pager diff --color=always --no-index -- /dev/null "$f"
+  done < <(git ls-files --others --exclude-standard -z)
+
+  if (( cnt == 0 )); then
+    echo "(no untracked files)"
+  fi
+}
