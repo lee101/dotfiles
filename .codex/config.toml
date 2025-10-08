@@ -1,0 +1,8 @@
+[projects."/mnt/fast/code/netwrck"]
+trust_level = "trusted"
+
+[sandbox_workspace_write]
+network_access = true
+
+[tools]
+web_search = true
