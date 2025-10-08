@@ -191,6 +191,11 @@ elif [ -f ~/.git_aliases ]; then
     . ~/.git_aliases
 fi
 
+# Source cross-platform utilities
+if [ -f ~/code/dotfiles/lib/cross_platform_utils ]; then
+    . ~/code/dotfiles/lib/cross_platform_utils
+fi
+
 
 if [ -n "$BASH_VERSION" ]; then
 
@@ -529,6 +534,34 @@ if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32
 else
    export DOCKER_HOST=tcp://127.0.0.1:2376
    alias docker='sudo docker'
+
+   # Set GOROOT from Homebrew Cellar only if present (macOS/Linux)
+   # - Prefer `brew --prefix go` when available
+   # - Fallback to common Cellar paths on macOS and Linuxbrew
+   if [ -z "$GOROOT" ]; then
+     if command -v brew >/dev/null 2>&1; then
+       __brew_go_prefix="$(brew --prefix go 2>/dev/null || true)"
+       if [ -n "$__brew_go_prefix" ] && [ -d "$__brew_go_prefix/libexec" ]; then
+         export GOROOT="$__brew_go_prefix/libexec"
+       fi
+     fi
+     if [ -z "$GOROOT" ]; then
+       for __p in /opt/homebrew/Cellar/go/*/libexec \
+                  /usr/local/Cellar/go/*/libexec \
+                  /home/linuxbrew/.linuxbrew/Cellar/go/*/libexec; do
+         if [ -d "$__p" ]; then
+           export GOROOT="$__p"
+           break
+         fi
+       done
+     fi
+     unset __brew_go_prefix __p
+   fi
+
+   # Add GOROOT/bin to PATH if it exists and isn't already included
+   if [ -n "$GOROOT" ] && [ -d "$GOROOT/bin" ] && [[ ":$PATH:" != *":$GOROOT/bin:"* ]]; then
+     export PATH="$GOROOT/bin:$PATH"
+   fi
 fi
 
 # Clipboard setup with Git Bash detection
@@ -700,7 +733,10 @@ pins() {
     uv pip install $package_name --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i $package_name >> $requirements_file
 }
 
-eval "$(hub alias -s)" 2>/dev/null || true
+# Check if hub is installed before evaluating
+if command -v hub >/dev/null 2>&1; then
+  eval "$(hub alias -s)" 2>/dev/null || true
+fi
 
 # Codex wrappers with better permission handling
 if [ -f ~/code/dotfiles/tools/codex-wrapper.sh ]; then
@@ -1009,14 +1045,23 @@ export GIT_EDITOR=nvim
 #export HISTSIZE=9999
 #export HISTFILESIZE=999999
 
-#export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
-#export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
-export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
-
-if command -v /usr/libexec/java_home >/dev/null 2>&1; then
-    export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+# Java configuration with proper error handling
+if [[ "$(uname)" == "Darwin" ]] && command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    # macOS - use java_home if available
+    JAVA_HOME=$(/usr/libexec/java_home 2>/dev/null) || true
+    if [ -n "$JAVA_HOME" ]; then
+        export JAVA_HOME
+    fi
+elif [ -d "/home/lee/.jdks/openjdk-23.0.2" ]; then
+    # Linux - use specific JDK if available
+    export JAVA_HOME=/home/lee/.jdks/openjdk-23.0.2
 fi
-export PATH=${PATH}:${JAVA_HOME}/bin:$HOME/programs
+
+# Only add to PATH if JAVA_HOME is set
+if [ -n "$JAVA_HOME" ]; then
+    export PATH=${PATH}:${JAVA_HOME}/bin
+fi
+export PATH=${PATH}:$HOME/programs
 
 # Only use bind if we're in bash
 if [ -n "$BASH_VERSION" ]; then
@@ -1059,7 +1104,12 @@ fi
 
 # virtualenv
 export WORKON_HOME=$HOME/.virtualenvs
-[ -f /usr/local/bin/virtualenvwrapper.sh ] && source /usr/local/bin/virtualenvwrapper.sh
+# Source virtualenvwrapper if available
+if [ -f /usr/local/bin/virtualenvwrapper.sh ]; then
+    source /usr/local/bin/virtualenvwrapper.sh
+elif command -v virtualenvwrapper.sh >/dev/null 2>&1; then
+    source $(which virtualenvwrapper.sh)
+fi
 
 export LESS="-eirMX"
 
@@ -1137,8 +1187,11 @@ fi
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" >/dev/null 2>&1  # This loads nvm silently
+# Only load bash_completion if we're actually in bash (not zsh)
+if [ -n "$BASH_VERSION" ]; then
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" >/dev/null 2>&1  # This loads nvm bash_completion silently
+fi
 
 
 
@@ -1287,6 +1340,19 @@ export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
 # JavaScript Error Checker alias
 alias jscheck='/home/lee/code/dotfiles/tools/jscheck'
 alias jserrors='/home/lee/code/dotfiles/tools/jscheck'
+
+# Shell fixup function - refreshes shell configuration
+function fixup() {
+    echo "Reloading shell configuration..."
+    if [ -n "$ZSH_VERSION" ]; then
+        source ~/.zshrc
+        echo "✓ Zsh configuration reloaded"
+    elif [ -n "$BASH_VERSION" ]; then
+        source ~/.bashrc
+        echo "✓ Bash configuration reloaded"
+    fi
+    echo "Shell environment refreshed!"
+}
 # Add tools directory to PATH if not already there
 if [[ ":$PATH:" != *":/home/lee/code/dotfiles/tools:"* ]]; then
     export PATH="$PATH:/home/lee/code/dotfiles/tools"
@@ -1497,3 +1563,4 @@ if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
     source ~/code/dotfiles/tools/watcher-utils.sh >/dev/null 2>&1
 fi
 export PATH="/usr/local/opt/openjdk/bin:$PATH"
+export PATH="/usr/local/opt/trash/bin:$PATH"

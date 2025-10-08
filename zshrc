@@ -214,7 +214,10 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
 
-[[ /snap/bin/kubectl ]] && source <(kubectl completion zsh)
+# Load kubectl completion only if kubectl is available
+if command -v kubectl >/dev/null 2>&1; then
+    source <(kubectl completion zsh 2>/dev/null) || true
+fi
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
@@ -259,7 +262,8 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" >/dev/null 2>&1  # This loads nvm silently
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" >/dev/null 2>&1  # This loads nvm bash_completion silently
+# Skip bash_completion in zsh - it's not compatible
+# [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" >/dev/null 2>&1
 
 
 alias usag='du -sh * * | sort -h'
@@ -440,3 +444,8 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # Lynx browser with auto-accept cookies
 alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
+export GOROOT=/usr/local/Cellar/go/1.25.0/libexec
+alias go="GOROOT=/usr/local/Cellar/go/1.25.0/libexec /usr/local/bin/go"
+# Go configuration for macOS
+export GOROOT=/usr/local/Cellar/go/1.25.0/libexec
+export PATH=$GOROOT/bin:$PATH
