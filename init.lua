@@ -79,16 +79,21 @@ require("lazy").setup({
       'nvim-lua/plenary.nvim',
       'nvim-telescope/telescope-fzf-native.nvim',
       'nvim-telescope/telescope-live-grep-args.nvim',
+      'nvim-telescope/telescope-file-browser.nvim',
+      'debugloop/telescope-undo.nvim',
     },
     config = function()
       local telescope = require('telescope')
       local actions = require('telescope.actions')
+      local builtin = require('telescope.builtin')
       
       telescope.setup({
         defaults = {
-          prompt_prefix = "🔍 ",
-          selection_caret = "➤ ",
-          path_display = { "truncate" },
+          prompt_prefix = "  ",
+          selection_caret = "❯ ",
+          path_display = { "smart" },
+          sorting_strategy = "ascending",
+          layout_strategy = "flex",
           file_ignore_patterns = {
             "node_modules/.*",
             "%.git/.*",
@@ -96,6 +101,15 @@ require("lazy").setup({
             "target/.*",
             "build/.*",
             "dist/.*",
+            "__pycache__/.*",
+            "%.pyc",
+            "%.o",
+            "%.a",
+            "%.class",
+            "%.pdf",
+            "%.mkv",
+            "%.mp4",
+            "%.zip",
           },
           mappings = {
             i = {
@@ -105,33 +119,58 @@ require("lazy").setup({
               ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,
               ["<C-x>"] = actions.select_horizontal,
               ["<C-v>"] = actions.select_vertical,
+              ["<C-t>"] = actions.select_tab,
+              ["<C-u>"] = actions.preview_scrolling_up,
+              ["<C-d>"] = actions.preview_scrolling_down,
+              ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
+              ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
+              ["<C-/>>"] = actions.which_key,
+              ["<C-_>"] = actions.which_key, -- terminals send C-/ as C-_
+              ["<Esc>"] = actions.close,
             },
             n = {
               ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,
+              ["q"] = actions.close,
+              ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
+              ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
             }
           },
           layout_config = {
             horizontal = {
-              preview_width = 0.6,
+              prompt_position = "top",
+              preview_width = 0.55,
             },
             vertical = {
               mirror = false,
             },
+            width = 0.87,
+            height = 0.80,
+            preview_cutoff = 120,
           },
         },
         pickers = {
           find_files = {
-            theme = "dropdown",
-            previewer = false,
             hidden = true,
+            follow = true,
+            -- Use ripgrep to list files (faster than find)
+            find_command = { "rg", "--files", "--hidden", "--follow", "--glob", "!.git/*", "--glob", "!node_modules/*", "--glob", "!target/*" },
           },
           live_grep = {
             theme = "ivy",
           },
           buffers = {
+            sort_lastused = true,
             theme = "dropdown",
             previewer = false,
             initial_mode = "normal",
+            mappings = {
+              i = {
+                ["<C-w>"] = actions.delete_buffer,
+              },
+              n = {
+                ["dd"] = actions.delete_buffer,
+              },
+            },
           },
         },
         extensions = {
@@ -146,6 +185,8 @@ require("lazy").setup({
       
       -- Load extensions
       telescope.load_extension('fzf')
+      pcall(telescope.load_extension, 'file_browser')
+      pcall(telescope.load_extension, 'undo')
     end,
   },
 
@@ -153,6 +194,55 @@ require("lazy").setup({
   {
     'nvim-telescope/telescope-fzf-native.nvim',
     build = 'make'
+  },
+
+  -- Formatting with external tools (ruff, prettier, gofmt, etc.)
+  {
+    'stevearc/conform.nvim',
+    event = { 'BufReadPre', 'BufNewFile' },
+    config = function()
+      local conform = require('conform')
+      conform.setup({
+        formatters_by_ft = {
+          lua = { 'stylua' },
+          python = function(bufnr)
+            if require("conform").get_formatter_info("ruff_format", bufnr).available then
+              return { "ruff_format", "ruff_fix" }
+            else
+              return { "black" }
+            end
+          end,
+          javascript = { { 'prettier', 'prettierd' } },
+          typescript = { { 'prettier', 'prettierd' } },
+          javascriptreact = { { 'prettier', 'prettierd' } },
+          typescriptreact = { { 'prettier', 'prettierd' } },
+          json = { { 'prettier', 'prettierd' } },
+          jsonc = { { 'prettier', 'prettierd' } },
+          markdown = { { 'prettier', 'prettierd' } },
+          html = { { 'prettier', 'prettierd' } },
+          css = { { 'prettier', 'prettierd' } },
+          scss = { { 'prettier', 'prettierd' } },
+          yaml = { { 'prettier', 'prettierd' } },
+          toml = { 'taplo' },
+          sh = { 'shfmt' },
+          bash = { 'shfmt' },
+          go = { 'goimports', 'gofmt' },
+          rust = { 'rustfmt' },
+        },
+        format_on_save = false,
+        notify_on_error = true,
+        default_format_opts = {
+          lsp_format = 'fallback',
+        },
+      })
+
+      -- Keymaps: Space+F as primary, with additional fallbacks
+      local fmt = function()
+        require('conform').format({ async = true, lsp_fallback = true })
+      end
+      vim.keymap.set({ 'n', 'v' }, '<leader>F', fmt, { desc = 'Format document/selection (Conform)' })
+      vim.keymap.set({ 'n', 'v' }, '<C-S-f>', fmt, { desc = 'Format document/selection (Conform)' })
+    end,
   },
 
   -- GitHub Copilot (commented out - no longer paying for subscription)
@@ -384,6 +474,12 @@ require("lazy").setup({
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
       local lspconfig = require('lspconfig')
       
+      -- Load optimized LSP configuration
+      local lsp_optimized = require('user.lsp-optimized')
+      
+      -- Setup auto-shutdown for idle LSP servers
+      lsp_optimized.setup_lsp_timeout()
+      
       -- Configure each LSP server
       local servers = {
         lua_ls = {
@@ -400,7 +496,7 @@ require("lazy").setup({
           },
         },
         pyright = {},
-        ts_ls = {},
+        -- ts_ls is configured separately with optimizations
         html = {},
         cssls = {},
         jsonls = {},
@@ -414,6 +510,9 @@ require("lazy").setup({
         config.capabilities = capabilities
         lspconfig[server].setup(config)
       end
+      
+      -- Setup optimized TypeScript LSP
+      lsp_optimized.setup_typescript()
       
       -- Global mappings
       vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float)
@@ -451,6 +550,34 @@ require("lazy").setup({
   },
   {
     'williamboman/mason-lspconfig.nvim',
+  },
+  -- Ensure formatters/linters via Mason
+  {
+    'WhoIsSethDaniel/mason-tool-installer.nvim',
+    dependencies = { 'williamboman/mason.nvim' },
+    config = function()
+      require('mason').setup()
+      require('mason-tool-installer').setup({
+        ensure_installed = {
+          -- Lua
+          'stylua',
+          -- Python
+          'ruff',
+          -- JS/TS/JSON/Markdown/YAML/CSS/HTML
+          'prettier',
+          -- Shell
+          'shfmt',
+          -- Go
+          'gofumpt', 'goimports',
+          -- Rust
+          'rustfmt',
+          -- TOML
+          'taplo',
+        },
+        auto_update = true,
+        run_on_start = true,
+      })
+    end,
   },
 
   -- Autocompletion
@@ -737,19 +864,73 @@ require("lazy").setup({
       })
     end,
   },
+
+  -- Multi-cursor editing
+  {
+    'mg979/vim-visual-multi',
+    branch = 'master',
+    init = function()
+      -- Use explicit mappings to avoid conflicts with <C-n>
+      vim.g.VM_default_mappings = 0
+      vim.g.VM_leader = ','
+      vim.g.VM_maps = {
+        -- Start/select next occurrence (Alt-n)
+        ["Find Under"] = "<A-n>",
+        ["Find Subword Under"] = "<A-n>",
+        -- Select all occurrences (Alt-a)
+        ["Select All"] = "<A-a>",
+        -- Add cursor above/below (Alt-Up/Alt-Down)
+        ["Add Cursor Up"] = "<A-Up>",
+        ["Add Cursor Down"] = "<A-Down>",
+        -- Extend/shrink region with Alt-h/l in visual-multi mode
+        ["Increase Selection"] = ",+",
+        ["Decrease Selection"] = ",-",
+        -- Exit visual-multi
+        ["Quit VM Mode"] = "<Esc>",
+      }
+    end,
+  },
 })
 
 -- Enhanced Key mappings
 vim.api.nvim_set_keymap('n', '<C-n>', '<cmd>NvimTreeToggle<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>e', '<cmd>NvimTreeFocus<CR>', { noremap = true, silent = true })
 
--- Telescope mappings
-vim.api.nvim_set_keymap('n', '<leader>ff', '<cmd>Telescope find_files<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fg', '<cmd>Telescope live_grep<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fb', '<cmd>Telescope buffers<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fh', '<cmd>Telescope help_tags<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fr', '<cmd>Telescope oldfiles<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fc', '<cmd>Telescope commands<CR>', { noremap = true, silent = true })
+-- Telescope mappings - Enhanced fzf-style navigation
+-- File navigation
+vim.api.nvim_set_keymap('n', '<leader>ff', '<cmd>Telescope find_files<CR>', { noremap = true, silent = true, desc = "Find files" })
+vim.api.nvim_set_keymap('n', '<C-p>', '<cmd>lua require("telescope.builtin").find_files({ cwd = vim.fn.getcwd() })<CR>', { noremap = true, silent = true, desc = "Find files (Quick)" })
+vim.api.nvim_set_keymap('n', '<leader>fg', '<cmd>Telescope live_grep<CR>', { noremap = true, silent = true, desc = "Live grep" })
+vim.api.nvim_set_keymap('n', '<leader>fw', '<cmd>Telescope grep_string<CR>', { noremap = true, silent = true, desc = "Find word under cursor" })
+vim.api.nvim_set_keymap('n', '<leader>fb', '<cmd>Telescope buffers<CR>', { noremap = true, silent = true, desc = "Buffers" })
+vim.api.nvim_set_keymap('n', '<leader>fh', '<cmd>Telescope help_tags<CR>', { noremap = true, silent = true, desc = "Help tags" })
+vim.api.nvim_set_keymap('n', '<leader>fr', '<cmd>Telescope oldfiles<CR>', { noremap = true, silent = true, desc = "Recent files" })
+vim.api.nvim_set_keymap('n', '<leader>fc', '<cmd>Telescope commands<CR>', { noremap = true, silent = true, desc = "Commands" })
+vim.api.nvim_set_keymap('n', '<leader>fk', '<cmd>Telescope keymaps<CR>', { noremap = true, silent = true, desc = "Keymaps" })
+vim.api.nvim_set_keymap('n', '<leader>ft', '<cmd>Telescope treesitter<CR>', { noremap = true, silent = true, desc = "Treesitter symbols" })
+
+-- Symbol search (@ notation support)
+vim.api.nvim_set_keymap('n', '<leader>fs', '<cmd>Telescope lsp_document_symbols<CR>', { noremap = true, silent = true, desc = "Document symbols" })
+vim.api.nvim_set_keymap('n', '<leader>fS', '<cmd>Telescope lsp_dynamic_workspace_symbols<CR>', { noremap = true, silent = true, desc = "Workspace symbols" })
+vim.api.nvim_set_keymap('n', '<leader>@', '<cmd>Telescope lsp_document_symbols<CR>', { noremap = true, silent = true, desc = "Document symbols (@)" })
+vim.api.nvim_set_keymap('n', '<leader>@@', '<cmd>Telescope lsp_dynamic_workspace_symbols<CR>', { noremap = true, silent = true, desc = "All symbols (@@)" })
+
+-- Git integration
+vim.api.nvim_set_keymap('n', '<leader>gc', '<cmd>Telescope git_commits<CR>', { noremap = true, silent = true, desc = "Git commits" })
+vim.api.nvim_set_keymap('n', '<leader>gb', '<cmd>Telescope git_branches<CR>', { noremap = true, silent = true, desc = "Git branches" })
+vim.api.nvim_set_keymap('n', '<leader>gs', '<cmd>Telescope git_status<CR>', { noremap = true, silent = true, desc = "Git status" })
+vim.api.nvim_set_keymap('n', '<leader>gS', '<cmd>Telescope git_stash<CR>', { noremap = true, silent = true, desc = "Git stash" })
+
+-- Advanced navigation
+vim.api.nvim_set_keymap('n', '<leader>/', '<cmd>Telescope current_buffer_fuzzy_find<CR>', { noremap = true, silent = true, desc = "Search in buffer" })
+vim.api.nvim_set_keymap('n', '<leader>?', '<cmd>Telescope search_history<CR>', { noremap = true, silent = true, desc = "Search history" })
+vim.api.nvim_set_keymap('n', '<leader>fm', '<cmd>Telescope marks<CR>', { noremap = true, silent = true, desc = "Marks" })
+vim.api.nvim_set_keymap('n', '<leader>fj', '<cmd>Telescope jumplist<CR>', { noremap = true, silent = true, desc = "Jumplist" })
+vim.api.nvim_set_keymap('n', '<leader>fd', '<cmd>Telescope diagnostics<CR>', { noremap = true, silent = true, desc = "Diagnostics" })
+
+-- Quick method/function navigation
+vim.api.nvim_set_keymap('n', 'gm', '<cmd>Telescope lsp_document_symbols symbols=method,function<CR>', { noremap = true, silent = true, desc = "Go to method" })
+vim.api.nvim_set_keymap('n', 'gM', '<cmd>Telescope lsp_dynamic_workspace_symbols symbols=method,function<CR>', { noremap = true, silent = true, desc = "Go to method (workspace)" })
 
 -- Buffer navigation
 vim.api.nvim_set_keymap('n', '<Tab>', '<cmd>BufferLineCycleNext<CR>', { noremap = true, silent = true })

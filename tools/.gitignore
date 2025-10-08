@@ -1,2 +1,5 @@
 chrome_profile_export
 chrome_profiles_export
+.venv/
+__pycache__/
+*.pyc

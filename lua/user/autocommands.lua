@@ -3,20 +3,32 @@
 -- Create augroup for all autocommands
 local group = vim.api.nvim_create_augroup("UserAutocommands", { clear = true })
 
--- Change to the directory of the file on BufEnter
-vim.api.nvim_create_autocmd("BufEnter", {
+-- Auto-save on focus lost or buffer change
+vim.api.nvim_create_autocmd({"FocusLost", "BufLeave"}, {
   group = group,
-  desc = "Change to directory of file",
+  desc = "Auto-save on focus lost",
   callback = function()
-    local bufname = vim.fn.bufname("%")
-    if bufname ~= "" and vim.fn.filereadable(bufname) == 1 then
-      local dir = vim.fn.expand("%:p:h")
-      if dir ~= "" and dir ~= vim.fn.getcwd() then
-        vim.cmd("silent! chdir " .. vim.fn.escape(dir, " "))
-      end
+    if vim.bo.modified and vim.bo.buftype == "" and vim.fn.expand("%") ~= "" then
+      vim.cmd("silent! update")
     end
   end,
 })
+
+-- DISABLED: Too aggressive directory changing - breaks Telescope
+-- Use :lcd if you need to change directory for specific buffers
+-- vim.api.nvim_create_autocmd("BufEnter", {
+--   group = group,
+--   desc = "Change to directory of file",
+--   callback = function()
+--     local bufname = vim.fn.bufname("%")
+--     if bufname ~= "" and vim.fn.filereadable(bufname) == 1 then
+--       local dir = vim.fn.expand("%:p:h")
+--       if dir ~= "" and dir ~= vim.fn.getcwd() then
+--         vim.cmd("silent! chdir " .. vim.fn.escape(dir, " "))
+--       end
+--     end
+--   end,
+-- })
 
 -- Remove trailing whitespace on save
 vim.api.nvim_create_autocmd("BufWritePre", {
@@ -116,7 +128,7 @@ vim.notify = function(msg, level, opts)
     msg:match("Invalid 'end_row'") or
     msg:match("Invalid 'end_col'") or
     msg:match("out of range") or
-    msg:match("\.swp") or
+    msg:match("%.swp") or
     msg:match("Swap file") or
     msg:match("E325")
   ) then

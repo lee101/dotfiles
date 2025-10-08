@@ -1,10 +1,17 @@
 #!/bin/bash
+# Startup timing - set DEBUG_STARTUP=1 to enable
+[ -n "$DEBUG_STARTUP" ] && echo "Bashrc start: $(date +%s.%N)"
+
+alias uva='source .venv/bin/activate'
+alias sni='sudo snap install --classic'
+alias bi='bun install'
+alias ba='bun add'
 alias pip='uv pip'
 alias grmtr='git remote remove'
 alias cru="cd /media/lee/crucial/code/"
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-
+export DOCKER_BUILDKIT=1
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -265,7 +272,7 @@ alias brf='bun run format'
 alias brt='bun run typecheck'
 alias brt='bun run test'
 
-# alias gst='git status'  # Commented out - using gst() function instead
+alias gst='git status' 
 alias gstt='git status -uno'
 alias gco='git checkout'
 alias gcob='git checkout -b'
@@ -276,7 +283,7 @@ alias gcm='git commit -m'
 alias gcmn='git commit --no-verify -m'
 alias gcmt='git commit'
 alias gcmtn='git commit --no-verify'
-alias gcmts='git commit -n '
+alias gcmts='git commit --no-edit'
 alias gcma='git commit -a -m'
 alias gcman='git commit -a --no-verify -m'
 alias gcms='git commit -n -m'
@@ -294,7 +301,7 @@ function gun {
     git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
         if [ -f "$file" ]; then
             echo -e "\033[1;32m+++ $file\033[0m"
-            cat "$file" | head -100
+            cat "$file" | command head -100
             echo
         fi
     done
@@ -318,13 +325,13 @@ function guna {
     fi
 
     # Show new/untracked files
-    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | head -1)
+    local has_untracked=$(git ls-files --others --exclude-standard "$path" 2>/dev/null | command head -1)
     if [ -n "$has_untracked" ]; then
         echo -e "\n\033[1;32m=== NEW/UNTRACKED FILES ===\033[0m"
         git ls-files --others --exclude-standard "$path" 2>/dev/null | while IFS= read -r file; do
             if [ -f "$file" ]; then
                 echo -e "\033[1;32m+++ $file\033[0m"
-                cat "$file" | head -50
+                cat "$file" | command head -50
                 echo
             fi
         done
@@ -463,7 +470,7 @@ function gunaa() {
     git --no-pager diff -p --cached
     echo
     echo "=== UNTRACKED FILES ==="
-    git ls-files --others --exclude-standard | while read -r file; do
+    git ls-files --others --exclude-standard | while IFS= read -r file; do
         echo "=== New file: $file ==="
         git diff --no-index /dev/null "$file" || true
         echo
@@ -738,24 +745,22 @@ if command -v hub >/dev/null 2>&1; then
   eval "$(hub alias -s)" 2>/dev/null || true
 fi
 
-# Codex wrappers with better permission handling
-if [ -f ~/code/dotfiles/tools/codex-wrapper.sh ]; then
-    source ~/code/dotfiles/tools/codex-wrapper.sh
-else
-    # Fallback to simple aliases if wrapper not found
-    alias cxm='codex -m gpt-5 --config model_reasoning_effort=high'
-    alias cx='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
-    alias cxa='codex -m gpt-5 --config model_reasoning_effort=high --auto-edit'
-    alias cxf='codex -m gpt-5 --config model_reasoning_effort=high --full-auto'
-fi
+# Codex aliases with dangerous mode for fast execution
+alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
+alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
+alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
+
+alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias cx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias cxa='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit'
+alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
 
 function cld {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
+  ANTHROPIC_API_KEY="" 
   bun run "$(which claude)" --dangerously-skip-permissions "$@"
 }
 
 function codex_wrapper {
-  CHOKIDAR_USEPOLLING=1 CHOKIDAR_INTERVAL=3000 \
   command codex "$@"
 }
 alias codex='codex_wrapper'
@@ -839,10 +844,8 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 
 alias cla='ANTHROPIC_API_KEY="" claude'
-# Use function 'cld' defined above for Claude with CHOKIDAR polling
 alias cldc='cld --continue'
 
-# Claude code review tool
 alias cr='claude-review'
 alias creview='claude-review'
 alias claude-rev='claude-review'
@@ -863,6 +866,59 @@ alias ccmt='cldcmt'                 # Short alias for cldcmt
 alias cgcmep='cldgcmep'             # Short alias for cldgcmep
 alias cfix='cldfix'                 # Short alias for cldfix
 alias cpr='cldpr'                   # Short alias for cldpr
+
+# Codex CLI aliases
+alias cdx='codex'
+alias cdxd='codex --dangerously-bypass-approvals-and-sandbox'
+alias cdxf='codex --full-auto'                              # Convenience for sandboxed auto (-a on-failure, --sandbox workspace-write)
+alias cdxr='codex --sandbox read-only'                      # Read-only sandbox mode
+alias cdxw='codex --sandbox workspace-write'                # Workspace write sandbox mode
+alias cdxa='codex apply'                                    # Apply latest diff as git apply
+alias cdxe='codex exec'                                     # Run non-interactively
+alias cdxs='codex --search'                                 # Enable web search
+alias cdxo='codex --oss'                                    # Use local OSS model (Ollama)
+alias cdxed='codex exec --dangerously-bypass-approvals-and-sandbox'  # Exec with no sandbox
+
+# Function to run multiple codex prompts in sequence
+function cdxm() {
+    # Run multiple codex exec commands in sequence
+    # Usage: cdxm "first prompt" "second prompt" "third prompt"
+    
+    local dangerous_mode=""
+    if [[ "$1" == "-d" ]]; then
+        dangerous_mode="--dangerously-bypass-approvals-and-sandbox"
+        shift
+    fi
+    
+    for prompt in "$@"; do
+        echo -e "\n\033[1;36m=== Executing: $prompt ===\033[0m"
+        codex exec $dangerous_mode "$prompt"
+        if [ $? -ne 0 ]; then
+            echo -e "\033[1;31mCommand failed, stopping sequence\033[0m"
+            return 1
+        fi
+        echo -e "\033[1;32m=== Completed ===\033[0m\n"
+    done
+}
+
+# Function to pipe prompts to codex interactively (experimental)
+function cdxi() {
+    # Interactive codex with initial prompt
+    # Usage: cdxi "initial prompt"
+    # Then type additional prompts interactively
+    
+    local dangerous_mode=""
+    if [[ "$1" == "-d" ]]; then
+        dangerous_mode="--dangerously-bypass-approvals-and-sandbox"
+        shift
+    fi
+    
+    if [ -n "$1" ]; then
+        codex $dangerous_mode "$1"
+    else
+        codex $dangerous_mode
+    fi
+}
 
 # Claude + Git diff functions
 function cldgdfaa() {
@@ -1113,8 +1169,10 @@ fi
 
 export LESS="-eirMX"
 
-# The next line enables bash completion for gcloud.
-[ -f '/Users/lee/google-cloud-sdk/completion.bash.inc' ] && source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+# The next line enables bash completion for gcloud (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    [ -f '/Users/lee/google-cloud-sdk/completion.bash.inc' ] && source '/Users/lee/google-cloud-sdk/completion.bash.inc'
+fi
 
 export RAILS_ENV=development
 
@@ -1158,16 +1216,26 @@ source ~/.secretbashrc
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
-# Check if direnv is installed before hooking
-if command -v direnv >/dev/null 2>&1; then
-  eval "$(direnv hook bash 2>/dev/null)" || true
-fi
+# Lazy load direnv for faster startup
+direnv() {
+    eval "$(command direnv hook bash 2>/dev/null)"
+    command direnv "$@"
+}
 
-if command -v pyenv >/dev/null 2>&1; then
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init --path)"
-    eval "$(pyenv init -)"
+# Pyenv configuration - optimized for speed
+# Set PYENV_ROOT first to avoid the warning message
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+# Only initialize pyenv if it exists and we're in an interactive shell
+if [ -d "$PYENV_ROOT" ] && [[ $- == *i* ]]; then
+    # Use lazy loading for pyenv to speed up startup
+    # Only init --path is needed for basic functionality
+    if command -v pyenv >/dev/null 2>&1; then
+        eval "$(pyenv init --path)"
+        # Defer full init to avoid slowing down startup
+        # eval "$(pyenv init -)" # Commented out for speed - uncomment if you need shims
+    fi
 fi
 
 # Guard kubectl completion
@@ -1186,12 +1254,19 @@ fi
 
 alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
+# NVM lazy loading for much faster startup
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" >/dev/null 2>&1  # This loads nvm silently
-# Only load bash_completion if we're actually in bash (not zsh)
-if [ -n "$BASH_VERSION" ]; then
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" >/dev/null 2>&1  # This loads nvm bash_completion silently
-fi
+# Don't load NVM immediately - use lazy loading
+lazy_load_nvm() {
+    unset -f nvm node npm npx 2>/dev/null
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+}
+# Stub functions that trigger NVM loading on first use
+nvm() { lazy_load_nvm; nvm "$@"; }
+node() { lazy_load_nvm; node "$@"; }
+npm() { lazy_load_nvm; npm "$@"; }
+npx() { lazy_load_nvm; npx "$@"; }
 
 
 
@@ -1202,8 +1277,10 @@ alias k='kubectl'
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/home/lee/programs/google-cloud-sdk/path.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/path.bash.inc'; fi
 
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ]; then . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'; fi
+# The next line enables shell command completion for gcloud (bash only)
+if [ -n "$BASH_VERSION" ]; then
+    [ -f '/home/lee/programs/google-cloud-sdk/completion.bash.inc' ] && . '/home/lee/programs/google-cloud-sdk/completion.bash.inc'
+fi
 
 #export PATH="/usr/local/cuda-12.2/$PATH"
 export PATH="/usr/local/cuda-12/bin:$PATH"
@@ -1221,10 +1298,25 @@ export PATH="/home/lee/.pixi/bin:$PATH"
 
 alias unr="cd /mnt/fast/programs/unreal/Engine/Binaries/Linux"
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+# SDKMAN lazy loading for faster startup
 export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+# Don't load SDKMAN immediately - use lazy loading
+lazy_load_sdkman() {
+    unset -f sdk java gradle maven 2>/dev/null
+    [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+}
+sdk() { lazy_load_sdkman; sdk "$@"; }
+# Lazy load Rust/Cargo
+cargo() {
+    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+    unset -f cargo rustc rustup 2>/dev/null
+    cargo "$@"
+}
+rustc() {
+    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+    unset -f cargo rustc rustup 2>/dev/null
+    rustc "$@"
+}
 
 # Source WSL-specific configuration if running in WSL
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
@@ -1371,46 +1463,28 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
-# SSH Agent Configuration
-# Check if SSH agent is running, start if not
-if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    eval "$(ssh-agent -s)" > /dev/null
-fi
-
-# Try to use gnome-keyring SSH agent if available
+# Optimized SSH Agent setup
+# Try gnome-keyring first (fastest)
 if [ -S "/run/user/$UID/keyring/ssh" ]; then
     export SSH_AUTH_SOCK="/run/user/$UID/keyring/ssh"
-elif [ -n "$SSH_AGENT_PID" ]; then
-    # Use existing SSH agent
-    export SSH_AUTH_SOCK="$SSH_AUTH_SOCK"
+elif [ -z "$SSH_AUTH_SOCK" ]; then
+    # Only start agent if really needed
+    if ! pgrep -u "$USER" ssh-agent >/dev/null 2>&1; then
+        eval "$(ssh-agent -s)" >/dev/null 2>&1
+    fi
 fi
 
 alias br='bun run'
 alias v=nvim
 
-# Use default node version silently
-if command -v nvm >/dev/null 2>&1; then
-    nvm use node >/dev/null 2>&1
-fi
-# Source local environment if it exists
-if [ -f "$HOME/.local/bin/env" ]; then
-    . "$HOME/.local/bin/env"
-fi
+# Don't auto-select node version on startup (slow)
+# Run 'nvm use node' manually when needed
+# Source local environment if it exists (fast check)
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 export PATH="/home/lee/.pixi/bin:$PATH"
 
-# Start SSH agent and add key automatically (safe version - allows passphrase prompts)
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" >/dev/null 2>&1
-    # Check if key is already loaded, if not, add it (allows passphrase prompt)
-    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        [ -f ~/.ssh/id_ed25519 ] && ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1 || true
-    fi
-else
-    # Ensure key is loaded in existing agent (allows passphrase prompt)
-    if ! ssh-add -l 2>/dev/null | grep -q "id_ed25519"; then
-        [ -f ~/.ssh/id_ed25519 ] && ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1 || true
-    fi
-fi
+# Defer SSH key loading - only when needed
+# Run 'ssh-add ~/.ssh/id_ed25519' manually if you need the key loaded
 
 alias gdfs='git diff --ext-diff'
 
@@ -1521,8 +1595,7 @@ function gcheck {
 alias gpu='gsp'
 alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify --force-with-lease'
 
-function gst {
-    echo -e "\033[1;34m━━━ Git Status ━━━\033[0m"
+function gstm {
     
     # Branch and upstream info
     branch=$(git branch --show-current 2>/dev/null)
@@ -1542,7 +1615,6 @@ function gst {
         fi
     fi
     
-    echo ""
     git status -sb
 }
 
@@ -1564,3 +1636,8 @@ if [ -f ~/code/dotfiles/tools/watcher-utils.sh ]; then
 fi
 export PATH="/usr/local/opt/openjdk/bin:$PATH"
 export PATH="/usr/local/opt/trash/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+unset DOCKER_HOST
+
+# Startup timing end
+[ -n "$DEBUG_STARTUP" ] && echo "Bashrc end: $(date +%s.%N)"
