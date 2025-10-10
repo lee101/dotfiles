@@ -29,4 +29,47 @@ vim.api.nvim_create_user_command('W',
     vim.cmd('edit!')
   end,
   { nargs = "?", complete = "file" } -- Allows :W new_file (though current impl doesn't use new_file)
-) 
+)
+
+-- LSP Management Commands
+local lsp_optimized = require('user.lsp-optimized')
+
+vim.api.nvim_create_user_command('LspRestart',
+  function(opts)
+    if opts.args == "typescript" or opts.args == "ts" then
+      lsp_optimized.restart_typescript_lsp()
+    else
+      vim.cmd('LspRestart')
+    end
+  end,
+  { nargs = "?", desc = "Restart LSP server (optionally specify 'typescript')" }
+)
+
+vim.api.nvim_create_user_command('LspStats',
+  function()
+    lsp_optimized.show_lsp_stats()
+  end,
+  { desc = "Show active LSP clients and stats" }
+)
+
+vim.api.nvim_create_user_command('LspStopIdle',
+  function()
+    local clients = vim.lsp.get_active_clients()
+    local stopped = 0
+    for _, client in ipairs(clients) do
+      -- Check if client has no attached buffers
+      local attached_buffers = vim.lsp.get_buffers_by_client_id(client.id)
+      if #attached_buffers == 0 then
+        vim.lsp.stop_client(client.id)
+        stopped = stopped + 1
+        vim.notify("Stopped idle LSP: " .. client.name, vim.log.levels.INFO)
+      end
+    end
+    if stopped == 0 then
+      vim.notify("No idle LSP servers found", vim.log.levels.INFO)
+    else
+      vim.notify(string.format("Stopped %d idle LSP server(s)", stopped), vim.log.levels.INFO)
+    end
+  end,
+  { desc = "Stop all idle LSP servers" }
+)
