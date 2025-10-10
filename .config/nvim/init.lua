@@ -710,25 +710,6 @@ require("lazy").setup({
       end
     },
     {
-      "NeogitOrg/neogit",
-      dependencies = {
-        "nvim-lua/plenary.nvim",
-        "sindrets/diffview.nvim",
-        "nvim-telescope/telescope.nvim",
-      },
-      config = function()
-        local neogit = require("neogit")
-        neogit.setup({
-          integrations = {
-            telescope = true,
-            diffview = true,
-          },
-        })
-        vim.keymap.set("n", "<leader>gg", neogit.open, { desc = "Neogit" })
-        vim.keymap.set("n", "<leader>gc", function() neogit.open({ "commit" }) end, { desc = "Neogit commit" })
-      end
-    },
-    {
       "sindrets/diffview.nvim",
       config = function()
         require("diffview").setup({

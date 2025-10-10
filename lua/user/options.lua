@@ -39,7 +39,45 @@ vim.opt.hlsearch = true         -- Highlight all matches
 -- Requires a clipboard tool like xclip (Linux) or pbcopy/pbpaste (macOS)
 vim.opt.clipboard = "unnamedplus"
 
-vim.opt.hidden = false          -- Do not hide buffers when abandoned
+vim.opt.hidden = true           -- Allow hiding buffers with unsaved changes
+
+-- Undo persistence - maintain undo history across sessions
+vim.opt.undofile = true
+vim.opt.undodir = vim.fn.expand('~/.config/nvim/undo')
+vim.opt.undolevels = 10000
+vim.opt.undoreload = 10000
+
+-- Better search experience
+vim.opt.inccommand = 'split'    -- Live preview of :s commands
+vim.opt.gdefault = true         -- Use 'g' flag by default in :s commands
+
+-- Faster key response
+vim.opt.updatetime = 100        -- Faster completion and git signs
+vim.opt.timeoutlen = 300        -- Faster key sequence completion
+
+-- Better splits
+vim.opt.splitbelow = true       -- Horizontal splits go below
+vim.opt.splitright = true       -- Vertical splits go right
+
+-- Scroll padding
+vim.opt.scrolloff = 8           -- Keep 8 lines visible above/below cursor
+vim.opt.sidescrolloff = 8       -- Keep 8 columns visible left/right of cursor
+
+-- Faster macros
+vim.opt.lazyredraw = true       -- Don't redraw while executing macros
+
+-- Backup settings
+vim.opt.backup = false          -- No backup files
+vim.opt.writebackup = false     -- No backup before overwriting
+vim.opt.swapfile = false        -- No swap files
+
+-- Tags configuration
+-- Search order: local symlink, then centralized tags directory
+vim.opt.tags = "./tags;,tags,.tags,~/.tags/*.tags"
+
+-- Better diffs
+vim.opt.diffopt:append('algorithm:histogram')
+vim.opt.diffopt:append('indent-heuristic')
 
 -- Status line: lualine is used, so we don't set statusline here
 vim.opt.laststatus = 2          -- Always show the status line (0=never, 1=only if multiple windows, 2=always, 3=global statusline Nvim 0.8+)

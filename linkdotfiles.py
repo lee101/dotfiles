@@ -173,3 +173,37 @@ if os.path.exists(config_source):
                         
             print('Creating link %s -> %s' % (src, dst))
             os.symlink(src, dst)
+
+# Link .codex directory contents for Codex CLI configuration
+codex_source = os.path.join(cwd, '.codex')
+codex_dest = os.path.join(homedir, '.codex')
+
+if os.path.exists(codex_source):
+    print('Linking .codex files...')
+    if not os.path.exists(codex_dest):
+        os.makedirs(codex_dest)
+
+    for root, dirs, files in os.walk(codex_source):
+        rel_path = os.path.relpath(root, codex_source)
+        dest_dir = codex_dest if rel_path == '.' else os.path.join(codex_dest, rel_path)
+
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+
+        for file in files:
+            src = os.path.join(root, file)
+            dst = os.path.join(dest_dir, file)
+
+            if os.path.lexists(dst):
+                print('Removing existing %s' % dst)
+                try:
+                    os.remove(dst)
+                except OSError:
+                    try:
+                        rmtree(dst)
+                    except OSError as e:
+                        print('Failed to delete %s' % dst)
+                        continue
+
+            print('Creating link %s -> %s' % (src, dst))
+            os.symlink(src, dst)

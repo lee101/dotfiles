@@ -1,0 +1,501 @@
+#!/bin/bash
+
+# Cross-platform utility functions
+# Source this file in your bashrc for unified commands across Mac, Linux, and Windows Git Bash
+
+# Detect platform
+detect_platform() {
+    unameOut="$(uname -s)"
+    case "${unameOut}" in
+        Linux*)     machine=Linux;;
+        Darwin*)    machine=Mac;;
+        CYGWIN*)    machine=Cygwin;;
+        MINGW*)     machine=MinGw;;
+        MSYS_NT*)   machine=Git;;
+        *)          machine="UNKNOWN:${unameOut}"
+    esac
+    echo "$machine"
+}
+
+PLATFORM=$(detect_platform)
+
+# Package manager abstraction
+pkg_install() {
+    case "$PLATFORM" in
+        Mac)
+            brew install "$@"
+            ;;
+        Linux)
+            if command -v apt-get >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S apt-get install -y "$@"
+            elif command -v yum >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S yum install -y "$@"
+            elif command -v pacman >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S pacman -S --noconfirm "$@"
+            else
+                echo "No supported package manager found"
+                return 1
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            if command -v choco >/dev/null 2>&1; then
+                choco install -y "$@"
+            elif command -v scoop >/dev/null 2>&1; then
+                scoop install "$@"
+            else
+                echo "Please install Chocolatey or Scoop for Windows package management"
+                return 1
+            fi
+            ;;
+        *)
+            echo "Unsupported platform: $PLATFORM"
+            return 1
+            ;;
+    esac
+}
+
+# Package update abstraction
+pkg_update() {
+    case "$PLATFORM" in
+        Mac)
+            brew update && brew upgrade
+            ;;
+        Linux)
+            if command -v apt-get >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S apt-get update && echo 'Leap' | sudo -S apt-get upgrade -y
+            elif command -v yum >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S yum update -y
+            elif command -v pacman >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S pacman -Syu --noconfirm
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            if command -v choco >/dev/null 2>&1; then
+                choco upgrade all -y
+            elif command -v scoop >/dev/null 2>&1; then
+                scoop update && scoop update *
+            fi
+            ;;
+    esac
+}
+
+# Service management abstraction
+service_start() {
+    local service=$1
+    case "$PLATFORM" in
+        Mac)
+            brew services start "$service"
+            ;;
+        Linux)
+            if command -v systemctl >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S systemctl start "$service"
+            elif command -v service >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S service "$service" start
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            sc start "$service" 2>/dev/null || net start "$service"
+            ;;
+    esac
+}
+
+service_stop() {
+    local service=$1
+    case "$PLATFORM" in
+        Mac)
+            brew services stop "$service"
+            ;;
+        Linux)
+            if command -v systemctl >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S systemctl stop "$service"
+            elif command -v service >/dev/null 2>&1; then
+                echo 'Leap' | sudo -S service "$service" stop
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            sc stop "$service" 2>/dev/null || net stop "$service"
+            ;;
+    esac
+}
+
+service_status() {
+    local service=$1
+    case "$PLATFORM" in
+        Mac)
+            brew services list | grep "$service"
+            ;;
+        Linux)
+            if command -v systemctl >/dev/null 2>&1; then
+                systemctl status "$service"
+            elif command -v service >/dev/null 2>&1; then
+                service "$service" status
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            sc query "$service" 2>/dev/null || net start | grep "$service"
+            ;;
+    esac
+}
+
+# Process management abstraction
+kill_port() {
+    local port=$1
+    case "$PLATFORM" in
+        Mac)
+            lsof -ti:$port | xargs kill -9 2>/dev/null || echo "No process on port $port"
+            ;;
+        Linux)
+            echo 'Leap' | sudo -S fuser -k $port/tcp 2>/dev/null || echo "No process on port $port"
+            ;;
+        Git|Cygwin|MinGw)
+            netstat -ano | grep ":$port" | awk '{print $5}' | xargs -I {} taskkill /F /PID {} 2>/dev/null || echo "No process on port $port"
+            ;;
+    esac
+}
+
+# Find process by name
+find_process() {
+    local name=$1
+    case "$PLATFORM" in
+        Mac|Linux)
+            ps aux | grep -i "$name" | grep -v grep
+            ;;
+        Git|Cygwin|MinGw)
+            tasklist | grep -i "$name"
+            ;;
+    esac
+}
+
+# Network utilities
+get_local_ip() {
+    case "$PLATFORM" in
+        Mac)
+            ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1
+            ;;
+        Linux)
+            ip route get 8.8.8.8 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1
+            ;;
+        Git|Cygwin|MinGw)
+            ipconfig | grep -A 4 "Wireless LAN adapter Wi-Fi" | grep "IPv4" | awk '{print $NF}'
+            ;;
+    esac
+}
+
+# File system utilities
+trash_file() {
+    case "$PLATFORM" in
+        Mac)
+            if command -v trash >/dev/null 2>&1; then
+                trash "$@"
+            else
+                mv "$@" ~/.Trash/
+            fi
+            ;;
+        Linux)
+            if command -v trash-put >/dev/null 2>&1; then
+                trash-put "$@"
+            elif command -v gio >/dev/null 2>&1; then
+                gio trash "$@"
+            else
+                mkdir -p ~/.local/share/Trash/files
+                mv "$@" ~/.local/share/Trash/files/
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            # Move to Windows Recycle Bin
+            powershell.exe -command "Move-Item -Path '$@' -Destination 'shell:RecycleBinFolder'"
+            ;;
+    esac
+}
+
+# System information
+sys_info() {
+    echo "Platform: $PLATFORM"
+    echo "Hostname: $(hostname)"
+    echo "User: $USER"
+    echo "Shell: $SHELL"
+    echo "Local IP: $(get_local_ip)"
+    
+    case "$PLATFORM" in
+        Mac)
+            echo "macOS Version: $(sw_vers -productVersion)"
+            echo "CPU: $(sysctl -n machdep.cpu.brand_string)"
+            echo "Memory: $(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 )) GB"
+            ;;
+        Linux)
+            echo "Kernel: $(uname -r)"
+            if [ -f /etc/os-release ]; then
+                . /etc/os-release
+                echo "Distribution: $NAME $VERSION"
+            fi
+            echo "CPU: $(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2)"
+            echo "Memory: $(free -h | grep Mem | awk '{print $2}')"
+            ;;
+        Git|Cygwin|MinGw)
+            echo "Windows Version: $(cmd.exe /c ver 2>/dev/null | grep -o '[0-9.]*')"
+            echo "CPU: $(wmic cpu get name 2>/dev/null | tail -2 | head -1)"
+            echo "Memory: $(wmic computersystem get TotalPhysicalMemory 2>/dev/null | tail -2 | awk '{print int($1/1024/1024/1024) " GB"}')"
+            ;;
+    esac
+}
+
+# Docker helpers (cross-platform)
+docker_clean() {
+    echo "Cleaning Docker system..."
+    docker system prune -a --volumes -f
+    docker network prune -f
+    echo "Docker cleanup complete"
+}
+
+# Git helpers (cross-platform)
+git_clean_branches() {
+    echo "Cleaning merged branches..."
+    git branch --merged | grep -v "\*\|main\|master\|develop" | xargs -n 1 git branch -d 2>/dev/null
+    echo "Branch cleanup complete"
+}
+
+# Archive extraction (unified)
+extract() {
+    if [ -f "$1" ]; then
+        case "$1" in
+            *.tar.bz2)   tar xvjf "$1"    ;;
+            *.tar.gz)    tar xvzf "$1"    ;;
+            *.tar.xz)    tar xvJf "$1"    ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       
+                if command -v unrar >/dev/null 2>&1; then
+                    unrar x "$1"
+                elif command -v rar >/dev/null 2>&1; then
+                    rar x "$1"
+                else
+                    echo "Please install unrar or rar"
+                    return 1
+                fi
+                ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xvf "$1"     ;;
+            *.tbz2)      tar xvjf "$1"    ;;
+            *.tgz)       tar xvzf "$1"    ;;
+            *.zip)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        
+                if [ "$PLATFORM" = "Mac" ]; then
+                    7za x "$1"
+                else
+                    7z x "$1"
+                fi
+                ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+}
+
+# Archive creation (unified)
+compress() {
+    local name="${1%%/}"
+    shift
+    local format="${1:-tgz}"
+    
+    case "$format" in
+        tar)    tar cvf "${name}.tar" "${name}/"     ;;
+        tgz)    tar cvzf "${name}.tar.gz" "${name}/" ;;
+        tbz)    tar cvjf "${name}.tar.bz2" "${name}/";;
+        zip)    zip -r "${name}.zip" "${name}/"      ;;
+        7z)     
+            if [ "$PLATFORM" = "Mac" ]; then
+                7za a "${name}.7z" "${name}/"
+            else
+                7z a "${name}.7z" "${name}/"
+            fi
+            ;;
+        *)      echo "Unknown format: $format" ;;
+    esac
+}
+
+# Clipboard operations (unified)
+copy_to_clipboard() {
+    case "$PLATFORM" in
+        Mac)
+            pbcopy
+            ;;
+        Linux)
+            if command -v xclip >/dev/null 2>&1; then
+                xclip -selection clipboard
+            elif command -v xsel >/dev/null 2>&1; then
+                xsel --clipboard --input
+            else
+                echo "Please install xclip or xsel"
+                return 1
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            clip
+            ;;
+    esac
+}
+
+paste_from_clipboard() {
+    case "$PLATFORM" in
+        Mac)
+            pbpaste
+            ;;
+        Linux)
+            if command -v xclip >/dev/null 2>&1; then
+                xclip -selection clipboard -o
+            elif command -v xsel >/dev/null 2>&1; then
+                xsel --clipboard --output
+            else
+                echo "Please install xclip or xsel"
+                return 1
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            powershell.exe -command 'Get-Clipboard'
+            ;;
+    esac
+}
+
+# Open file/URL with default application
+open_file() {
+    case "$PLATFORM" in
+        Mac)
+            open "$@"
+            ;;
+        Linux)
+            xdg-open "$@"
+            ;;
+        Git|Cygwin|MinGw)
+            explorer.exe "$@"
+            ;;
+    esac
+}
+
+# Sound/notification utilities
+notify() {
+    local title="${1:-Notification}"
+    local message="${2:-Task completed}"
+    
+    case "$PLATFORM" in
+        Mac)
+            osascript -e "display notification \"$message\" with title \"$title\""
+            ;;
+        Linux)
+            if command -v notify-send >/dev/null 2>&1; then
+                notify-send "$title" "$message"
+            else
+                echo "[$title] $message"
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            powershell.exe -command "New-BurntToastNotification -Text '$title','$message'"
+            ;;
+    esac
+}
+
+beep() {
+    case "$PLATFORM" in
+        Mac)
+            say "beep" || afplay /System/Library/Sounds/Ping.aiff
+            ;;
+        Linux)
+            if command -v paplay >/dev/null 2>&1; then
+                paplay /usr/share/sounds/freedesktop/stereo/complete.oga
+            elif command -v speaker-test >/dev/null 2>&1; then
+                speaker-test -t sine -f 1000 -l 1 &
+                sleep 0.2
+                killall speaker-test 2>/dev/null
+            else
+                echo -e "\a"
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            powershell.exe -c "[console]::beep(1000,300)"
+            ;;
+    esac
+}
+
+# Performance monitoring
+top_cmd() {
+    case "$PLATFORM" in
+        Mac)
+            if command -v htop >/dev/null 2>&1; then
+                htop
+            else
+                top -o cpu
+            fi
+            ;;
+        Linux)
+            if command -v htop >/dev/null 2>&1; then
+                htop
+            elif command -v btop >/dev/null 2>&1; then
+                btop
+            else
+                top
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            taskmgr
+            ;;
+    esac
+}
+
+# Disk usage
+disk_usage() {
+    case "$PLATFORM" in
+        Mac|Linux)
+            if command -v ncdu >/dev/null 2>&1; then
+                ncdu "${1:-.}"
+            else
+                du -sh "${1:-.}"/* | sort -h
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            powershell.exe -command "Get-ChildItem '${1:-.}' | Sort-Object Length -Descending | Select-Object Name, @{Name='Size';Expression={'{0:N2} MB' -f ($_.Length / 1MB)}}"
+            ;;
+    esac
+}
+
+# Memory info
+mem_info() {
+    case "$PLATFORM" in
+        Mac)
+            vm_stat | perl -ne '/page size of (\d+)/ and $size=$1; /Pages\s+([^:]+)[^\d]+(\d+)/ and printf("%-16s % 16.2f MB\n", "$1:", $2 * $size / 1048576);'
+            ;;
+        Linux)
+            free -h
+            ;;
+        Git|Cygwin|MinGw)
+            wmic OS get TotalVisibleMemorySize,FreePhysicalMemory
+            ;;
+    esac
+}
+
+# Create aliases for common operations
+alias pkg-install='pkg_install'
+alias pkg-update='pkg_update'
+alias svc-start='service_start'
+alias svc-stop='service_stop'
+alias svc-status='service_status'
+alias killport='kill_port'
+alias findproc='find_process'
+alias myip='get_local_ip'
+alias publicip='curl -s ifconfig.me'
+alias trash='trash_file'
+alias sysinfo='sys_info'
+alias docker-clean='docker_clean'
+alias git-clean='git_clean_branches'
+alias clip='copy_to_clipboard'
+alias paste='paste_from_clipboard'
+alias o='open_file'
+alias alert='notify "Alert" "Command completed"'
+alias meminfo='mem_info'
+alias duh='disk_usage'
+alias topc='top_cmd'
+
+# Export platform for use in other scripts
+export PLATFORM
+
+# Silently loaded - no output needed
+# echo "Cross-platform utilities loaded (Platform: $PLATFORM)"

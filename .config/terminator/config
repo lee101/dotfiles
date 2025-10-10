@@ -1,0 +1,34 @@
+[global_config]
+  focus = system
+  handle_size = 1
+  smart_copy = True
+  clear_select_on_copy = True
+  disable_mouse_paste = True
+  suppress_multiple_term_dialog = True
+  putty_paste_style = False
+[keybindings]
+  help = <Primary><Shift>F1
+[profiles]
+  [[default]]
+    allow_bold = True
+    background_image = None
+    copy_on_selection = False
+    cursor_blink = False
+    cursor_color = "#aaaaaa"
+    font = Noto Mono 8
+    login_shell = False
+    scrollback_infinite = True
+    scrollback_lines = 20000
+    use_custom_command = False
+    use_system_font = False
+    use_theme_colors = False
+[layouts]
+  [[default]]
+    [[[child1]]]
+      parent = window0
+      profile = default
+      type = Terminal
+    [[[window0]]]
+      parent = ""
+      type = Window
+[plugins]

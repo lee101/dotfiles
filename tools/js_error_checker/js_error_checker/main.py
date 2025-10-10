@@ -92,7 +92,25 @@ class JSErrorChecker:
         
         try:
             # Use webdriver-manager to handle ChromeDriver automatically
-            service = Service(ChromeDriverManager().install())
+            driver_path = ChromeDriverManager().install()
+            # Fix for ChromeDriverManager returning wrong file
+            if driver_path.endswith('THIRD_PARTY_NOTICES.chromedriver'):
+                # Get the directory and look for the actual chromedriver executable
+                driver_dir = os.path.dirname(driver_path)
+                chromedriver_path = os.path.join(driver_dir, 'chromedriver')
+                if os.path.exists(chromedriver_path):
+                    driver_path = chromedriver_path
+                else:
+                    # Try with .exe extension on Windows
+                    chromedriver_exe_path = os.path.join(driver_dir, 'chromedriver.exe')
+                    if os.path.exists(chromedriver_exe_path):
+                        driver_path = chromedriver_exe_path
+                    else:
+                        print(f"Warning: ChromeDriver not found in expected location: {driver_dir}")
+                        print(f"Contents of directory: {os.listdir(driver_dir)}")
+            
+            print(f"Using ChromeDriver at: {driver_path}")
+            service = Service(driver_path)
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             print("Chrome driver initialized successfully")
             
@@ -139,6 +157,59 @@ class JSErrorChecker:
             print(f"Error collecting console logs: {e}")
             return []
     
+    
+    def get_page_info(self):
+        """Get page status code and content information"""
+        try:
+            # Get response status using Performance API
+            status_script = """
+            const perfEntries = performance.getEntriesByType('navigation');
+            if (perfEntries.length > 0) {
+                // For navigation timing API v2
+                return perfEntries[0].responseStatus || null;
+            }
+            // Try to get from fetch/XHR if available
+            const resourceEntries = performance.getEntriesByType('resource');
+            for (let entry of resourceEntries) {
+                if (entry.name === window.location.href) {
+                    return entry.responseStatus || null;
+                }
+            }
+            return null;
+            """
+            
+            # Note: Getting actual HTTP status via Selenium is limited
+            # We'll check for common error indicators
+            page_source = self.driver.page_source
+            page_title = self.driver.title
+            body_text = self.driver.find_element(By.TAG_NAME, "body").text if self.driver.find_elements(By.TAG_NAME, "body") else ""
+            
+            # Check for common error patterns
+            is_error = False
+            error_indicators = [
+                '500', '503', '502', '504', '404', '403', '401',
+                'Internal Server Error', 'Bad Gateway', 'Service Unavailable',
+                'Gateway Timeout', 'Not Found', 'Forbidden', 'Unauthorized'
+            ]
+            
+            for indicator in error_indicators:
+                if indicator in page_title or indicator in body_text[:500]:
+                    is_error = True
+                    break
+            
+            # Check if page is very short (under 2000 characters)
+            is_short = len(page_source) < 2000
+            
+            return {
+                'is_error': is_error,
+                'is_short': is_short,
+                'page_source': page_source,
+                'body_text': body_text,
+                'title': page_title
+            }
+        except Exception as e:
+            print(f"Error getting page info: {e}")
+            return {'is_error': False, 'is_short': False, 'page_source': '', 'body_text': '', 'title': ''}
     
     def check_url(self, url):
         """Load URL and check for JavaScript errors"""
@@ -214,7 +285,10 @@ class JSErrorChecker:
             
             print(f"Found {len(console_errors)} console errors and {len(js_errors)} JS errors")
             
-            return console_errors, js_errors
+            # Get page info to check if we should print content
+            page_info = self.get_page_info()
+            
+            return console_errors, js_errors, page_info
             
         except TimeoutException:
             print("Timeout waiting for page to load")
@@ -222,18 +296,32 @@ class JSErrorChecker:
             try:
                 console_errors = self.collect_console_errors()
                 js_errors = self.driver.execute_script("return window.jsErrors || [];")
-                return console_errors, js_errors
+                page_info = self.get_page_info()
+                return console_errors, js_errors, page_info
             except:
-                return [], []
+                return [], [], {'is_error': False, 'is_short': False, 'page_source': '', 'body_text': '', 'title': ''}
         except Exception as e:
             print(f"Error loading page: {e}")
             import traceback
             traceback.print_exc()
-            return [], []
+            return [], [], {'is_error': False, 'is_short': False, 'page_source': '', 'body_text': '', 'title': ''}
     
-    def print_errors(self, console_errors, js_errors):
-        """Print collected errors in a formatted way"""
+    def print_errors(self, console_errors, js_errors, page_info=None):
+        """Print collected errors and page content if needed"""
         total_errors = len(console_errors) + len(js_errors)
+        
+        # Print page content if it's an error page or very short
+        if page_info and (page_info['is_error'] or page_info['is_short']):
+            print(f"\n{'='*50}")
+            print("PAGE CONTENT (Error page or short response detected)")
+            print(f"{'='*50}")
+            print(f"Title: {page_info['title']}")
+            print(f"Content length: {len(page_info['page_source'])} characters")
+            print(f"\nBody text:\n{'-'*30}")
+            print(page_info['body_text'][:5000])  # Limit to 5000 chars for readability
+            if len(page_info['body_text']) > 5000:
+                print("\n... (truncated)")
+            print(f"{'-'*30}\n")
         
         print(f"\n{'='*50}")
         print(f"ERROR SUMMARY: {total_errors} errors found")
@@ -266,8 +354,14 @@ class JSErrorChecker:
         """Main execution method"""
         try:
             self.setup_driver()
-            console_errors, js_errors = self.check_url(url)
-            self.print_errors(console_errors, js_errors)
+            result = self.check_url(url)
+            if len(result) == 3:
+                console_errors, js_errors, page_info = result
+                self.print_errors(console_errors, js_errors, page_info)
+            else:
+                # Fallback for compatibility
+                console_errors, js_errors = result
+                self.print_errors(console_errors, js_errors)
             
         finally:
             if self.driver:
