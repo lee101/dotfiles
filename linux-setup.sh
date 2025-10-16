@@ -1,4 +1,5 @@
 #!/bin/bash
+sudo snap install eza
 
 # Essential Git tools setup
 echo "Installing Git and essential Git tools..."
