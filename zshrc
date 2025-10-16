@@ -186,7 +186,6 @@ alias mh='merge_history'
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
     #alias dir='dir --color=auto'
     #alias vdir='vdir --color=auto'
 
@@ -195,11 +194,27 @@ if [ -x /usr/bin/dircolors ]; then
     alias egrep='egrep --color=auto'
 fi
 
-# some more ls aliases
-alias ll='ls -alF'
-alias lt='ls -lttra'
-alias la='ls -A'
-alias l='ls -CF'
+# Prefer eza for directory listings when available
+if command -v eza >/dev/null 2>&1; then
+    alias ls='eza --group-directories-first --color=auto'
+    alias ll='eza -al --group-directories-first --classify --git'
+    alias la='eza -a --group-directories-first --classify'
+    alias l='eza --classify --group-directories-first'
+    alias lt='eza --long --all --sort=modified --reverse --group-directories-first'
+    alias ltree='eza --tree --level=2 --group-directories-first --classify'
+    alias lsize='eza -al --sort=size --reverse --group-directories-first'
+    alias tree='eza --tree'
+    alias lrecent='eza -al --sort=modified --reverse --group-directories-first'
+else
+    alias ls='ls --color=auto'
+    alias ll='ls -alF'
+    alias la='ls -A'
+    alias l='ls -CF'
+    alias lt='ls -lttra'
+    alias ltree='tree -L 2'
+    alias lsize='ls -lSh'
+    alias lrecent='ls -ltr'
+fi
 
 alias d='cd'
 alias c='cd ~/code'
@@ -445,14 +460,61 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Lynx browser with auto-accept cookies
 alias lynx='lynx -accept_all_cookies -cookie_file=~/.lynx/cookies -cookie_save_file=~/.lynx/cookies'
 
-# Go configuration for macOS
-export GOROOT=/usr/local/Cellar/go/1.25.0/libexec
-alias go="GOROOT=/usr/local/Cellar/go/1.25.0/libexec /usr/local/bin/go"
-export PATH=$GOROOT/bin:$PATH
+# Go configuration (favor the latest available install when possible)
+if [[ -z "$GOROOT" ]]; then
+  if command -v go >/dev/null 2>&1; then
+    __go_root_from_env="$(GOROOT= go env GOROOT 2>/dev/null || true)"
+    if [[ -n "$__go_root_from_env" && -d "$__go_root_from_env" ]]; then
+      export GOROOT="$__go_root_from_env"
+    fi
+  fi
+fi
+
+if [[ -z "$GOROOT" ]]; then
+  if command -v brew >/dev/null 2>&1; then
+    __brew_go_prefix="$(brew --prefix go 2>/dev/null || true)"
+    if [[ -n "$__brew_go_prefix" && -d "$__brew_go_prefix/libexec" ]]; then
+      export GOROOT="$__brew_go_prefix/libexec"
+    fi
+  fi
+fi
+
+if [[ -z "$GOROOT" ]]; then
+  __go_candidates=(/opt/homebrew/Cellar/go/*/libexec(N) \
+                   /usr/local/Cellar/go/*/libexec(N) \
+                   /home/linuxbrew/.linuxbrew/Cellar/go/*/libexec(N))
+  for __p in "${__go_candidates[@]}"; do
+    if [[ -d "$__p" ]]; then
+      export GOROOT="$__p"
+      break
+    fi
+  done
+fi
+
+unset __brew_go_prefix __p __go_root_from_env __go_candidates
+
+if [[ -z "$GOROOT" ]] && command -v go >/dev/null 2>&1; then
+  __go_bin="$(command -v go)"
+  case "$__go_bin" in
+    */bin/go)
+      potential_root="${__go_bin%/bin/go}"
+      if [[ -d "$potential_root" ]]; then
+        export GOROOT="$potential_root"
+      fi
+      ;;
+  esac
+  unset __go_bin potential_root
+fi
+
+if [[ -n "$GOROOT" && -d "$GOROOT/bin" && ":$PATH:" != *":$GOROOT/bin:"* ]]; then
+  export PATH="$GOROOT/bin:$PATH"
+fi
 
 # Git diffs including untracked
 # gdfa: show diff of all changes (tracked vs HEAD + untracked files)
 # gdfu: show diff of untracked files only
+unalias gdfa 2>/dev/null
+unalias gdfu 2>/dev/null
 gdfa() {
   if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     echo "Not a git repository" >&2
