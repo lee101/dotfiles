@@ -15,7 +15,9 @@
       "ctrl-alt-up": "editor::DuplicateLineUp",
       "f3": "editor::GoToImplementation",
       "alt-shift-left": "pane::ActivatePreviousItem",
-      "alt-shift-right": "pane::ActivateNextItem"
+      "alt-shift-right": "pane::ActivateNextItem",
+      "cmd-alt-c": ["agent::NewExternalAgentThread", { "agent": "codex" }],
+      "ctrl-alt-c": ["agent::NewExternalAgentThread", { "agent": "codex" }]
     }
   },
   {

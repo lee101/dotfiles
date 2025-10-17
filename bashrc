@@ -279,11 +279,12 @@ function gi {
         echo "$arg" >> .gitignore
     done
 
-    if type gus >/dev/null 2>&1; then
-        gus "$@"
-    else
-        git reset HEAD -- "$@"
+    if git help -a 2>/dev/null | grep -qw unstage; then
+        git unstage -- "$@"
+        return 0
     fi
+
+    git reset HEAD -- "$@"
 }
 
 alias gpr='hub pull-request'
