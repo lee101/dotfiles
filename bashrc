@@ -750,8 +750,10 @@ alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
 alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
 alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
 
-alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+#alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
 alias cx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
+alias cxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
 alias cxa='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit'
 alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
 
