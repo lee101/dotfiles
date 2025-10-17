@@ -1,0 +1,27 @@
+[
+  {
+    "platforms": ["linux"],
+    "bindings": {
+      "ctrl-g": "editor::FindAllReferences",
+      "ctrl-shift-e": "project_panel::ToggleFocus",
+      "alt-y": "editor::SelectNext",
+      "alt-shift-y": "editor::UndoSelection",
+      "alt-left": "pane::GoBack",
+      "alt-right": "pane::GoForward",
+      "ctrl-d": "editor::DeleteLine",
+      "ctrl-y": "editor::Redo",
+      "ctrl-shift-d": "editor::DuplicateSelection",
+      "ctrl-alt-down": "editor::DuplicateLineDown",
+      "ctrl-alt-up": "editor::DuplicateLineUp",
+      "f3": "editor::GoToImplementation",
+      "alt-shift-left": "pane::ActivatePreviousItem",
+      "alt-shift-right": "pane::ActivateNextItem"
+    }
+  },
+  {
+    "context": "Pane",
+    "bindings": {
+      "alt-left": "pane::GoBack"
+    }
+  }
+]
