@@ -271,9 +271,19 @@ function findn { find . -name "$@"; }
 
 # Append arguments to .gitignore
 function gi {
+    if [ "$#" -eq 0 ]; then
+        return 0
+    fi
+
     for arg in "$@"; do
         echo "$arg" >> .gitignore
     done
+
+    if type gus >/dev/null 2>&1; then
+        gus "$@"
+    else
+        git reset HEAD -- "$@"
+    fi
 }
 
 alias gpr='hub pull-request'
