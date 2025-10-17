@@ -61,12 +61,27 @@ sudo apt install -y \
     neofetch \
     tldr
 
-# Install exa (better ls)
-if ! command -v exa &> /dev/null; then
-    wget -c https://github.com/ogham/exa/releases/download/v0.10.0/exa-linux-x86_64-v0.10.0.zip
-    unzip exa-linux-x86_64-v0.10.0.zip
-    sudo mv bin/exa /usr/local/bin/
-    rm -rf bin exa-linux-x86_64-v0.10.0.zip
+# Install eza (modern ls replacement)
+if ! command -v eza &> /dev/null; then
+    echo -e "${GREEN}Installing eza (modern ls alternative)${NC}"
+    if ! sudo apt install -y eza; then
+        ARCH="$(uname -m)"
+        case "$ARCH" in
+            x86_64) EZA_ARCH="x86_64-unknown-linux-gnu" ;;
+            aarch64) EZA_ARCH="aarch64-unknown-linux-gnu" ;;
+            armv7l|armhf) EZA_ARCH="arm-unknown-linux-gnueabihf" ;;
+            *) EZA_ARCH="" ;;
+        esac
+        EZA_VERSION="0.23.4"
+        if [ -n "$EZA_ARCH" ]; then
+            curl -sSL -o "eza_${EZA_ARCH}.tar.gz" "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_${EZA_ARCH}.tar.gz"
+            tar -xzf "eza_${EZA_ARCH}.tar.gz"
+            sudo install -m 0755 eza /usr/local/bin/eza
+            rm -f "eza_${EZA_ARCH}.tar.gz" eza
+        else
+            echo -e "${YELLOW}Unsupported architecture (${ARCH}) for the eza prebuilt binary. Please install eza manually.${NC}"
+        fi
+    fi
 fi
 
 # Python setup
@@ -210,9 +225,6 @@ echo -e "${GREEN}Step 20: Setting up shell configuration${NC}"
 cat >> ~/.bashrc << 'EOF'
 
 # Custom aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias g='git'
@@ -228,18 +240,33 @@ alias tf='terraform'
 alias py='python3'
 alias v='nvim'
 
+# Directory listings
+if command -v eza &> /dev/null; then
+    alias ls='eza --group-directories-first --color=auto'
+    alias ll='eza -al --group-directories-first --classify --git'
+    alias la='eza -a --group-directories-first --classify'
+    alias l='eza --classify --group-directories-first'
+    alias lt='eza --long --all --sort=modified --reverse --group-directories-first'
+    alias ltree='eza --tree --level=2 --group-directories-first --classify'
+    alias lsize='eza -al --sort=size --reverse --group-directories-first'
+    alias tree='eza --tree'
+    alias lrecent='eza -al --sort=modified --reverse --group-directories-first'
+else
+    alias ls='ls --color=auto'
+    alias ll='ls -alF'
+    alias la='ls -A'
+    alias l='ls -CF'
+    alias lt='ls -lttra'
+    alias ltree='tree -L 2'
+    alias lsize='ls -lSh'
+    alias lrecent='ls -ltr'
+fi
+
 # Use bat instead of cat if available
 if command -v batcat &> /dev/null; then
     alias cat='batcat'
 elif command -v bat &> /dev/null; then
     alias cat='bat'
-fi
-
-# Use exa instead of ls if available
-if command -v exa &> /dev/null; then
-    alias ls='exa'
-    alias ll='exa -la'
-    alias tree='exa --tree'
 fi
 
 # Initialize starship if installed
@@ -270,9 +297,6 @@ EOF
 cat >> ~/.zshrc << 'EOF'
 
 # Custom aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias g='git'
@@ -288,18 +312,33 @@ alias tf='terraform'
 alias py='python3'
 alias v='nvim'
 
+# Directory listings
+if command -v eza &> /dev/null; then
+    alias ls='eza --group-directories-first --color=auto'
+    alias ll='eza -al --group-directories-first --classify --git'
+    alias la='eza -a --group-directories-first --classify'
+    alias l='eza --classify --group-directories-first'
+    alias lt='eza --long --all --sort=modified --reverse --group-directories-first'
+    alias ltree='eza --tree --level=2 --group-directories-first --classify'
+    alias lsize='eza -al --sort=size --reverse --group-directories-first'
+    alias tree='eza --tree'
+    alias lrecent='eza -al --sort=modified --reverse --group-directories-first'
+else
+    alias ls='ls --color=auto'
+    alias ll='ls -alF'
+    alias la='ls -A'
+    alias l='ls -CF'
+    alias lt='ls -lttra'
+    alias ltree='tree -L 2'
+    alias lsize='ls -lSh'
+    alias lrecent='ls -ltr'
+fi
+
 # Use bat instead of cat if available
 if command -v batcat &> /dev/null; then
     alias cat='batcat'
 elif command -v bat &> /dev/null; then
     alias cat='bat'
-fi
-
-# Use exa instead of ls if available
-if command -v exa &> /dev/null; then
-    alias ls='exa'
-    alias ll='exa -la'
-    alias tree='exa --tree'
 fi
 
 # Initialize starship if installed

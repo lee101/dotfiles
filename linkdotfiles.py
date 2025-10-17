@@ -44,7 +44,7 @@ for filename in files:
             except OSError:
                 try:
                     rmtree(destination)
-                except OSError as e:
+                except OSError:
                     print('Failed to delete %s' % destination)
                     continue
         else:
@@ -157,6 +157,9 @@ if os.path.exists(config_source):
             if fnmatch(file, '*.ps1') or fnmatch(file, '*.sh'):
                 print('Skipping %s in .config' % file)
                 continue
+            if file.lower() == 'readme.md':
+                print('Skipping %s in .config' % file)
+                continue
             src = os.path.join(root, file)
             dst = os.path.join(dest_dir, file)
             
@@ -167,7 +170,7 @@ if os.path.exists(config_source):
                 except OSError:
                     try:
                         rmtree(dst)
-                    except OSError as e:
+                    except OSError:
                         print('Failed to delete %s' % dst)
                         continue
                         
@@ -201,7 +204,7 @@ if os.path.exists(codex_source):
                 except OSError:
                     try:
                         rmtree(dst)
-                    except OSError as e:
+                    except OSError:
                         print('Failed to delete %s' % dst)
                         continue
 

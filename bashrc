@@ -113,7 +113,6 @@ if [ -x /usr/bin/dircolors ]; then
 fi
 
 # Always use colors for common commands
-alias ls='ls --color=auto'
 alias dir='dir --color=auto'
 alias vdir='vdir --color=auto'
 alias grep='grep --color=auto'
@@ -167,11 +166,27 @@ alias r='rm -rf'
 # Safe trash alias - moves files to trash instead of permanent deletion
 alias rr='trash-put'
 
-# some more ls aliases
-alias ll='ls -alF'
-alias lt='ls -lttra'
-alias la='ls -A'
-alias l='ls -CF'
+# Prefer eza for directory listings when available
+if command -v eza >/dev/null 2>&1; then
+  alias ls='eza --group-directories-first --color=auto'
+  alias ll='eza -al --group-directories-first --classify --git'
+  alias la='eza -a --group-directories-first --classify'
+  alias l='eza --classify --group-directories-first'
+  alias lt='eza --long --all --sort=modified --reverse --group-directories-first'
+  alias ltree='eza --tree --level=2 --group-directories-first --classify'
+  alias lsize='eza -al --sort=size --reverse --group-directories-first'
+  alias lrecent='eza -al --sort=modified --reverse --group-directories-first'
+  alias tree='eza --tree'
+else
+  alias ls='ls --color=auto'
+  alias ll='ls -alF'
+  alias la='ls -A'
+  alias l='ls -CF'
+  alias lt='ls -lttra'
+  alias ltree='tree -L 2'
+  alias lsize='ls -lSh'
+  alias lrecent='ls -ltr'
+fi
 
 alias d='cd'
 alias c='cd ~/code'
@@ -256,9 +271,20 @@ function findn { find . -name "$@"; }
 
 # Append arguments to .gitignore
 function gi {
+    if [ "$#" -eq 0 ]; then
+        return 0
+    fi
+
     for arg in "$@"; do
         echo "$arg" >> .gitignore
     done
+
+    if git help -a 2>/dev/null | grep -qw unstage; then
+        git unstage -- "$@"
+        return 0
+    fi
+
+    git reset HEAD -- "$@"
 }
 
 alias gpr='hub pull-request'
@@ -749,12 +775,11 @@ fi
 alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
 alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
 alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
-
-alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
 alias cx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
+alias cxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
 alias cxa='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit'
 alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
-alias cxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
 
 function cld {
   ANTHROPIC_API_KEY="" 
