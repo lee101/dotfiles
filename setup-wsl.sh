@@ -4,6 +4,13 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if command -v tic >/dev/null; then
+    echo -e "${GREEN}Installing Ghostty terminfo entry for tmux${NC}"
+    tic -x -o "${HOME}/.terminfo" "${SCRIPT_DIR}/terminfo/xterm-ghostty.ti"
+fi
+
 echo "======================================="
 echo "WSL Ubuntu Development Setup"
 echo "======================================="
