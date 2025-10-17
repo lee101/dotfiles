@@ -1,6 +1,5 @@
 [
   {
-    "platforms": ["linux"],
     "bindings": {
       "ctrl-g": "editor::FindAllReferences",
       "ctrl-shift-e": "project_panel::ToggleFocus",
