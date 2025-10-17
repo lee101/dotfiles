@@ -1,0 +1,24 @@
+// Zed settings synchronized via dotfiles
+//
+// Configuration is derived from existing PyCharm and Cursor preferences:
+// - Fonts/theme from PyCharm's LeesMonokai scheme (DejaVu Sans Mono @ 15pt)
+// - Monokai dark theme to match Cursor and JetBrains usage
+// - Whitespace handling aligned with PyCharm editor defaults
+{
+  "base_keymap": "JetBrains",
+  "buffer_font_family": "DejaVu Sans Mono",
+  "buffer_font_features": {
+    "calt": 0
+  },
+  "buffer_font_size": 15,
+  "ui_font_size": 14.0,
+  "icon_theme": "Zed (Default)",
+  "theme": {
+    "mode": "dark",
+    "dark": "Monokai",
+    "light": "One Light"
+  },
+  "remove_trailing_whitespace_on_save": true,
+  "ensure_final_newline_on_save": true,
+  "autosave": "on_focus_change"
+}
