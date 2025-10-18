@@ -19,6 +19,33 @@ detect_platform() {
 
 PLATFORM=$(detect_platform)
 
+# Retrieve sudo password from current env or ~/.secretbashrc
+_get_sudo_password() {
+    if [ -n "${MAC_PW:-}" ]; then
+        printf '%s' "$MAC_PW"
+        return 0
+    fi
+
+    local secret_file="$HOME/.secretbashrc"
+    if [ -f "$secret_file" ]; then
+        # shellcheck disable=SC1090
+        . "$secret_file"
+        if [ -n "${MAC_PW:-}" ]; then
+            printf '%s' "$MAC_PW"
+            return 0
+        fi
+    fi
+
+    echo "MAC_PW is not set; add it to ~/.secretbashrc" >&2
+    return 1
+}
+
+sudo_run() {
+    local pw
+    pw="$(_get_sudo_password)" || return 1
+    printf '%s\n' "$pw" | sudo -S "$@"
+}
+
 # Package manager abstraction
 pkg_install() {
     case "$PLATFORM" in
@@ -27,11 +54,11 @@ pkg_install() {
             ;;
         Linux)
             if command -v apt-get >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S apt-get install -y "$@"
+                sudo_run apt-get install -y "$@"
             elif command -v yum >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S yum install -y "$@"
+                sudo_run yum install -y "$@"
             elif command -v pacman >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S pacman -S --noconfirm "$@"
+                sudo_run pacman -S --noconfirm "$@"
             else
                 echo "No supported package manager found"
                 return 1
@@ -62,11 +89,11 @@ pkg_update() {
             ;;
         Linux)
             if command -v apt-get >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S apt-get update && echo 'Leap' | sudo -S apt-get upgrade -y
+                sudo_run apt-get update && sudo_run apt-get upgrade -y
             elif command -v yum >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S yum update -y
+                sudo_run yum update -y
             elif command -v pacman >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S pacman -Syu --noconfirm
+                sudo_run pacman -Syu --noconfirm
             fi
             ;;
         Git|Cygwin|MinGw)
@@ -88,9 +115,9 @@ service_start() {
             ;;
         Linux)
             if command -v systemctl >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S systemctl start "$service"
+                sudo_run systemctl start "$service"
             elif command -v service >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S service "$service" start
+                sudo_run service "$service" start
             fi
             ;;
         Git|Cygwin|MinGw)
@@ -107,9 +134,9 @@ service_stop() {
             ;;
         Linux)
             if command -v systemctl >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S systemctl stop "$service"
+                sudo_run systemctl stop "$service"
             elif command -v service >/dev/null 2>&1; then
-                echo 'Leap' | sudo -S service "$service" stop
+                sudo_run service "$service" stop
             fi
             ;;
         Git|Cygwin|MinGw)
@@ -145,7 +172,7 @@ kill_port() {
             lsof -ti:$port | xargs kill -9 2>/dev/null || echo "No process on port $port"
             ;;
         Linux)
-            echo 'Leap' | sudo -S fuser -k $port/tcp 2>/dev/null || echo "No process on port $port"
+            sudo_run fuser -k $port/tcp 2>/dev/null || echo "No process on port $port"
             ;;
         Git|Cygwin|MinGw)
             netstat -ano | grep ":$port" | awk '{print $5}' | xargs -I {} taskkill /F /PID {} 2>/dev/null || echo "No process on port $port"

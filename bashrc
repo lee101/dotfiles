@@ -803,6 +803,17 @@ function codex_wrapper {
 }
 alias codex='codex_wrapper'
 
+# Kill processes listening on a specific port via `portkill 8080`
+portkill() {
+  local port="$1"
+  if [ -z "$port" ]; then
+    echo "Usage: portkill <port>"
+    return 1
+  fi
+
+  lsof -ti:"$port" | xargs kill -9 2>/dev/null || echo "No process found"
+}
+
 alias usage='du -sh .[!.]* * | sort -h'
 alias usager='du -sh * *  | sort -h'
 alias pn=pnpm
