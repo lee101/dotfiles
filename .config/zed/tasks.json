@@ -1,0 +1,77 @@
+[
+  {
+    "label": "Python: Ruff Check",
+    "command": "uvx",
+    "args": ["ruff", "check", "--output-format", "text", "$ZED_WORKTREE_ROOT"],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "Python: Ruff Fix",
+    "command": "uvx",
+    "args": ["ruff", "check", "--fix", "$ZED_WORKTREE_ROOT"],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "Python: Run pytest",
+    "command": "uvx",
+    "args": ["pytest"],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "Go: Test ./...",
+    "command": "go",
+    "args": ["test", "./..."],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "Go: Build ./...",
+    "command": "go",
+    "args": ["build", "./..."],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "C/CUDA: Configure (CMake Release)",
+    "command": "cmake",
+    "args": ["-S", "$ZED_WORKTREE_ROOT", "-B", "$ZED_WORKTREE_ROOT/build", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "C/CUDA: Build (Ninja)",
+    "command": "cmake",
+    "args": ["--build", "$ZED_WORKTREE_ROOT/build", "--config", "Release"],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  },
+  {
+    "label": "C/CUDA: Run clang-format",
+    "command": "bash",
+    "args": [
+      "-lc",
+      "find $ZED_WORKTREE_ROOT -type f \\\n        \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' -o -name '*.cu' -o -name '*.cuh' \) \\\n        -print0 | xargs -0 clang-format -i"
+    ],
+    "options": {
+      "cwd": "$ZED_WORKTREE_ROOT"
+    },
+    "reveal_target": "panel"
+  }
+]

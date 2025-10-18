@@ -20,5 +20,41 @@
   },
   "remove_trailing_whitespace_on_save": true,
   "ensure_final_newline_on_save": true,
-  "autosave": "on_focus_change"
+  "autosave": "on_focus_change",
+  "file_types": {
+    "C++": ["cu", "cuh"]
+  },
+  "languages": {
+    "Python": {
+      "language_servers": ["pyright", "ruff"],
+      "format_on_save": "on",
+      "formatter": [
+        { "code_action": "source.organizeImports.ruff" },
+        { "code_action": "source.fixAll.ruff" },
+        { "language_server": { "name": "ruff" } }
+      ]
+    },
+    "Go": {
+      "language_servers": ["gopls"],
+      "format_on_save": "on",
+      "formatter": [
+        { "code_action": "source.organizeImports" },
+        { "language_server": { "name": "gopls" } }
+      ]
+    },
+    "C": {
+      "language_servers": ["clangd"],
+      "format_on_save": "on",
+      "formatter": [
+        { "language_server": { "name": "clangd" } }
+      ]
+    },
+    "C++": {
+      "language_servers": ["clangd"],
+      "format_on_save": "on",
+      "formatter": [
+        { "language_server": { "name": "clangd" } }
+      ]
+    }
+  }
 }

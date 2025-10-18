@@ -777,7 +777,17 @@ alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
 alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
 
 #alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
-alias cx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+# Prefer the locally built codex binary with --yolo3 when available.
+unalias cx 2>/dev/null || true
+cx() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"
+  fi
+}
+alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
 alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
 alias cxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
 alias cxa='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit'
