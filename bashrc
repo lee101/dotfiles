@@ -788,9 +788,32 @@ cx() {
   fi
 }
 alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
-alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
-alias cxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
-alias cxa='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit'
+cxm() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"
+  fi
+}
+
+cxl() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
+  fi
+}
+
+cxa() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit "$@"
+  fi
+}
 alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
 
 function cld {
