@@ -1,0 +1,43 @@
+[
+  {
+    "label": "Python: Debug Current File",
+    "adapter": "Debugpy",
+    "configuration": {
+      "request": "launch",
+      "program": "$ZED_FILE",
+      "cwd": "$ZED_WORKTREE_ROOT",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  },
+  {
+    "label": "Go: Debug Main Package",
+    "adapter": "Delve",
+    "configuration": {
+      "request": "launch",
+      "mode": "debug",
+      "program": "$ZED_WORKTREE_ROOT",
+      "cwd": "$ZED_WORKTREE_ROOT"
+    }
+  },
+  {
+    "label": "Go: Debug Package Tests",
+    "adapter": "Delve",
+    "configuration": {
+      "request": "launch",
+      "mode": "test",
+      "program": "$ZED_WORKTREE_ROOT",
+      "cwd": "$ZED_WORKTREE_ROOT"
+    }
+  },
+  {
+    "label": "C/C++: Debug build/a.out",
+    "adapter": "CodeLLDB",
+    "configuration": {
+      "request": "launch",
+      "program": "$ZED_WORKTREE_ROOT/build/a.out",
+      "cwd": "$ZED_WORKTREE_ROOT",
+      "stopOnEntry": false
+    }
+  }
+]
