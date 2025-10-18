@@ -1,5 +1,14 @@
 #!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 sudo snap install eza
+
+# Ensure Ghostty terminfo exists so tmux works when TERM is xterm-ghostty
+if command -v tic >/dev/null; then
+  echo "Installing Ghostty terminfo entry..."
+  tic -x -o "${HOME}/.terminfo" "${SCRIPT_DIR}/terminfo/xterm-ghostty.ti"
+fi
 
 # Essential Git tools setup
 echo "Installing Git and essential Git tools..."

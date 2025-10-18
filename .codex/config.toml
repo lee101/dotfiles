@@ -1,3 +1,5 @@
+model = "gpt-5-codex"
+
 [default]
 model_reasoning_effort = "high"
 
