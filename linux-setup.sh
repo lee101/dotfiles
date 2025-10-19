@@ -8,6 +8,9 @@ sudo snap install eza
 if command -v tic >/dev/null; then
   echo "Installing Ghostty terminfo entry..."
   tic -x -o "${HOME}/.terminfo" "${SCRIPT_DIR}/terminfo/xterm-ghostty.ti"
+
+  echo "Installing Kitty terminfo entry..."
+  tic -x -o "${HOME}/.terminfo" "${SCRIPT_DIR}/terminfo/kitty.terminfo"
 fi
 
 # Essential Git tools setup
