@@ -17,7 +17,7 @@ export PATH="$HOME/.poetry/bin:$PATH"
 # The next line enables shell command completion for gcloud.
 #if [ -f '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc' ]; then . '/Users/leepenkman/Downloads/google-cloud-sdk2/completion.bash.inc'; fi
 
-#if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 #if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
 if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ]; then
@@ -35,6 +35,11 @@ export PATH="/home/lee/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
 
 
 export PATH="$PATH:/home/lee/.modular/bin"
+
+# ZVM
+export ZVM_INSTALL="$HOME/.zvm/self"
+export PATH="$HOME/.zvm/bin:$PATH"
+export PATH="$ZVM_INSTALL:$PATH"
 
 # Source local environment if it exists
 if [ -f "$HOME/.local/bin/env" ]; then

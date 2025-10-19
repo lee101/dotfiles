@@ -772,14 +772,14 @@ if command -v hub >/dev/null 2>&1; then
 fi
 
 # Codex aliases with dangerous mode for fast execution
-alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
-alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
-alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
+#alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
+#alias cxda='codex --auto-edit --dangerously-bypass-approvals-and-sandbox'
+#alias cxdf='codex --full-auto --dangerously-bypass-approvals-and-sandbox'
 
 #alias cxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
 # Prefer the locally built codex binary with --yolo3 when available.
-unalias cx 2>/dev/null || true
-cx() {
+#unalias cx 2>/dev/null || true
+function cx() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox "$@"
@@ -787,8 +787,10 @@ cx() {
     codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"
   fi
 }
+
 alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
-cxm() {
+
+function cxm() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"
@@ -797,7 +799,7 @@ cxm() {
   fi
 }
 
-cxl() {
+function cxl() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
@@ -806,7 +808,7 @@ cxl() {
   fi
 }
 
-cxa() {
+function cxa() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit "$@"
@@ -1713,3 +1715,8 @@ unset DOCKER_HOST
 
 # Startup timing end
 [ -n "$DEBUG_STARTUP" ] && echo "Bashrc end: $(date +%s.%N)"
+
+# ZVM
+export ZVM_INSTALL="$HOME/.zvm/self"
+export PATH="$PATH:$HOME/.zvm/bin"
+export PATH="$PATH:$ZVM_INSTALL/"
