@@ -788,6 +788,33 @@ function cx() {
   fi
 }
 
+function cxi() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-idea "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-idea "$@"
+  fi
+}
+
+function cxn() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-steps "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-steps "$@"
+  fi
+}
+
+function cxni() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-steps --auto-next-idea "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-steps --auto-next-idea "$@"
+  fi
+}
+
 alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
 
 function cxm() {
