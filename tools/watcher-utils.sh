@@ -77,7 +77,7 @@ watcher_dirs() {
 
 # Aliases for convenience
 alias ws='watcher_status'
-alias wc='watcher_cleanup'
+alias wclean='watcher_cleanup'
 alias wr='watcher_reset'
 alias wm='watcher_monitor'
 alias wi='watcher_increase'
@@ -92,7 +92,7 @@ export -f watcher_dirs
 
 echo "File watcher utilities loaded. Commands:"
 echo "  ws / watcher_status   - Check current watcher usage"
-echo "  wc / watcher_cleanup  - Clean up excessive watchers"
+echo "  wclean / watcher_cleanup - Clean up excessive watchers"
 echo "  wr / watcher_reset    - Reset ALL watchers (aggressive)"
 echo "  wm / watcher_monitor  - Monitor usage in real-time"
 echo "  wi / watcher_increase - Increase limits (requires sudo)"
