@@ -838,9 +838,9 @@ function cxl() {
 function cxa() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
   if [ -x "$custom_codex" ]; then
-    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit "$@"
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-idea "$@"
   else
-    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-edit "$@"
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"
   fi
 }
 alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
