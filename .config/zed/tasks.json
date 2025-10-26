@@ -6,7 +6,7 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "Python: Ruff Fix",
@@ -15,7 +15,7 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "Python: Run pytest",
@@ -24,7 +24,7 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "Go: Test ./...",
@@ -33,7 +33,7 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "Go: Build ./...",
@@ -42,7 +42,7 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "C/CUDA: Configure (CMake Release)",
@@ -51,7 +51,7 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "C/CUDA: Build (Ninja)",
@@ -60,18 +60,18 @@
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   },
   {
     "label": "C/CUDA: Run clang-format",
     "command": "bash",
     "args": [
       "-lc",
-      "find $ZED_WORKTREE_ROOT -type f \\\n        \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' -o -name '*.cu' -o -name '*.cuh' \) \\\n        -print0 | xargs -0 clang-format -i"
+      "find \"$ZED_WORKTREE_ROOT\" -type f \\( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' -o -name '*.cu' -o -name '*.cuh' \\) -print0 | xargs -0 clang-format -i"
     ],
     "options": {
       "cwd": "$ZED_WORKTREE_ROOT"
     },
-    "reveal_target": "panel"
+    "reveal_target": "dock"
   }
 ]

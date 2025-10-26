@@ -15,7 +15,7 @@
   "icon_theme": "Zed (Default)",
   "theme": {
     "mode": "dark",
-    "dark": "Monokai",
+    "dark": "One Dark",
     "light": "One Light"
   },
   "remove_trailing_whitespace_on_save": true,
@@ -45,16 +45,16 @@
     "C": {
       "language_servers": ["clangd"],
       "format_on_save": "on",
-      "formatter": [
-        { "language_server": { "name": "clangd" } }
-      ]
+      "formatter": {
+        "language_server": { "name": "clangd" }
+      }
     },
     "C++": {
       "language_servers": ["clangd"],
       "format_on_save": "on",
-      "formatter": [
-        { "language_server": { "name": "clangd" } }
-      ]
+      "formatter": {
+        "language_server": { "name": "clangd" }
+      }
     }
   }
 }
