@@ -816,6 +816,8 @@ function cxni() {
 }
 
 alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias ccxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
+alias ccxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
 
 function cxm() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
