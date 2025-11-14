@@ -141,24 +141,26 @@ class FlamegraphParser:
 
 class ProfileParser:
     """Parse .profile and .prof files."""
-    
+
     def __init__(self, profile_path: Path):
         self.profile_path = profile_path
         self.profile_data = []
-    
+        self.stats = None
+
     def parse(self) -> List[Dict]:
         """Parse profile file and extract performance data."""
         import pstats
-        
+
         try:
             # Try to load as pstats file
             stats = pstats.Stats(str(self.profile_path))
             stats.strip_dirs()
-            
+            self.stats = stats
+
             # Get the stats in a parseable format
             stats_dict = {}
             stats.calc_callees()
-            
+
             for func, (cc, nc, tt, ct, callers) in stats.stats.items():
                 filename, line, func_name = func
                 stats_dict[func] = {
@@ -170,22 +172,23 @@ class ProfileParser:
                     'tottime': tt,
                     'percall': tt/nc if nc > 0 else 0,
                     'cumtime': ct,
-                    'percall_cum': ct/nc if nc > 0 else 0
+                    'percall_cum': ct/nc if nc > 0 else 0,
+                    'location': f"{filename}:{line}"
                 }
-            
+
             # Convert to list and sort by cumulative time
             self.profile_data = list(stats_dict.values())
             self.profile_data.sort(key=lambda x: x['cumtime'], reverse=True)
-            
+
             # Calculate percentages
             total_time = sum(x['cumtime'] for x in self.profile_data)
             for item in self.profile_data:
                 item['percentage'] = (item['cumtime'] / total_time * 100) if total_time > 0 else 0
-                
+
         except Exception as e:
             # If pstats fails, try to parse as text profile
             self._parse_text_profile()
-            
+
         return self.profile_data
     
     def _parse_text_profile(self):
@@ -275,8 +278,8 @@ class MarkdownFormatter:
         
         return "\n".join(md_lines)
     
-    def format_profile(self, profile_data: List[Dict], input_file: str) -> str:
-        """Format profile data as markdown."""
+    def format_profile(self, profile_data: List[Dict], input_file: str, top_n=50, hotspot_threshold=1.0) -> str:
+        """Format profile data as markdown with hot paths analysis."""
         md_lines = [
             f"# Profile Analysis: {Path(input_file).name}",
             "",
@@ -285,70 +288,102 @@ class MarkdownFormatter:
             f"Total functions profiled: {len(profile_data)}",
             ""
         ]
-        
+
         # Calculate total time
-        if profile_data:
-            total_time = sum(x.get('cumtime', 0) for x in profile_data)
+        total_time = sum(x.get('cumtime', 0) for x in profile_data)
+        if total_time > 0:
             md_lines.append(f"Total execution time: {total_time:.3f} seconds")
             md_lines.append("")
-        
+
         md_lines.extend([
-            "## Top Time-Consuming Functions",
+            f"## Top {top_n} Time-Consuming Functions (Hot Paths)",
             "",
-            "| Function | Cumulative Time | Own Time | Calls | Time % |",
-            "|----------|----------------|----------|-------|--------|"
+            "| Rank | Function | Location | Cumulative | Own Time | Calls | % Total |",
+            "|------|----------|----------|------------|----------|-------|---------|"
         ])
-        
-        # Show top 20 functions
-        for item in profile_data[:20]:
-            func_name = item.get('function', 'Unknown')
-            if len(func_name) > 50:
-                func_name = func_name[:47] + "..."
-            
+
+        # Show top N functions
+        for idx, item in enumerate(profile_data[:top_n], 1):
+            func_name = item.get('func_name', item.get('function', 'Unknown'))
+            location = item.get('location', 'Unknown')
+
+            # Truncate long names for table
+            if len(func_name) > 40:
+                func_name = func_name[:37] + "..."
+            if len(location) > 50:
+                location = "..." + location[-47:]
+
             cumtime = item.get('cumtime', 0)
             tottime = item.get('tottime', 0)
             ncalls = item.get('ncalls', 0)
             percentage = item.get('percentage', 0)
-            
+
             md_lines.append(
-                f"| {func_name} | {cumtime:.3f}s | {tottime:.3f}s | {ncalls} | {percentage:.1f}% |"
+                f"| {idx} | `{func_name}` | {location} | {cumtime:.3f}s | {tottime:.3f}s | {ncalls:,} | {percentage:.1f}% |"
             )
-        
-        # Add hotspots section
+
+        # Add hotspots section (functions taking >threshold% of time)
         md_lines.extend([
             "",
-            "## Performance Hotspots",
+            f"## Performance Hotspots (>{hotspot_threshold}% of total time)",
             "",
-            "Functions consuming more than 5% of total time:",
-            ""
         ])
-        
-        hotspots = [f for f in profile_data if f.get('percentage', 0) >= 5.0]
-        
-        for item in hotspots:
-            func_name = item.get('function', 'Unknown')
+
+        hotspots = [f for f in profile_data if f.get('percentage', 0) >= hotspot_threshold]
+
+        for item in hotspots[:30]:  # Limit to top 30 hotspots
+            func_name = item.get('func_name', item.get('function', 'Unknown'))
+            location = item.get('location', 'Unknown')
             percentage = item.get('percentage', 0)
             cumtime = item.get('cumtime', 0)
             tottime = item.get('tottime', 0)
-            
+            ncalls = item.get('ncalls', 0)
+
+            # Create visual bar
+            bar_length = min(int(percentage), 50)
+            bar = "█" * bar_length
+
             md_lines.extend([
-                f"### {func_name}",
-                f"- **Cumulative time**: {cumtime:.3f}s ({percentage:.1f}%)",
+                f"### `{func_name}` ({location})",
+                f"{bar} **{percentage:.2f}%**",
+                f"- **Cumulative time**: {cumtime:.3f}s",
                 f"- **Own time**: {tottime:.3f}s",
-                f"- **Number of calls**: {item.get('ncalls', 0)}",
+                f"- **Calls**: {ncalls:,}",
+                f"- **Time per call**: {item.get('percall_cum', 0):.6f}s",
                 ""
             ])
-        
+
+        # Add recommendations section
+        md_lines.extend([
+            "",
+            "## Optimization Recommendations",
+            "",
+            "Based on the profile data, consider optimizing:",
+            ""
+        ])
+
+        # Top 5 by cumulative time
+        for idx, item in enumerate(profile_data[:5], 1):
+            func_name = item.get('func_name', item.get('function', 'Unknown'))
+            location = item.get('location', 'Unknown')
+            percentage = item.get('percentage', 0)
+
+            md_lines.append(
+                f"{idx}. **{func_name}** ({location}) - {percentage:.1f}% of total time"
+            )
+
         return "\n".join(md_lines)
 
 
 @click.command()
 @click.argument('input_file', type=click.Path(exists=True))
 @click.option('-o', '--output', type=click.Path(), help='Output markdown file (default: stdout)')
-def cli(input_file, output):
-    """Convert flamegraph SVG or profile data to markdown description."""
+@click.option('-n', '--top-n', type=int, default=50, help='Number of top functions to display (default: 50)')
+@click.option('-t', '--threshold', type=float, default=1.0, help='Hotspot threshold percentage (default: 1.0)')
+def cli(input_file, output, top_n, threshold):
+    """Convert flamegraph SVG or profile data to markdown description with hot paths analysis."""
     input_path = Path(input_file)
-    
+
     # Determine file type and parse accordingly
     if input_path.suffix.lower() == '.svg':
         parser = FlamegraphParser(input_path)
@@ -359,11 +394,11 @@ def cli(input_file, output):
         parser = ProfileParser(input_path)
         data = parser.parse()
         formatter = MarkdownFormatter()
-        markdown = formatter.format_profile(data, input_file)
+        markdown = formatter.format_profile(data, input_file, top_n=top_n, hotspot_threshold=threshold)
     else:
         click.echo(f"Unsupported file type: {input_path.suffix}", err=True)
         return
-    
+
     # Output result
     if output:
         Path(output).write_text(markdown)
