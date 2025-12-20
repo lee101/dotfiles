@@ -1758,3 +1758,6 @@ else
 fi
 alias tx='tmux attach'
 alias cldd='claude --dangerously-skip-permissions'
+
+# opencode
+export PATH=/home/lee/.opencode/bin:$PATH

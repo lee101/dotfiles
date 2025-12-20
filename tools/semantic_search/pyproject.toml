@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_backend"
+
+[project]
+name = "semantic-search"
+version = "0.1.0"
+description = "GPU-accelerated semantic search with CAGRA"
+requires-python = ">=3.9"
+dependencies = [
+    "cuvs-cu12",
+    "rmm-cu12",
+    "sentence-transformers",
+    "torch",
+    "numpy",
+    "tqdm",
+]
+
+[project.scripts]
+semsearch = "semantic_search.main:main"
+
+[tool.setuptools.packages.find]
+include = ["semantic_search*"]
