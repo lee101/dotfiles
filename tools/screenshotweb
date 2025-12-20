@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""
+Full resolution screenshot tool for web pages.
+
+Usage:
+    screenshotweb <url> [output.png]
+"""
+
+import sys
+import os
+import time
+import tempfile
+import shutil
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from webdriver_manager.chrome import ChromeDriverManager
+
+
+def take_screenshot(url, output_path=None, width=1920, height=1080):
+    profile_path = os.getenv('CHROME_PROFILE_PATH')
+    temp_profile = None
+    driver = None
+
+    try:
+        chrome_options = Options()
+
+        if profile_path:
+            temp_profile = tempfile.mkdtemp(prefix="chrome_screenshot_")
+            for item in ['Default', 'Local State']:
+                src = os.path.join(profile_path, item)
+                if os.path.exists(src):
+                    if os.path.isdir(src):
+                        shutil.copytree(src, os.path.join(temp_profile, item),
+                                      ignore=shutil.ignore_patterns('SingletonLock', 'SingletonCookie', 'SingletonSocket'))
+                    else:
+                        shutil.copy2(src, temp_profile)
+            chrome_options.add_argument(f"--user-data-dir={temp_profile}")
+
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument(f"--window-size={width},{height}")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--hide-scrollbars")
+        chrome_options.add_argument("--force-device-scale-factor=1")
+        chrome_options.add_argument("--ignore-certificate-errors")
+        chrome_options.add_argument("--allow-insecure-localhost")
+
+        driver_path = ChromeDriverManager().install()
+        if driver_path.endswith('THIRD_PARTY_NOTICES.chromedriver'):
+            driver_dir = os.path.dirname(driver_path)
+            chromedriver_path = os.path.join(driver_dir, 'chromedriver')
+            if os.path.exists(chromedriver_path):
+                driver_path = chromedriver_path
+
+        service = Service(driver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_window_size(width, height)
+
+        if not url.startswith(('http://', 'https://')):
+            url = 'http://' + url
+
+        driver.get(url)
+
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "body"))
+            )
+        except TimeoutException:
+            pass
+
+        time.sleep(2)
+
+        # Get full page height and resize
+        total_height = driver.execute_script("return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)")
+        driver.set_window_size(width, total_height)
+        time.sleep(0.5)
+
+        if not output_path:
+            output_path = "screenshot.png"
+
+        driver.save_screenshot(output_path)
+        print(f"Screenshot saved: {output_path} ({width}x{total_height})")
+        return output_path
+
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if driver:
+            driver.quit()
+        if temp_profile and os.path.exists(temp_profile):
+            shutil.rmtree(temp_profile, ignore_errors=True)
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ['-h', '--help']:
+        print("Usage: screenshotweb <url> [output.png] [--width=1920] [--height=1080]")
+        print("\nTakes full-page screenshot of a URL")
+        print("\nOptions:")
+        print("  --width=N    Viewport width (default: 1920)")
+        print("  --height=N   Initial viewport height (default: 1080)")
+        sys.exit(0 if '-h' in sys.argv or '--help' in sys.argv else 1)
+
+    url = sys.argv[1]
+    output = None
+    width = 1920
+    height = 1080
+
+    for arg in sys.argv[2:]:
+        if arg.startswith('--width='):
+            width = int(arg.split('=')[1])
+        elif arg.startswith('--height='):
+            height = int(arg.split('=')[1])
+        elif not arg.startswith('-'):
+            output = arg
+
+    take_screenshot(url, output, width, height)
+
+
+if __name__ == "__main__":
+    main()
