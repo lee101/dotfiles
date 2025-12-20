@@ -1529,7 +1529,8 @@ export PATH="$PATH:$HOME/code/dotfiles/tools"
 export aideg='aider --model gemini/gemini-2.5-pro-preview-06-05 --thinking-tokens 32k'
 export aided='aider --model deepseek/deepseek-reasoner'
 alias pip='uv pip'
-export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
+# DATABASE_URL not needed - app uses default local socket connection
+# export DATABASE_URL="postgresql://postgres:password@localhost:5432/textgen"
 # Chrome profile environment variable
 
 # JavaScript Error Checker alias
@@ -1566,16 +1567,7 @@ export DISABLE_COST_WARNINGS=1          # Disable cost warnings that might inter
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0  # Keep terminal title updates
 
 export PATH="$HOME/.local/bin:$PATH"
-# Optimized SSH Agent setup
-# Try gnome-keyring first (fastest)
-if [ -S "/run/user/$UID/keyring/ssh" ]; then
-    export SSH_AUTH_SOCK="/run/user/$UID/keyring/ssh"
-elif [ -z "$SSH_AUTH_SOCK" ]; then
-    # Only start agent if really needed
-    if ! pgrep -u "$USER" ssh-agent >/dev/null 2>&1; then
-        eval "$(ssh-agent -s)" >/dev/null 2>&1
-    fi
-fi
+# SSH Agent setup moved to ~/.secretbashrc to avoid exposing in source control
 
 alias br='bun run'
 alias v=nvim
@@ -1749,3 +1741,20 @@ unset DOCKER_HOST
 export ZVM_INSTALL="$HOME/.zvm/self"
 export PATH="$PATH:$HOME/.zvm/bin"
 export PATH="$PATH:$ZVM_INSTALL/"
+export PATH="/home/administrator/.pixi/bin:$PATH"
+
+# SSH agent persistence - reuse agent across sessions
+SSH_ENV="$HOME/.ssh/agent-environment"
+function start_ssh_agent {
+    ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    chmod 600 "${SSH_ENV}"
+    . "${SSH_ENV}" > /dev/null
+}
+if [ -f "${SSH_ENV}" ]; then
+    . "${SSH_ENV}" > /dev/null
+    ps -p ${SSH_AGENT_PID} > /dev/null 2>&1 || start_ssh_agent
+else
+    start_ssh_agent
+fi
+alias tx='tmux attach'
+alias cldd='claude --dangerously-skip-permissions'
