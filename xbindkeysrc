@@ -1,0 +1,7 @@
+# VoiceType hotkey
+"touch $HOME/.cache/voicetype-trigger"
+    Control+Mod4 + h
+
+# Type ultrathink
+"sleep 0.1 && xdotool type --clearmodifiers ultrathink"
+    Control+Shift+Alt + l
