@@ -948,6 +948,11 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cldc='cld --continue'
+alias cldf='cld --continue --fork-session'
+alias cldr='cld --resume'
+alias cldp='cld --print'
+alias clds='cld --model claude-sonnet-4-20250514'
+alias cldo='cld --model claude-opus-4-20250514'
 
 alias cr='claude-review'
 alias creview='claude-review'
