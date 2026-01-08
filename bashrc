@@ -1760,7 +1760,23 @@ else
     start_ssh_agent
 fi
 alias tx='tmux attach'
+alias tls='tmux ls'
+alias tn='tmux new -s'
 alias cldd='claude --dangerously-skip-permissions'
+
+# Search aliases and functions by pattern
+algrp() {
+    local pattern="$1"
+    [ -z "$pattern" ] && { echo "Usage: algrp <pattern>"; return 1; }
+    echo "=== Aliases ==="
+    alias | grep -i "$pattern"
+    echo -e "\n=== Functions ==="
+    declare -F | awk '{print $3}' | grep -i "$pattern" | while read fn; do
+        echo -n "$fn: "
+        type "$fn" | head -3 | tail -2 | tr '\n' ' '
+        echo
+    done
+}
 
 # opencode
 export PATH=/home/lee/.opencode/bin:$PATH
