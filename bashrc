@@ -784,7 +784,7 @@ function cx() {
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox "$@"
   else
-    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"
   fi
 }
 
@@ -793,7 +793,7 @@ function cxi() {
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-idea "$@"
   else
-    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-idea "$@"
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-idea "$@"
   fi
 }
 
@@ -802,7 +802,7 @@ function cxn() {
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-steps "$@"
   else
-    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-steps "$@"
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-steps "$@"
   fi
 }
 
@@ -811,13 +811,14 @@ function cxni() {
   if [ -x "$custom_codex" ]; then
     "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-steps --auto-next-idea "$@"
   else
-    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --auto-next-steps --auto-next-idea "$@"
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-steps --auto-next-idea "$@"
   fi
 }
 
-alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh'
 alias ccxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
 alias ccxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
+alias ccxh='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
 
 function cxm() {
   local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
