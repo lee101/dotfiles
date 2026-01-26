@@ -74,7 +74,9 @@ sudo apt-get install -y libarrow-dev libparquet-dev
 sudo apt install nasm
 
 sudo apt install zile plocate hstr
-sudo snap install nvim
+# Install/update Neovim to latest stable via snap
+sudo snap install nvim --classic
+sudo snap refresh nvim --channel=stable
 
 # Install Helix editor
 sudo add-apt-repository ppa:maveonair/helix-editor -y
@@ -248,8 +250,9 @@ echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudf
 # install cloudflared
 sudo apt-get update && sudo apt-get install cloudflared
 
-# setup nvim
-sudo apt-get install neovim
+# setup nvim (using snap for latest version - apt version is usually outdated)
+# Note: snap nvim is preferred as it provides latest stable (0.11.x)
+# sudo apt-get install neovim  # Commented - apt usually has old version
 
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k

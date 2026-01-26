@@ -6,7 +6,7 @@ vim.g.maplocalleader = "\\"
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
   vim.fn.system({
     "git",
     "clone",
@@ -74,7 +74,7 @@ require("lazy").setup({
   -- Telescope fuzzy finder with additional extensions
   {
     'nvim-telescope/telescope.nvim',
-    tag = '0.1.5',
+    tag = '0.2.0',
     dependencies = { 
       'nvim-lua/plenary.nvim',
       'nvim-telescope/telescope-fzf-native.nvim',
@@ -212,17 +212,17 @@ require("lazy").setup({
               return { "black" }
             end
           end,
-          javascript = { { 'prettier', 'prettierd' } },
-          typescript = { { 'prettier', 'prettierd' } },
-          javascriptreact = { { 'prettier', 'prettierd' } },
-          typescriptreact = { { 'prettier', 'prettierd' } },
-          json = { { 'prettier', 'prettierd' } },
-          jsonc = { { 'prettier', 'prettierd' } },
-          markdown = { { 'prettier', 'prettierd' } },
-          html = { { 'prettier', 'prettierd' } },
-          css = { { 'prettier', 'prettierd' } },
-          scss = { { 'prettier', 'prettierd' } },
-          yaml = { { 'prettier', 'prettierd' } },
+          javascript = { 'prettierd', 'prettier', stop_after_first = true },
+          typescript = { 'prettierd', 'prettier', stop_after_first = true },
+          javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+          typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+          json = { 'prettierd', 'prettier', stop_after_first = true },
+          jsonc = { 'prettierd', 'prettier', stop_after_first = true },
+          markdown = { 'prettierd', 'prettier', stop_after_first = true },
+          html = { 'prettierd', 'prettier', stop_after_first = true },
+          css = { 'prettierd', 'prettier', stop_after_first = true },
+          scss = { 'prettierd', 'prettier', stop_after_first = true },
+          yaml = { 'prettierd', 'prettier', stop_after_first = true },
           toml = { 'taplo' },
           sh = { 'shfmt' },
           bash = { 'shfmt' },
@@ -314,7 +314,7 @@ require("lazy").setup({
           use_languagetree = true,
           disable = function(lang, buf)
             local max_filesize = 100 * 1024 -- 100 KB
-            local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
+            local ok, stats = pcall((vim.uv or vim.loop).fs_stat, vim.api.nvim_buf_get_name(buf))
             if ok and stats and stats.size > max_filesize then
               return true
             end
@@ -775,14 +775,14 @@ require("lazy").setup({
         },
       })
       
-      -- Register key mappings
-      wk.register({
-        ["<leader>f"] = { name = "+file/find" },
-        ["<leader>g"] = { name = "+git" },
-        ["<leader>h"] = { name = "+git hunks" },
-        ["<leader>w"] = { name = "+workspace" },
-        ["<leader>c"] = { name = "+code" },
-        ["<leader>r"] = { name = "+rename" },
+      -- Register key mappings using new spec format (v3 compatible)
+      wk.add({
+        { "<leader>f", group = "file/find" },
+        { "<leader>g", group = "git" },
+        { "<leader>h", group = "git hunks" },
+        { "<leader>w", group = "workspace" },
+        { "<leader>c", group = "code" },
+        { "<leader>r", group = "rename" },
       })
     end,
   },
