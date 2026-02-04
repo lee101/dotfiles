@@ -155,7 +155,7 @@ end
 
 -- Command to manually restart TypeScript LSP
 M.restart_typescript_lsp = function()
-  local clients = vim.lsp.get_active_clients()
+  local clients = vim.lsp.get_clients()
   for _, client in ipairs(clients) do
     if client.name == "ts_ls" or client.name == "tsserver" then
       vim.lsp.stop_client(client.id)
@@ -171,7 +171,7 @@ end
 
 -- Command to show LSP memory usage
 M.show_lsp_stats = function()
-  local clients = vim.lsp.get_active_clients()
+  local clients = vim.lsp.get_clients()
   if #clients == 0 then
     vim.notify("No LSP clients running", vim.log.levels.INFO)
     return
