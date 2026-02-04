@@ -79,7 +79,7 @@ vim.opt.laststatus = 2
 -- Auto-reload settings for external file changes
 vim.opt.autoread = true  -- Automatically read file when changed outside of vim
 
--- Cross-platform clipboard setup
+-- Cross-platform clipboard setup with OSC 52 support for tmux
 if is_wsl then
   vim.g.clipboard = {
     name = 'WslClipboard',
@@ -96,8 +96,29 @@ if is_wsl then
 elseif is_windows then
   vim.opt.clipboard = "unnamedplus"
 else
-  vim.opt.clipboard = "unnamedplus"
+  -- Use OSC 52 for clipboard - works across tmux sessions and SSH
+  -- This allows yanking between different nvim instances even in different tmux panes/windows
+  local function paste()
+    return { vim.fn.split(vim.fn.getreg(''), '\n'), vim.fn.getregtype('') }
+  end
+
+  vim.g.clipboard = {
+    name = 'OSC 52',
+    copy = {
+      ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
+      ['*'] = require('vim.ui.clipboard.osc52').copy('*'),
+    },
+    paste = {
+      -- OSC 52 paste requires terminal support; fallback to native paste
+      -- Most terminals support OSC 52 copy but not paste, so we use the register
+      ['+'] = paste,
+      ['*'] = paste,
+    },
+  }
 end
+
+-- Sync with system clipboard
+vim.opt.clipboard = "unnamedplus"
 
 require("lazy").setup({
   spec = {
@@ -903,7 +924,10 @@ require("lazy").setup({
       "ggandor/leap.nvim",
       dependencies = { "tpope/vim-repeat" },
       config = function()
-        require("leap").add_default_mappings()
+        -- Use new mapping API (add_default_mappings deprecated)
+        vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
+        vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
+        vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
       end
     },
     {
