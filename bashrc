@@ -751,7 +751,7 @@ alias pfr='pip freeze'
 alias ipy='ipython'
 alias pfrr='pip freeze > requirements.txt'
 alias pin='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
-alias pi='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
+# alias pi='uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org' # conflicts with pi coding agent CLI
 alias pinu='uv pip install -U --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org'
 # alias pi='pip install --cache-dir /media/lee/pipcache'
 
