@@ -19,7 +19,7 @@ parser.add_option("-f", "--force", dest="force", default=False, action="store_tr
 (options, args) = parser.parse_args()
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua']
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig.windows']
 cwd = os.path.realpath(os.getcwd())
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)
@@ -176,6 +176,25 @@ if os.path.exists(config_source):
                         
             print('Creating link %s -> %s' % (src, dst))
             os.symlink(src, dst)
+
+# Link Windows-specific gitconfig on Windows only
+import platform
+if platform.system() == 'Windows' or os.name == 'nt':
+    win_gitconfig = os.path.join(cwd, 'gitconfig.windows')
+    if os.path.exists(win_gitconfig):
+        destination = os.path.join(homedir, '.gitconfig.windows')
+        if os.path.lexists(destination):
+            if options.force:
+                print('Deleting %s' % destination)
+                try:
+                    os.remove(destination)
+                except OSError:
+                    print('Failed to delete %s' % destination)
+            else:
+                print('Not overwriting %s since it exists and force (-f) is not in effect' % destination)
+        if not os.path.lexists(destination):
+            print('Creating a link to %s at %s.' % (win_gitconfig, destination))
+            os.symlink(win_gitconfig, destination)
 
 # Link .codex directory contents for Codex CLI configuration
 codex_source = os.path.join(cwd, '.codex')

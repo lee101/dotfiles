@@ -76,6 +76,32 @@ foreach ($file in $files) {
     }
 }
 
+# Handle Windows-specific gitconfig
+$winGitconfig = Join-Path $currentDir "gitconfig.windows"
+if (Test-Path $winGitconfig) {
+    Write-Host ""
+    Write-Host "Linking Windows-specific gitconfig..." -ForegroundColor Cyan
+    $targetPath = Join-Path $homeDir ".gitconfig.windows"
+
+    if (Test-Path $targetPath) {
+        if ($Force) {
+            Write-Host "  Removing existing: $targetPath" -ForegroundColor Yellow
+            Remove-Item $targetPath -Force
+        } else {
+            Write-Host "  Skipping (exists): $targetPath" -ForegroundColor Gray
+        }
+    }
+
+    if (!(Test-Path $targetPath)) {
+        try {
+            New-Item -ItemType SymbolicLink -Path $targetPath -Target $winGitconfig -Force:$Force | Out-Null
+            Write-Host "  Created link: $targetPath -> $winGitconfig" -ForegroundColor Green
+        } catch {
+            Write-Host "  Failed to create link: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+}
+
 # Handle lib directory files (like git_aliases)
 $libPath = Join-Path $currentDir "lib"
 if (Test-Path $libPath) {

@@ -8,7 +8,8 @@ from typing import Dict, List, Tuple
 import xml.etree.ElementTree as ET
 
 import click
-from lxml import etree
+# NOTE: `lxml` isn't required for the current parser implementation; avoid an
+# extra dependency so this works in minimal Python environments.
 
 
 class FlamegraphParser:
