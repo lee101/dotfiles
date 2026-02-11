@@ -9,23 +9,22 @@ __fzf_find__() {
   esac
 }
 
-# Enable fuzzy auto-completion with fzf-completion widget on TAB
-fzf-completion-widget() {
-  # When the trigger is detected at the end of the line, remove it and invoke fzf selection.
-  if [[ "$LBUFFER" == *"$FZF_COMPLETION_TRIGGER" ]]; then
-    local prefix=${LBUFFER%"$FZF_COMPLETION_TRIGGER"}
+# Enable fuzzy auto-completion with fzf
+# Bash version: use readline bind for fzf completion on TAB
+_fzf_bash_completion() {
+  local line="${READLINE_LINE}"
+  if [[ "$line" == *"$FZF_COMPLETION_TRIGGER" ]]; then
+    local prefix="${line%"$FZF_COMPLETION_TRIGGER"}"
     local selection
     selection=$(__fzf_select__ --bind 'tab:accept,enter:accept,right:accept')
     if [[ -n $selection ]]; then
-      LBUFFER="${prefix}${selection}"
+      READLINE_LINE="${prefix}${selection}"
+      READLINE_POINT=${#READLINE_LINE}
     fi
-  else
-    # Otherwise, fall back to the normal expand-or-complete behavior.
-    zle expand-or-complete
   fi
 }
-zle -N hstr
-bindkey '^I' hstr
+# Bind Ctrl-T to fzf file selection in bash
+bind -x '"\C-t":_fzf_bash_completion'
 
 # Auto-completion functions
 # Generate path completions using fd command
