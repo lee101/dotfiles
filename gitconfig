@@ -58,7 +58,7 @@
 [difftool "nvimdiff"]
     cmd = nvim -d $LOCAL $REMOTE
 [credential]
-	helper = store
+	helper = manager
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path =
@@ -124,5 +124,14 @@
     # Smart status that shows upstream info
     st = status -sb
     stu = !sh -c 'git status -sb; echo ""; git branch -vv | grep "^*"' -
+[include]
+	# Windows-specific config (silently ignored if file doesn't exist)
+	path = ~/.gitconfig.windows
 [init]
 	templatedir = /home/lee/.git-templates
+[credential "https://github.com"]
+	helper = 
+	helper = !'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential

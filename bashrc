@@ -2,6 +2,9 @@
 # Startup timing - set DEBUG_STARTUP=1 to enable
 [ -n "$DEBUG_STARTUP" ] && echo "Bashrc start: $(date +%s.%N)"
 
+# Ensure ~/.local/bin is in PATH (for uv, claude, etc.)
+export PATH="$HOME/.local/bin:$PATH"
+
 alias uva='source .venv/bin/activate'
 alias sni='sudo snap install --classic'
 alias bi='bun install'
@@ -1319,7 +1322,7 @@ export AWS_REGION=us-east-1
 #export GOPATH=$HOME/go
 #export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
-source ~/.secretbashrc
+[ -f ~/.secretbashrc ] && source ~/.secretbashrc
 
 # export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 #source ~/.bash_profile
@@ -1363,17 +1366,19 @@ alias kscore="docker run -v $(pwd):/project zegl/kube-score:v1.10.0"
 
 # NVM lazy loading for much faster startup
 export NVM_DIR="$HOME/.nvm"
-# Don't load NVM immediately - use lazy loading
-lazy_load_nvm() {
-    unset -f nvm node npm npx 2>/dev/null
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-}
-# Stub functions that trigger NVM loading on first use
-nvm() { lazy_load_nvm; nvm "$@"; }
-node() { lazy_load_nvm; node "$@"; }
-npm() { lazy_load_nvm; npm "$@"; }
-npx() { lazy_load_nvm; npx "$@"; }
+# Only set up NVM lazy loading if NVM is installed
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    lazy_load_nvm() {
+        unset -f nvm node npm npx 2>/dev/null
+        . "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+    }
+    # Stub functions that trigger NVM loading on first use
+    function nvm() { lazy_load_nvm; nvm "$@"; }
+    function node() { lazy_load_nvm; node "$@"; }
+    function npm() { lazy_load_nvm; npm "$@"; }
+    function npx() { lazy_load_nvm; npx "$@"; }
+fi
 
 
 
@@ -1747,18 +1752,33 @@ export PATH="$PATH:$HOME/.zvm/bin"
 export PATH="$PATH:$ZVM_INSTALL/"
 export PATH="/home/administrator/.pixi/bin:$PATH"
 
-# SSH agent persistence - reuse agent across sessions
-SSH_ENV="$HOME/.ssh/agent-environment"
-function start_ssh_agent {
-    ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
-    chmod 600 "${SSH_ENV}"
-    . "${SSH_ENV}" > /dev/null
-}
-if [ -f "${SSH_ENV}" ]; then
-    . "${SSH_ENV}" > /dev/null
-    ps -p ${SSH_AGENT_PID} > /dev/null 2>&1 || start_ssh_agent
+# SSH agent setup - platform-specific
+if [ "$machine" = "Git" ] || [ "$machine" = "MinGw" ] || [ "$machine" = "Cygwin" ]; then
+    # Windows: Use the Windows OpenSSH agent service (persists across all terminals)
+    # Unset SSH_AUTH_SOCK so Windows OpenSSH uses its named pipe to the Windows agent
+    unset SSH_AUTH_SOCK
+    unset SSH_AGENT_PID
+    # Put Windows OpenSSH first in PATH so it shadows Git Bash's ssh/scp/ssh-add
+    # This ensures all ssh commands (interactive, scripts, subshells) use Windows OpenSSH
+    export PATH="/c/Windows/System32/OpenSSH:$PATH"
+    # Auto-add SSH key to Windows agent if not already loaded
+    if ! ssh-add -l &>/dev/null; then
+        ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    fi
 else
-    start_ssh_agent
+    # Linux/Mac: Use standard ssh-agent persistence - reuse agent across sessions
+    SSH_ENV="$HOME/.ssh/agent-environment"
+    function start_ssh_agent {
+        ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+        chmod 600 "${SSH_ENV}"
+        . "${SSH_ENV}" > /dev/null
+    }
+    if [ -f "${SSH_ENV}" ]; then
+        . "${SSH_ENV}" > /dev/null
+        ps -p ${SSH_AGENT_PID} > /dev/null 2>&1 || start_ssh_agent
+    else
+        start_ssh_agent
+    fi
 fi
 alias tx='tmux attach'
 alias tls='tmux ls'
