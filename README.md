@@ -48,8 +48,9 @@ dotfiles/
 ### Quick Start (Unix-like systems)
 1. **Clone**: `git clone https://github.com/lee101/dotfiles.git ~/.dotfiles`
 2. **Navigate**: `cd ~/.dotfiles`
-3. **Install**: `python linkdotfiles.py`
-4. **Force overwrite**: `python linkdotfiles.py -f`
+3. **Bootstrap packages/tools**: `./setup-linux.sh`
+4. **Install**: `python linkdotfiles.py`
+5. **Force overwrite**: `python linkdotfiles.py -f`
 
 ### Manual Setup
 ```bash
@@ -235,4 +236,3 @@ extra tools
 
   # With visible window (if needed for debugging)
   jscheck --show-window https://example.com
-
