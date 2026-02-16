@@ -5,6 +5,11 @@
 // - Monokai dark theme to match Cursor and JetBrains usage
 // - Whitespace handling aligned with PyCharm editor defaults
 {
+  "agent": {
+    "play_sound_when_agent_done": true,
+    "always_allow_tool_actions": true,
+    "model_parameters": []
+  },
   "base_keymap": "JetBrains",
   "buffer_font_family": "DejaVu Sans Mono",
   "buffer_font_features": {

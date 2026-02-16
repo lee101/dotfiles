@@ -211,3 +211,9 @@ fi
 # Final PATH cleanup (remove duplicates while preserving order)
 # ============================================================
 typeset -U PATH
+
+# Codex aliases
+alias cx="codex"  # official openai codex
+alias cxi="codex-infinity"  # codex-infinity npm package
+alias cxl="/home/lee/code/codex/codex-rs/target/release/codex"  # local build
+alias ccx="codex-infinity"  # alias for codex-infinity
