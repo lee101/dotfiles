@@ -181,6 +181,28 @@ install_nodejs() {
   run_root apt-get install -y nodejs
 }
 
+install_claude_code() {
+  if command -v claude >/dev/null 2>&1; then
+    log_info "Claude Code CLI already installed."
+    return
+  fi
+
+  if ! command -v npm >/dev/null 2>&1; then
+    log_warn "npm not found; skipping Claude Code CLI install."
+    return
+  fi
+
+  log_info "Installing Claude Code CLI via npm..."
+  npm install -g @anthropic-ai/claude-code
+
+  if command -v claude >/dev/null 2>&1; then
+    POST_INSTALL_NOTES+=("Claude Code installed. Run 'claude' to authenticate.")
+  else
+    log_warn "npm install completed but 'claude' was not found on PATH."
+    POST_INSTALL_NOTES+=("If needed, add your npm global bin directory to PATH, then run 'claude'.")
+  fi
+}
+
 install_go() {
   if command -v go >/dev/null 2>&1; then
     log_info "Go already installed ($(go version))."
@@ -470,6 +492,7 @@ main() {
   install_github_cli
   install_cloudflared
   install_nodejs
+  install_claude_code
   install_eza
   install_lazygit
   install_git_delta

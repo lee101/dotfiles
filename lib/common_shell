@@ -562,76 +562,89 @@ alias cgcmep='cldgcmep'
 alias cfix='cldfix'
 alias cpr='cldpr'
 
-# Codex aliases
-alias cdx='codex'
-alias cdxd='codex --dangerously-bypass-approvals-and-sandbox'
-alias cdxf='codex --full-auto'
-alias cdxr='codex --sandbox read-only'
-alias cdxw='codex --sandbox workspace-write'
-alias cdxa='codex apply'
-alias cdxe='codex exec'
-alias cdxs='codex --search'
-alias cdxo='codex --oss'
-alias cdxed='codex exec --dangerously-bypass-approvals-and-sandbox'
+# Codex paths
+CODEX_LOCAL="$HOME/code/codex/codex-rs/target/release/codex"
+CODEX_BUN="$HOME/.bun/bin/codex"
 
-alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh'
-alias ccxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
-alias ccxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
-alias ccxh='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
-alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
+# Upstream codex (via bun) - ccx* aliases
+alias ccx='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh'
+alias ccxl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
+alias ccxm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
+alias ccxh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias ccxf='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
 
+# Standard codex aliases (use bun)
+alias cdx='$CODEX_BUN'
+alias cdxd='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox'
+alias cdxf='$CODEX_BUN --full-auto'
+alias cdxr='$CODEX_BUN --sandbox read-only'
+alias cdxw='$CODEX_BUN --sandbox workspace-write'
+alias cdxa='$CODEX_BUN apply'
+alias cdxe='$CODEX_BUN exec'
+alias cdxs='$CODEX_BUN --search'
+alias cdxo='$CODEX_BUN --oss'
+alias cdxed='$CODEX_BUN exec --dangerously-bypass-approvals-and-sandbox'
+
+# Local Codex Infinity build - cx* aliases
 cx() {
-    local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
-    if [ -x "$custom_codex" ]; then
-        "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox "$@"
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 "$@"
     else
-        codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"
+        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
+        return 1
     fi
 }
 
 cxi() {
-    local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
-    if [ -x "$custom_codex" ]; then
-        "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-idea "$@"
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --auto-next-idea "$@"
     else
-        codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+        echo "Local codex not built"; return 1
     fi
 }
 
 cxn() {
-    local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
-    if [ -x "$custom_codex" ]; then
-        "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-steps "$@"
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --auto-next-steps "$@"
     else
-        codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-steps "$@"
+        echo "Local codex not built"; return 1
     fi
 }
 
 cxm() {
-    local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
-    if [ -x "$custom_codex" ]; then
-        "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=medium "$@"
     else
-        codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"
+        echo "Local codex not built"; return 1
     fi
 }
 
 cxl() {
-    local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
-    if [ -x "$custom_codex" ]; then
-        "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=low "$@"
     else
-        codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
+        echo "Local codex not built"; return 1
     fi
 }
 
-cld() {
-    ANTHROPIC_API_KEY=""
-    bun run "$(which claude)" --dangerously-skip-permissions "$@"
+cxh() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=high "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
 }
 
-codex_wrapper() { command codex "$@"; }
-alias codex='codex_wrapper'
+# Codex build helper
+cxbuild() {
+    cd ~/code/codex && cargo build --release -p codex && echo "Built: $CODEX_LOCAL"
+}
+
+cld() {
+    # Call Claude directly. Running the ELF binary through "bun run"
+    # causes parse errors like "Unexpected ... ELF".
+    ANTHROPIC_API_KEY="" command claude --dangerously-skip-permissions "$@"
+}
 
 cldgdfaa() {
     [ -z "$1" ] && { echo "Usage: cldgdfaa 'prompt'"; return 1; }
