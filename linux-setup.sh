@@ -4,6 +4,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sudo snap install eza
 
+# Python memory tooling (memray) for pymem-report
+if command -v uv >/dev/null; then
+  if [ ! -d "${HOME}/code/dotfiles/tools/.venv" ]; then
+    python3 -m venv "${HOME}/code/dotfiles/tools/.venv"
+  fi
+  uv pip install --python "${HOME}/code/dotfiles/tools/.venv/bin/python" memray rich psutil
+else
+  echo "uv not found; skipping memray install. Install uv and re-run to enable pymem-report."
+fi
+
 # Ensure Ghostty terminfo exists so tmux works when TERM is xterm-ghostty
 if command -v tic >/dev/null; then
   echo "Installing Ghostty terminfo entry..."

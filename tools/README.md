@@ -54,6 +54,15 @@ export CHROME_PROFILE_PATH="/path"     # Use specific Chrome profile
 jscheck https://example.com
 ```
 
+### 🧠 pymem-report - Python Memory Report (Markdown + Flamegraph)
+Runs a Python command under memray and emits a markdown summary plus optional flamegraph.
+
+**Usage:**
+```bash
+pymem-report -- python -m your_module --args
+pymem-report --out report.md --flame report.html -- python script.py
+```
+
 ### 🤖 cldpr - Pull Request Creator
 Creates well-structured pull requests with AI-generated summaries.
 
