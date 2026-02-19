@@ -99,6 +99,7 @@
 	directory = /media/lee/crucial2/code
 	directory = /media/lee/crucial2/code/audiounderstanding
 	directory = *
+	directory = /home/administrator/actions-runner/_work/codex-infinity-site/codex-infinity-site
 [pull]
 	rebase = false
 [pager]
