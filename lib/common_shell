@@ -547,6 +547,7 @@ alias cldf='cld --continue --fork-session'
 alias cldr='cld --resume'
 alias cldp='cld --print'
 alias cldd='claude --dangerously-skip-permissions'
+alias clds='claude --dangerously-skip-permissions --model sonnet'
 
 alias cr='claude-review'
 alias creview='claude-review'

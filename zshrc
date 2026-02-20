@@ -157,6 +157,18 @@ aa() {
 ali()  { echo "alias $@" >> ~/.zshrc; source ~/.zshrc; }
 alis() { echo "alias $@" >> ~/.secretbashrc; source ~/.secretbashrc; }
 
+gali() {
+    [ $# -eq 0 ] && { echo "Usage: gali name='command'"; return 1; }
+    local def="$*"
+    local name="${def%%=*}"
+    [[ "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]] || { echo "Invalid alias name: $name"; return 1; }
+    [[ "$def" == *=* ]] || { echo "Missing '=' — usage: gali name='command'"; return 1; }
+    eval "alias $def" 2>/dev/null || { echo "Invalid alias: $def"; return 1; }
+    echo "alias $def" >> ~/.zshrc
+    source ~/.zshrc
+    echo "Added & loaded: alias $def"
+}
+
 # ============================================================
 # Zsh plugin configuration
 # ============================================================
