@@ -1,2 +1,8 @@
 [core]
 	sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
+[credential "https://github.com"]
+	helper =
+	helper = !'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential

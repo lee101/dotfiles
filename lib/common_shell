@@ -595,6 +595,41 @@ cx() {
     fi
 }
 
+cxxh() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=xhigh "$@"
+    else
+        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
+        return 1
+    fi
+}
+
+cxxhn() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3  --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    else
+        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
+        return 1
+    fi
+}
+
+cxxhni() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3  --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    else
+        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
+        return 1
+    fi
+}
+
+cxhni() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 "$@" --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+    else
+        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
+        return 1
+    fi
+}
 cxi() {
     if [ -x "$CODEX_LOCAL" ]; then
         "$CODEX_LOCAL" --yolo3 --auto-next-idea "$@"
