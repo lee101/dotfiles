@@ -83,7 +83,7 @@ sudo apt-get install -y libarrow-dev libparquet-dev
 
 sudo apt install nasm
 
-sudo apt install zile plocate hstr
+sudo apt install zile plocate hstr strace
 # Install/update Neovim to latest stable via snap
 sudo snap install nvim --classic
 sudo snap refresh nvim --channel=stable

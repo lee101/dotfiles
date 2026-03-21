@@ -675,6 +675,154 @@ cxbuild() {
     cd ~/code/codex && cargo build --release -p codex && echo "Built: $CODEX_LOCAL"
 }
 
+# ── Two-phase Codex pipeline: Plan (spark) → Execute (codex) → Git (spark) ──
+
+# Phase 1: Plan with spark model (fast, cheap, great for planning)
+cxplan() {
+    if [ ! -x "$CODEX_LOCAL" ]; then
+        echo "Local codex not built. Run: cxbuild"; return 1
+    fi
+    local plan_file="/tmp/codex-plan-$$.md"
+    echo "═══ Phase 1: Planning with gpt-5.3-codex-spark (high) ═══"
+    "$CODEX_LOCAL" exec --yolo3 \
+        -m gpt-5.3-codex-spark \
+        --config model_reasoning_effort=high \
+        --include-plan-tool \
+        -o "$plan_file" \
+        "$@"
+    echo "Plan saved to: $plan_file"
+}
+
+# Phase 2: Execute with codex high (full power for implementation)
+cxdo() {
+    if [ ! -x "$CODEX_LOCAL" ]; then
+        echo "Local codex not built. Run: cxbuild"; return 1
+    fi
+    echo "═══ Phase 2: Executing with gpt-5.3-codex (high) ═══"
+    "$CODEX_LOCAL" --yolo3 \
+        -m gpt-5.3-codex \
+        --config model_reasoning_effort=high \
+        --auto-next-steps \
+        "$@"
+}
+
+# Phase 3: Git commit and push with spark medium (cheap for routine git ops)
+cxgit() {
+    if [ ! -x "$CODEX_LOCAL" ]; then
+        echo "Local codex not built. Run: cxbuild"; return 1
+    fi
+    echo "═══ Phase 3: Git commit & push with gpt-5.3-codex-spark (medium) ═══"
+    "$CODEX_LOCAL" exec --yolo3 \
+        -m gpt-5.3-codex-spark \
+        --config model_reasoning_effort=medium \
+        "Review the git diff, write a good commit message, git add the changed files, commit, and push. Do not add unrelated files."
+}
+
+# Full 3-phase pipeline: Plan → Execute → Git
+# Usage: cxfull "build a login page with OAuth"
+cxfull() {
+    if [ ! -x "$CODEX_LOCAL" ]; then
+        echo "Local codex not built. Run: cxbuild"; return 1
+    fi
+    [ -z "$1" ] && { echo "Usage: cxfull 'your task description'"; return 1; }
+
+    local task="$*"
+    local plan_file="/tmp/codex-plan-$$.md"
+
+    # Phase 1: Plan with spark
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  Phase 1/3: PLAN  (gpt-5.3-codex-spark · high)         ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    "$CODEX_LOCAL" exec --yolo3 \
+        -m gpt-5.3-codex-spark \
+        --config model_reasoning_effort=high \
+        --include-plan-tool \
+        -o "$plan_file" \
+        "You are a senior software architect. Create a detailed, step-by-step implementation plan for the following task. Include specific files to create/modify, functions to write, and edge cases to handle. Be thorough and actionable.
+
+TASK: $task
+
+Output a complete implementation plan that another AI agent can execute without ambiguity." || { echo "Planning failed"; return 1; }
+
+    echo ""
+    echo "Plan saved to: $plan_file"
+    echo ""
+
+    # Phase 2: Execute with codex high
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  Phase 2/3: EXECUTE  (gpt-5.3-codex · high)            ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    local plan_content
+    plan_content=$(cat "$plan_file" 2>/dev/null)
+    "$CODEX_LOCAL" exec --yolo3 \
+        -m gpt-5.3-codex \
+        --config model_reasoning_effort=high \
+        --auto-next-steps \
+        "Execute the following implementation plan completely. Follow each step precisely. Test your work after implementation. You may also use gpt-5.3-codex-spark as a lighter model for sub-tasks if helpful.
+
+IMPLEMENTATION PLAN:
+$plan_content" || { echo "Execution failed"; return 1; }
+
+    echo ""
+
+    # Phase 3: Git commit and push with spark medium
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  Phase 3/3: GIT  (gpt-5.3-codex-spark · medium)        ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    "$CODEX_LOCAL" exec --yolo3 \
+        -m gpt-5.3-codex-spark \
+        --config model_reasoning_effort=medium \
+        "Review the git diff of all changes. Write a clear, descriptive commit message summarizing what was done. Git add the relevant changed files, commit with the message, and push. Do not add unrelated files.
+
+Original task was: $task"
+
+    echo ""
+    echo "═══ Pipeline complete ═══"
+    rm -f "$plan_file"
+}
+
+# Interactive two-phase: Plan with spark, then hand off to interactive codex
+# Usage: cxpi "refactor the auth system"
+cxpi() {
+    if [ ! -x "$CODEX_LOCAL" ]; then
+        echo "Local codex not built. Run: cxbuild"; return 1
+    fi
+    [ -z "$1" ] && { echo "Usage: cxpi 'your task description'"; return 1; }
+
+    local task="$*"
+    local plan_file="/tmp/codex-plan-$$.md"
+
+    # Phase 1: Plan with spark
+    echo "═══ Planning with spark... ═══"
+    "$CODEX_LOCAL" exec --yolo3 \
+        -m gpt-5.3-codex-spark \
+        --config model_reasoning_effort=high \
+        --include-plan-tool \
+        -o "$plan_file" \
+        "You are a senior software architect. Create a detailed implementation plan for: $task" || { echo "Planning failed"; return 1; }
+
+    echo ""
+    echo "═══ Plan ready. Launching interactive codex to execute... ═══"
+    echo ""
+
+    local plan_content
+    plan_content=$(cat "$plan_file" 2>/dev/null)
+    # Phase 2: Interactive execution with codex high
+    "$CODEX_LOCAL" --yolo3 \
+        -m gpt-5.3-codex \
+        --config model_reasoning_effort=high \
+        "Execute this plan step by step. You can use gpt-5.3-codex-spark for lighter sub-tasks.
+
+PLAN:
+$plan_content"
+
+    rm -f "$plan_file"
+}
+
 cld() {
     # Call Claude directly. Running the ELF binary through "bun run"
     # causes parse errors like "Unexpected ... ELF".
