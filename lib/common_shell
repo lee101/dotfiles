@@ -365,7 +365,7 @@ alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-ve
 # ============================================================
 # Git functions
 # ============================================================
-findn() { find . -name "$@"; }
+function findn { find . -name "$@"; }
 
 gi() {
     [ "$#" -eq 0 ] && return 0
@@ -648,7 +648,15 @@ cxn() {
 
 cxm() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=medium "$@"
+        "$CODEX_LOCAL" --yolo3 --config model=gpt-5.4-mini "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxim() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --config model=gpt-5.4-mini --auto-next-idea "$@"
     else
         echo "Local codex not built"; return 1
     fi
