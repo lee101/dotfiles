@@ -213,7 +213,57 @@ fi
 typeset -U PATH
 
 # Codex aliases
-alias cx="codex"  # official openai codex
-alias cxi="codex-infinity"  # codex-infinity npm package
-alias cxl="/home/lee/code/codex/codex-rs/target/release/codex"  # local build
-alias ccx="codex-infinity"  # alias for codex-infinity
+# ccx = OpenAI upstream codex, cx = local codex-infinity rust build
+alias ccx='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh'
+alias ccxl='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
+alias ccxm='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
+alias ccxh='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+
+function cx() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"
+  fi
+}
+function cxi() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-idea "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+  fi
+}
+function cxn() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --auto-next-steps "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh --auto-next-steps "$@"
+  fi
+}
+function cxm() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model=gpt-5.4-mini "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model=gpt-5.4-mini "$@"
+  fi
+}
+function cxim() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model=gpt-5.4-mini --auto-next-idea "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model=gpt-5.4-mini --auto-next-idea "$@"
+  fi
+}
+function cxl() {
+  local custom_codex="$HOME/code/codex/codex-rs/target/release/codex"
+  if [ -x "$custom_codex" ]; then
+    "$custom_codex" --yolo3 --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
+  else
+    codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"
+  fi
+}
