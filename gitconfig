@@ -2,10 +2,7 @@
 	name = Lee Penkman
 	email = leepenkman@gmail.com
 [push]
-	default = upstream
-	default = simple
 	default = current
-	default = upstream
 [color]
 	ui = true
 	diff = auto
@@ -96,7 +93,6 @@
 	directory = /media/lee/crucial/code/stock
 	directory = /media/lee/crucial2
 	directory = /media/lee/crucial2/code
-	directory = /media/lee/crucial2/code
 	directory = /media/lee/crucial2/code/audiounderstanding
 	directory = *
 	directory = /home/administrator/actions-runner/_work/codex-infinity-site/codex-infinity-site
@@ -132,7 +128,9 @@
 	templatedir = /home/lee/.git-templates
 [credential "https://github.com"]
 	helper =
-	helper = !gh auth git-credential
+	helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
 	helper =
-	helper = !gh auth git-credential
+	helper = !/usr/bin/gh auth git-credential
+[url "ssh://git@46.225.7.89:443/"]
+	insteadOf = infinity:
