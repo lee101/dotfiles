@@ -118,6 +118,41 @@ fi
 ## =============           My things        =================
 ## =============           My things        =================
 
+## =============    AI Coding Agents    =================
+# Pi Infinity (our fork of pi-mono with --auto-next-steps/--auto-next-idea)
+# pinf is installed at /usr/local/bin/pinf -> pi-infinity dist/cli.js
+# Original pi (upstream @mariozechner/pi-coding-agent) installed via bun
+# Run alongside each other: pinf uses .pinf/ config, pi uses .pi/ config
+
+# Export Claude Code OAuth token as ANTHROPIC_API_KEY (for tools that support it)
+export_claude_auth() {
+    local creds="${CLAUDE_HOME:-$HOME/.claude}/.credentials.json"
+    if [ -f "$creds" ]; then
+        local token
+        token=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('$creds'))
+    print(d.get('claudeAiOauth', {}).get('accessToken', ''))
+except Exception as e:
+    sys.exit(0)
+" 2>/dev/null)
+        if [ -n "$token" ]; then
+            export ANTHROPIC_API_KEY="$token"
+            echo "Claude auth loaded (${token:0:15}...)"
+        else
+            echo "No Claude OAuth token found in $creds"
+        fi
+    else
+        echo "No Claude credentials found at $creds"
+    fi
+}
+
+# Quick aliases for the two coding agents
+alias pinf-update='cd /nvme0n1-disk/code/pi-infinity && git pull && npm run build && sudo ln -sf /nvme0n1-disk/code/pi-infinity/packages/coding-agent/dist/cli.js /usr/local/bin/pinf'
+alias pi-update='bun add -g @mariozechner/pi-coding-agent'
+## =====================================================
+
 alias gst='git status'
 alias gco='git checkout'
 alias gcob='git checkout -b'
