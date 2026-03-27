@@ -292,3 +292,4 @@ algrp() {
 # opencode
 export PATH=/home/lee/.opencode/bin:$PATH
 export PATH="/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d:$PATH"
+

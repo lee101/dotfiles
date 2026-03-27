@@ -333,10 +333,96 @@ function pn { pnpm $args }
 function yt { yarn test $args }
 function yr { yarn remove $args }
 
-# Codex shortcuts (if you use it)
-function cx { codex $args }
-function cxa { codex --auto-edit $args }
-function cxf { codex --full-auto $args }
+# ==========================================
+# Claude Code aliases (mirrors bashrc)
+# ==========================================
+function cld { claude --dangerously-skip-permissions @args }
+function cldd { claude --dangerously-skip-permissions @args }
+function cla { claude @args }
+function cldc { cld --continue @args }
+function cldf { cld --continue --fork-session @args }
+function cldr { cld --resume @args }
+function cldp { cld --print @args }
+
+# Claude review aliases
+function cr { claude-review @args }
+function creview { claude-review @args }
+function crc { claude-review --staged @args }
+function crw { claude-review @args }
+
+# Claude Git workflow functions
+function cldcmt {
+    # Claude commit: stage all, generate commit message, push
+    git add -A
+    git diff --cached | claude --print "Write a concise commit message for these changes" | ForEach-Object {
+        git commit -m $_
+    }
+}
+
+function cldgcmep {
+    # Claude add+commit+push workflow
+    git add -A
+    $msg = git diff --cached | claude --print "Write a concise commit message for these changes"
+    git commit -m $msg
+    $branch = git rev-parse --abbrev-ref HEAD
+    git push --set-upstream origin $branch
+}
+
+function cldfix {
+    # Claude fix issues in current changes
+    git diff | claude "Fix any issues in these changes"
+}
+
+function cldpr {
+    # Claude PR generator
+    $base = git merge-base HEAD main 2>$null
+    if (-not $base) { $base = git merge-base HEAD master 2>$null }
+    git diff "$base..HEAD" | claude "Generate a PR title and description for these changes"
+}
+
+# Short aliases for Claude Git workflows
+function ccmt { cldcmt }
+function cgcmep { cldgcmep }
+function cfix { cldfix }
+function cpr { cldpr }
+
+# Claude + Git diff functions
+function cldgdfaa {
+    param([string]$prompt)
+    if (-not $prompt) {
+        Write-Host "Usage: cldgdfaa 'your prompt text'"
+        return
+    }
+    $diff = git diff
+    $staged = git diff --cached
+    "$prompt`n`nHere are all the changes in the repository:`n`n$diff`n$staged" | claude
+}
+
+function cldgdf {
+    param([string]$prompt)
+    if (-not $prompt) {
+        Write-Host "Usage: cldgdf 'your prompt text'"
+        return
+    }
+    $diff = git diff
+    "$prompt`n`nHere are the unstaged changes:`n`n$diff" | claude
+}
+
+# ==========================================
+# Codex CLI aliases
+# ==========================================
+function cx { codex @args }
+function cxa { codex --auto-edit @args }
+function cxf { codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto @args }
+function cdx { codex @args }
+function cdxd { codex --dangerously-bypass-approvals-and-sandbox @args }
+function cdxf { codex --full-auto @args }
+function cdxr { codex --sandbox read-only @args }
+function cdxw { codex --sandbox workspace-write @args }
+function cdxa { codex apply @args }
+function cdxe { codex exec @args }
+function cdxs { codex --search @args }
+function cdxed { codex exec --dangerously-bypass-approvals-and-sandbox @args }
 
 # IP address functions
 function my-ip {
@@ -481,12 +567,12 @@ function refresh-env {
 }
 
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "gh", "hub", "code", "nvim", "python", "pip", "uv", "fzf")
+    $tools = @("node", "npm", "yarn", "git", "gh", "claude", "codex", "code", "nvim", "python", "pip", "uv", "fzf", "bun", "rg", "fd", "bat")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
-            Write-Host "✓ $tool" -ForegroundColor Green
+            Write-Host "[OK] $tool" -ForegroundColor Green
         } else {
-            Write-Host "✗ $tool" -ForegroundColor Red
+            Write-Host "[--] $tool" -ForegroundColor Red
         }
     }
 }
