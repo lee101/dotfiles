@@ -1,7 +1,7 @@
 [project]
 name = "flamegraph-analyzer"
 version = "0.1.0"
-description = "Convert flamegraphs and profile data to markdown descriptions"
+description = "Convert flamegraphs, profiles, traces, and perf exports to markdown descriptions"
 requires-python = ">=3.8"
 dependencies = [
     "lxml>=4.9.0",
