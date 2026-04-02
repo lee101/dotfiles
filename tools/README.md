@@ -30,6 +30,8 @@ cldperf profile [path]   # Profile code and identify bottlenecks
 cldperf optimize [path]  # Get optimization suggestions (--fix to apply)
 cldperf benchmark        # Run and analyze benchmarks
 cldperf memory           # Analyze memory usage and leaks
+cldperf gpu -- <cmd>     # Run Nsight Systems and emit a Markdown CUDA report
+cldperf cuda -- <cmd>    # Alias for gpu
 ```
 
 **Features:**
@@ -62,6 +64,29 @@ Runs a Python command under memray and emits a markdown summary plus optional fl
 pymem-report -- python -m your_module --args
 pymem-report --out report.md --flame report.html -- python script.py
 ```
+
+### 🛰️ cuda-prof-report - CUDA/Nsight Markdown Report
+Runs a command under Nsight Systems and emits a Markdown report with CUDA API hotspots,
+kernel summaries, transfer breakdowns, simple USE-style heuristics, and next-step recommendations.
+
+**Usage:**
+```bash
+cuda-prof-report -- ./build/bitbankc_forecast_bench --context 512 --horizon 24
+cuda-prof-report --top 10 -- ./build/bitbankc_forecast_bench --context 512 --horizon 24
+cuda-prof-report --report api -- ./build/app
+cuda-prof-report --report kernels --report transfers -- ./build/app
+cuda-prof-report --timeout 30 --stats-timeout 10 -- ./build/app
+cuda-prof-report --require-kernels --max-api-time-pct cudaMalloc=20 -- ./build/app
+cuda-prof-report --out cuda-report.md --prefix /tmp/bench_cuda -- ./app
+cuda-prof-report --out cuda-report.md --latest-link latest-cuda.md -- ./app
+cldperf gpu -- ./build/app
+cldperf cuda -- ./build/app
+```
+
+If you pass `--out` and omit `--prefix`, the profiler artifacts default to the same path stem as the markdown file.
+If you pass `--latest-link`, the tool also updates sibling `.nsys-rep` and `.sqlite` latest pointers.
+Use `--report api|kernels|transfers` to limit which sections are collected and rendered; policy flags automatically pull in the sections they need.
+Use `--timeout` and `--stats-timeout` to keep stuck profile or summary runs from hanging forever.
 
 ### 🤖 cldpr - Pull Request Creator
 Creates well-structured pull requests with AI-generated summaries.

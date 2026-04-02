@@ -13,6 +13,8 @@ Commands:
     optimize [path]     Suggest optimizations for slow code
     benchmark           Run and analyze benchmarks
     memory              Analyze memory usage and leaks
+    gpu                 Run Nsight Systems and emit a Markdown CUDA report
+    cuda                Alias for gpu
     compare             Compare performance between commits/branches
     monitor             Real-time performance monitoring suggestions
 
@@ -30,6 +32,7 @@ Examples:
     cldperf benchmark                # Run and analyze benchmarks
     cldperf memory --verbose         # Detailed memory analysis
     cldperf compare main feature     # Compare branch performance
+    cldperf gpu -- ./build/app       # Profile a CUDA binary with Nsight Systems
 
 Performance Tools Available:
     - Go: pprof, trace, benchmarks
@@ -44,6 +47,10 @@ EOF
 # Parse command
 COMMAND=$1
 shift
+
+if [[ "$COMMAND" == "gpu" || "$COMMAND" == "cuda" ]]; then
+    exec "$(dirname "$0")/cuda-prof-report" "$@"
+fi
 
 # Default values
 VERBOSE=false
