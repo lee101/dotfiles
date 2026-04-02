@@ -23,6 +23,15 @@ if command -v tic >/dev/null; then
   tic -x -o "${HOME}/.terminfo" "${SCRIPT_DIR}/terminfo/kitty.terminfo"
 fi
 
+# Install Jujutsu (jj) - Git-compatible VCS
+echo "Installing Jujutsu (jj)..."
+mkdir -p /tmp/jj_extract
+curl -Lo /tmp/jj.tar.gz "https://github.com/jj-vcs/jj/releases/download/v0.39.0/jj-v0.39.0-x86_64-unknown-linux-musl.tar.gz"
+tar xf /tmp/jj.tar.gz -C /tmp/jj_extract
+sudo install /tmp/jj_extract/jj /usr/local/bin/
+rm -rf /tmp/jj.tar.gz /tmp/jj_extract
+jj --version
+
 # Essential Git tools setup
 echo "Installing Git and essential Git tools..."
 
