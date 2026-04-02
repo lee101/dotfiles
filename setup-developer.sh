@@ -479,6 +479,7 @@ main() {
     htop \
     tree \
     jq \
+    graphviz \
     ripgrep \
     fd-find \
     fzf \
