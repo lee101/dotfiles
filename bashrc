@@ -247,28 +247,7 @@ export PATH="$PATH:$HOME/.zvm/bin"
 export PATH="$PATH:$ZVM_INSTALL/"
 export PATH="/home/administrator/.pixi/bin:$PATH"
 
-# SSH agent setup - platform-specific
-if [ "$machine" = "Git" ] || [ "$machine" = "MinGw" ] || [ "$machine" = "Cygwin" ]; then
-    unset SSH_AUTH_SOCK
-    unset SSH_AGENT_PID
-    export PATH="/c/Windows/System32/OpenSSH:$PATH"
-    if ! ssh-add -l &>/dev/null; then
-        ssh-add ~/.ssh/id_ed25519 2>/dev/null
-    fi
-else
-    SSH_ENV="$HOME/.ssh/agent-environment"
-    function start_ssh_agent {
-        ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
-        chmod 600 "${SSH_ENV}"
-        . "${SSH_ENV}" > /dev/null
-    }
-    if [ -f "${SSH_ENV}" ]; then
-        . "${SSH_ENV}" > /dev/null
-        ps -p ${SSH_AGENT_PID} > /dev/null 2>&1 || start_ssh_agent
-    else
-        start_ssh_agent
-    fi
-fi
+# SSH agent setup is handled in lib/common_shell.
 
 alias tx='tmux attach'
 alias tls='tmux ls'

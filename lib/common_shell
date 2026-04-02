@@ -363,9 +363,137 @@ alias gsu_branch='git push -u origin $(git branch --show-current)'
 alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify'
 
 # ============================================================
+# Jujutsu (jj) aliases - mirrors git aliases for familiarity
+# ============================================================
+alias jst='jj status'
+alias jdf='jj diff'
+alias jdfs='jj diff --stat'
+alias jdfr='jj diff -r'
+alias jlg='jj log'
+alias jlgs='jj log -s'
+alias jlgp='jj log -p'
+alias jcm='jj commit -m'
+alias jcmt='jj commit'
+alias jds='jj describe -m'
+alias jdsc='jj describe'
+alias jnw='jj new'
+alias jnwm='jj new main'
+alias jed='jj edit'
+alias jbr='jj bookmark list'
+alias jbrc='jj bookmark create'
+alias jbrs='jj bookmark set'
+alias jbrd='jj bookmark delete'
+alias jsw='jj show'
+alias jswr='jj show -r'
+alias jmg='jj merge'
+alias jrs='jj restore'
+alias jab='jj abandon'
+alias jsp='jj split'
+alias jsq='jj squash'
+alias jph='jj git push'
+alias jpl='jj git fetch'
+alias jgi='jj git init --colocate'
+alias jgc='jj git clone'
+alias jrl='jj op log'
+alias jru='jj op undo'
+alias jrv='jj resolve'
+
+# ============================================================
 # Git functions
 # ============================================================
 function findn { find . -name "$@"; }
+__auto_commit_message_from_diff() {
+    local vcs="$1"
+    shift
+    local user_prompt="$*"
+    local diff_text prompt_text response commit_message model payload
+    local model_candidates="${OPENAI_COMMIT_MODELS:-gpt-5.4-nano gpt-5-nano}"
+    local api_url="${OPENAI_API_BASE_URL:-https://api.openai.com/v1/responses}"
+    local commit_suffix="${OPENAI_COMMIT_SUFFIX:- - try codex-infinity.com}"
+
+    diff_text="$(cat)"
+
+    if [ -z "$diff_text" ]; then
+        echo "wip${commit_suffix}"
+        return 0
+    fi
+
+    if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+        echo "wip${commit_suffix}"
+        return 0
+    fi
+
+    if [ -z "${OPENAI_API_KEY:-}" ]; then
+        echo "wip${commit_suffix}"
+        return 0
+    fi
+
+    diff_text="$(printf '%s' "$diff_text" | head -c 12000)"
+    prompt_text="Write a terse ${vcs} commit message for these changes.
+Return only the commit message text.
+Use imperative mood.
+Keep it under 72 characters if possible.
+Do not include quotes, code fences, explanations, or prefixes like 'feat:' unless the diff clearly warrants them."
+
+    if [ -n "$user_prompt" ]; then
+        prompt_text="${prompt_text}
+Extra guidance from the user: ${user_prompt}"
+    fi
+
+    prompt_text="${prompt_text}
+
+Diff:
+${diff_text}"
+
+    for model in $model_candidates; do
+        payload="$(jq -n \
+            --arg model "$model" \
+            --arg input "$prompt_text" \
+            '{
+                model: $model,
+                reasoning: { effort: "low" },
+                max_output_tokens: 48,
+                input: $input
+            }')"
+
+        response="$(curl -sS --fail "$api_url" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$payload" 2>/dev/null)" || continue
+
+        commit_message="$(
+            printf '%s' "$response" | jq -r '
+                .output_text //
+                ([.output[]?.content[]? | select(.type == "output_text" or .type == "text") | .text] | join("")) //
+                empty
+            ' 2>/dev/null
+        )"
+
+        commit_message="$(printf '%s' "$commit_message" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+        if [ -n "$commit_message" ]; then
+            case "$commit_message" in
+                *"$commit_suffix") ;;
+                *) commit_message="${commit_message}${commit_suffix}" ;;
+            esac
+            echo "$commit_message"
+            return 0
+        fi
+    done
+
+    echo "wip${commit_suffix}"
+}
+
+__git_auto_commit_message() {
+    git diff --cached --stat --no-ext-diff
+    printf '\n'
+    git diff --cached --no-ext-diff
+}
+
+__jj_auto_commit_message() {
+    jj diff --stat 2>/dev/null
+    printf '\n'
+    jj diff --git 2>/dev/null || jj diff 2>/dev/null
+}
 
 gi() {
     [ "$#" -eq 0 ] && return 0
@@ -402,6 +530,20 @@ gcmen()   { git add -A; git commit -a --no-verify -m "$@"; }
 gcmep()   { git add -A; git commit -a -m "$@"; gpsh_fn; }
 gcmepn()  { git add -A; git commit -a --no-verify -m "$@"; gpsh_fn; }
 gcmepf()  { git add -A; git commit -a -m "$@"; git push -f; }
+gcmpa()   { local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -m "$msg"; gpsh_fn; }
+gcmpna()  { local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit --no-verify -m "$msg"; gpsh_fn; }
+gcmpfa()  { local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -m "$msg"; git push -f; }
+gcmapa()  { git add -u; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -m "$msg"; git push; }
+gcmapna() { git add -u; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit --no-verify -m "$msg"; git push; }
+gcmapfa() { git add -u; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -m "$msg"; git push -f; }
+gcmea()   { git add -A; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -a -m "$msg"; }
+gcmena()  { git add -A; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -a --no-verify -m "$msg"; }
+gcmepa()  { git add -A; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -a -m "$msg"; gpsh_fn; }
+gcmepna() { git add -A; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -a --no-verify -m "$msg"; gpsh_fn; }
+gcmepfa() { git add -A; local msg; msg="$(__git_auto_commit_message | __auto_commit_message_from_diff git "$@")"; echo "Auto commit message: $msg"; git commit -a -m "$msg"; git push -f; }
+jcma()    { local msg; msg="$(__jj_auto_commit_message | __auto_commit_message_from_diff jj "$@")"; echo "Auto commit message: $msg"; jj commit -m "$msg"; }
+jcmpa()   { local msg; msg="$(__jj_auto_commit_message | __auto_commit_message_from_diff jj "$@")"; echo "Auto commit message: $msg"; jj commit -m "$msg" && jj git push; }
+jcmepa()  { jcmpa "$@"; }
 
 # Helper: push with auto upstream
 gpsh_fn() {
@@ -571,7 +713,11 @@ alias ccx='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_
 alias ccxl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low'
 alias ccxm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium'
 alias ccxh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
-alias ccxf='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
+alias ccxf='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high'
+alias ccxs='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=xhigh'
+alias ccxsl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=low'
+alias ccxsm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=medium'
+alias ccxsh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=high'
 
 # Standard codex aliases (use bun)
 alias cdx='$CODEX_BUN'
@@ -588,7 +734,7 @@ alias cdxed='$CODEX_BUN exec --dangerously-bypass-approvals-and-sandbox'
 # Local Codex Infinity build - cx* aliases
 cx() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -597,7 +743,7 @@ cx() {
 
 cxxh() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=xhigh "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=xhigh "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -606,7 +752,7 @@ cxxh() {
 
 cxxhn() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3  --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4  --config model_reasoning_effort=xhigh --auto-next-idea "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -615,7 +761,7 @@ cxxhn() {
 
 cxxhni() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3  --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4  --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -624,7 +770,7 @@ cxxhni() {
 
 cxhni() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 "$@" --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 "$@" --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -632,7 +778,7 @@ cxhni() {
 }
 cxi() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --auto-next-idea "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --auto-next-idea "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -640,7 +786,7 @@ cxi() {
 
 cxn() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --auto-next-steps "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -664,7 +810,7 @@ cxim() {
 
 cxl() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=low "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=low "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -672,7 +818,71 @@ cxl() {
 
 cxh() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --config model_reasoning_effort=high "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=high "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxs() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=xhigh "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxsl() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=low "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxsm() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=medium "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxsh() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=high "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxsi() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxsn() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=xhigh --auto-next-steps "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxsni() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4-mini --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxni() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -1129,7 +1339,24 @@ _start_ssh_agent() {
 }
 if [ -f "${SSH_ENV}" ]; then
     . "${SSH_ENV}" > /dev/null
-    ps -p ${SSH_AGENT_PID} > /dev/null 2>&1 || _start_ssh_agent
+    ps -p "${SSH_AGENT_PID}" > /dev/null 2>&1 || _start_ssh_agent
 else
     _start_ssh_agent
 fi
+
+_ensure_default_ssh_key() {
+    local default_key="$HOME/.ssh/id_ed25519"
+
+    [ -n "$SSH_CONNECTION" ] && return 0
+    [ -f "$default_key" ] || return 0
+    [ -t 0 ] || return 0
+
+    if ssh-add -l >/dev/null 2>&1; then
+        ssh-add -L 2>/dev/null | grep -F -q "$(cat "${default_key}.pub" 2>/dev/null)" && return 0
+    fi
+
+    # Prompt once in a local interactive shell so SSH/scp reuse the agent after reboot.
+    ssh-add "$default_key" </dev/tty
+}
+
+_ensure_default_ssh_key
