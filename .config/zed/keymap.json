@@ -24,7 +24,8 @@
       "alt-shift-left": "pane::ActivatePreviousItem",
       "alt-shift-right": "pane::ActivateNextItem",
       "cmd-alt-c": ["agent::NewExternalAgentThread", { "agent": "codex" }],
-      "ctrl-alt-c": ["agent::NewExternalAgentThread", { "agent": "codex" }]
+      "ctrl-alt-c": ["agent::NewExternalAgentThread", { "agent": "codex" }],
+      "ctrl-alt-shift-n": "agent::NewThread"
     }
   },
   {
