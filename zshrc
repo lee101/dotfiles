@@ -47,8 +47,23 @@ plugins=(
     zsh-syntax-highlighting
 )
 
+# Disable AWS region/profile in prompt (from aws plugin)
+SHOW_AWS_PROMPT=false
+
+# Pyenv (must init before oh-my-zsh pyenv plugin)
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d "$PYENV_ROOT/bin" ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+if [[ -d "$PYENV_ROOT" ]] && command -v pyenv >/dev/null 2>&1; then
+    eval "$(pyenv init --path)"
+fi
+
 # Load oh-my-zsh
 [[ -f $ZSH/oh-my-zsh.sh ]] && source $ZSH/oh-my-zsh.sh
+
+# Minimal prompt: ~/path branch
+# Overrides theme — LLM-friendly, no decorations
+PROMPT='%{$fg[cyan]%}%~%{$reset_color%}$(git_current_branch &>/dev/null && echo " %{$fg[magenta]%}$(git_current_branch)%{$reset_color%}") $ '
+RPROMPT=''
 
 # ============================================================
 # Zsh-specific options
@@ -203,7 +218,18 @@ fi
 # ============================================================
 # FZF integration (zsh-specific)
 # ============================================================
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# Homebrew fzf (Intel Mac)
+if [ -f /usr/local/opt/fzf/shell/completion.zsh ]; then
+    source /usr/local/opt/fzf/shell/completion.zsh
+    source /usr/local/opt/fzf/shell/key-bindings.zsh
+# Homebrew fzf (Apple Silicon Mac)
+elif [ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]; then
+    source /opt/homebrew/opt/fzf/shell/completion.zsh
+    source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+# Manual fzf install
+elif [ -f ~/.fzf.zsh ]; then
+    source ~/.fzf.zsh
+fi
 
 # ============================================================
 # Powerlevel10k (if installed)
@@ -224,8 +250,9 @@ fi
 # ============================================================
 typeset -U PATH
 
-# Codex aliases
-alias cx="codex"  # official openai codex
-alias cxi="codex-infinity"  # codex-infinity npm package
-alias cxl="/home/lee/code/codex/codex-rs/target/release/codex"  # local build
-alias ccx="codex-infinity"  # alias for codex-infinity
+# ============================================================
+# Go wrapper (macOS Homebrew)
+# ============================================================
+if [[ "$(uname -s)" == "Darwin" ]] && [ -x /usr/local/bin/go-wrapper ]; then
+    alias go="/usr/local/bin/go-wrapper"
+fi
