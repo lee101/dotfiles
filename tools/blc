@@ -1,0 +1,331 @@
+#!/usr/bin/env python3
+"""
+Broken Link Checker - crawls a website and reports broken links.
+Outputs clean markdown with results.
+
+Usage:
+    blc <url> [options]
+    blc https://codex-infinity.com --depth=2
+    blc https://example.com --external --timeout=10
+"""
+
+import sys
+import os
+import argparse
+import time
+import json
+from urllib.parse import urljoin, urlparse
+from collections import defaultdict
+import concurrent.futures
+
+TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Try to find requests/beautifulsoup - check common venv locations
+_VENV_SEARCH_PATHS = [
+    os.path.join(TOOLS_DIR, ".venv"),
+    "/nvme0n1-disk/code/netwrck/.venv",
+]
+for _venv in _VENV_SEARCH_PATHS:
+    if os.path.isdir(_venv):
+        _site_packages = os.path.join(_venv, "lib")
+        if os.path.isdir(_site_packages):
+            for _d in os.listdir(_site_packages):
+                _sp = os.path.join(_site_packages, _d, "site-packages")
+                if os.path.isdir(_sp) and _sp not in sys.path:
+                    sys.path.insert(0, _sp)
+            break
+
+try:
+    import requests
+    from bs4 import BeautifulSoup
+    HAS_DEPS = True
+except ImportError:
+    HAS_DEPS = False
+
+
+# Fallback: stdlib-only HTTP checker
+import urllib.request
+import urllib.error
+import ssl
+import html.parser
+
+
+class LinkExtractor(html.parser.HTMLParser):
+    """Extract links from HTML using only stdlib."""
+    def __init__(self):
+        super().__init__()
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+        if tag == 'a' and 'href' in attrs_dict:
+            self.links.append(('a', attrs_dict['href']))
+        elif tag == 'img' and 'src' in attrs_dict:
+            self.links.append(('img', attrs_dict['src']))
+        elif tag == 'link' and 'href' in attrs_dict:
+            self.links.append(('link', attrs_dict['href']))
+        elif tag == 'script' and 'src' in attrs_dict:
+            self.links.append(('script', attrs_dict['src']))
+
+
+def fetch_url(url, timeout=10):
+    """Fetch a URL and return (status_code, content_type, body_or_none, error_or_none)."""
+    if HAS_DEPS:
+        try:
+            resp = requests.get(url, timeout=timeout, allow_redirects=True,
+                              headers={"User-Agent": "BrokenLinkChecker/1.0"})
+            content_type = resp.headers.get("content-type", "")
+            body = resp.text if "text/html" in content_type else None
+            return resp.status_code, content_type, body, None
+        except requests.exceptions.Timeout:
+            return None, None, None, "Timeout"
+        except requests.exceptions.SSLError as e:
+            return None, None, None, f"SSL Error: {e}"
+        except requests.exceptions.ConnectionError as e:
+            return None, None, None, f"Connection Error: {e}"
+        except Exception as e:
+            return None, None, None, str(e)
+    else:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={"User-Agent": "BrokenLinkChecker/1.0"})
+        try:
+            resp = urllib.request.urlopen(req, timeout=timeout, context=ctx)
+            code = resp.getcode()
+            content_type = resp.headers.get("content-type", "")
+            body = resp.read().decode("utf-8", errors="replace") if "text/html" in content_type else None
+            return code, content_type, body, None
+        except urllib.error.HTTPError as e:
+            return e.code, None, None, None
+        except urllib.error.URLError as e:
+            return None, None, None, str(e.reason)
+        except Exception as e:
+            return None, None, None, str(e)
+
+
+def extract_links(html_body, base_url):
+    """Extract all links from HTML."""
+    links = []
+    if HAS_DEPS:
+        soup = BeautifulSoup(html_body, "html.parser")
+        for tag in soup.find_all(["a", "img", "link", "script"]):
+            href = tag.get("href") or tag.get("src")
+            if href:
+                links.append((tag.name, href))
+    else:
+        parser = LinkExtractor()
+        try:
+            parser.feed(html_body)
+            links = parser.links
+        except Exception:
+            pass
+
+    resolved = []
+    for tag, href in links:
+        href = href.strip()
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
+            continue
+        full_url = urljoin(base_url, href)
+        resolved.append((tag, full_url))
+    return resolved
+
+
+def check_link(url, timeout=10):
+    """Check if a single URL is reachable. Returns (status, error)."""
+    status, _, _, error = fetch_url(url, timeout)
+    return status, error
+
+
+def is_same_domain(url, base_url):
+    return urlparse(url).netloc == urlparse(base_url).netloc
+
+
+def crawl(start_url, max_depth=2, check_external=False, timeout=10, max_pages=200, workers=10):
+    """Crawl starting from start_url and check all links."""
+    visited = set()
+    results = []  # list of dicts
+    pages_crawled = 0
+    queue = [(start_url, 0, None)]  # (url, depth, source_page)
+
+    # Track which pages link to which URLs
+    link_sources = defaultdict(list)  # url -> [(source_page, tag)]
+
+    while queue and pages_crawled < max_pages:
+        current_url, depth, source = queue.pop(0)
+
+        if current_url in visited:
+            continue
+        visited.add(current_url)
+
+        if not is_same_domain(current_url, start_url):
+            continue
+
+        pages_crawled += 1
+        sys.stderr.write(f"\rCrawling page {pages_crawled}: {current_url[:80]}...   ")
+
+        status, content_type, body, error = fetch_url(current_url, timeout)
+
+        if error or (status and status >= 400):
+            results.append({
+                "url": current_url,
+                "status": status,
+                "error": error,
+                "source": source,
+                "type": "page",
+            })
+            continue
+
+        if not body:
+            continue
+
+        links = extract_links(body, current_url)
+
+        # Batch check links with thread pool
+        urls_to_check = []
+        for tag, link_url in links:
+            link_sources[link_url].append((current_url, tag))
+            if link_url not in visited:
+                is_internal = is_same_domain(link_url, start_url)
+                if is_internal and depth < max_depth:
+                    queue.append((link_url, depth + 1, current_url))
+                elif is_internal or check_external:
+                    urls_to_check.append((tag, link_url))
+
+        # Check non-crawlable links in parallel
+        if urls_to_check:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = {}
+                for tag, link_url in urls_to_check:
+                    if link_url not in visited:
+                        futures[pool.submit(check_link, link_url, timeout)] = (tag, link_url)
+                        visited.add(link_url)
+
+                for future in concurrent.futures.as_completed(futures):
+                    tag, link_url = futures[future]
+                    try:
+                        link_status, link_error = future.result()
+                    except Exception as e:
+                        link_status, link_error = None, str(e)
+
+                    if link_error or (link_status and link_status >= 400):
+                        results.append({
+                            "url": link_url,
+                            "status": link_status,
+                            "error": link_error,
+                            "source": current_url,
+                            "tag": tag,
+                            "type": "external" if not is_same_domain(link_url, start_url) else "internal",
+                        })
+
+    sys.stderr.write("\n")
+    return results, pages_crawled, link_sources
+
+
+def to_markdown(results, pages_crawled, start_url, link_sources):
+    lines = []
+    lines.append(f"# Broken Link Report: {start_url}")
+    lines.append(f"*{time.strftime('%Y-%m-%d %H:%M:%S')}*\n")
+    lines.append(f"**Pages crawled**: {pages_crawled}")
+    lines.append(f"**Broken links found**: {len(results)}\n")
+
+    if not results:
+        lines.append("No broken links found!\n")
+        return "\n".join(lines)
+
+    # Group by status
+    by_status = defaultdict(list)
+    for r in results:
+        key = r.get("status") or r.get("error", "Unknown")
+        by_status[key].append(r)
+
+    # Summary table
+    lines.append("## Summary\n")
+    lines.append("| Status | Count |")
+    lines.append("|--------|-------|")
+    for status, items in sorted(by_status.items(), key=lambda x: -len(x[1])):
+        lines.append(f"| {status} | {len(items)} |")
+    lines.append("")
+
+    # Detailed results
+    lines.append("## Broken Links\n")
+    lines.append("| URL | Status | Found On | Type |")
+    lines.append("|-----|--------|----------|------|")
+
+    for r in sorted(results, key=lambda x: (x.get("status") or 0, x["url"])):
+        url = r["url"]
+        if len(url) > 80:
+            url = url[:77] + "..."
+        status = r.get("status") or r.get("error", "?")
+        source = r.get("source", "")
+        if source:
+            source_parsed = urlparse(source)
+            source = source_parsed.path or "/"
+        link_type = r.get("type", "?")
+        lines.append(f"| `{url}` | {status} | {source} | {link_type} |")
+    lines.append("")
+
+    # Pages with most broken links
+    source_counts = defaultdict(int)
+    for r in results:
+        if r.get("source"):
+            source_counts[r["source"]] += 1
+    if source_counts:
+        lines.append("## Pages with Most Broken Links\n")
+        lines.append("| Page | Broken Links |")
+        lines.append("|------|-------------|")
+        for page, count in sorted(source_counts.items(), key=lambda x: -x[1])[:10]:
+            parsed = urlparse(page)
+            lines.append(f"| {parsed.path or '/'} | {count} |")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Check a website for broken links")
+    parser.add_argument("url", help="URL to check")
+    parser.add_argument("--depth", type=int, default=2, help="Max crawl depth (default: 2)")
+    parser.add_argument("--external", action="store_true", help="Also check external links")
+    parser.add_argument("--timeout", type=int, default=10, help="Request timeout in seconds")
+    parser.add_argument("--max-pages", type=int, default=200, help="Max pages to crawl")
+    parser.add_argument("--workers", type=int, default=10, help="Concurrent workers")
+    parser.add_argument("--json", action="store_true", help="Output raw JSON")
+    parser.add_argument("--output", "-o", help="Write markdown to file")
+    args = parser.parse_args()
+
+    url = args.url
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    if not HAS_DEPS:
+        sys.stderr.write("Note: requests/beautifulsoup4 not found, using stdlib fallback (slower)\n")
+        sys.stderr.write("Install for better performance: pip install requests beautifulsoup4\n\n")
+
+    start = time.time()
+    results, pages_crawled, link_sources = crawl(
+        url, args.depth, args.external, args.timeout, args.max_pages, args.workers
+    )
+    elapsed = time.time() - start
+
+    if args.json:
+        output = json.dumps({
+            "url": url,
+            "pages_crawled": pages_crawled,
+            "broken_links": results,
+            "elapsed_seconds": round(elapsed, 1),
+        }, indent=2)
+    else:
+        output = to_markdown(results, pages_crawled, url, link_sources)
+        output += f"\n*Completed in {elapsed:.1f}s*\n"
+
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(output)
+        sys.stderr.write(f"Written to {args.output}\n")
+    else:
+        print(output)
+
+
+if __name__ == "__main__":
+    main()
