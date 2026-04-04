@@ -1,0 +1,440 @@
+#!/usr/bin/env python3
+"""
+Web Vitals measurement tool using Playwright + Chrome DevTools Protocol.
+Outputs clean markdown with Core Web Vitals metrics.
+
+Usage:
+    webvitals <url> [options]
+    webvitals https://beta.netwrck.com --runs=3
+"""
+
+import sys
+import os
+import json
+import time
+import argparse
+import statistics
+
+TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Try to find playwright - check common venv locations
+_VENV_SEARCH_PATHS = [
+    os.path.join(TOOLS_DIR, ".venv"),
+    "/nvme0n1-disk/code/netwrck/.venv",
+]
+for _venv in _VENV_SEARCH_PATHS:
+    if os.path.isdir(_venv):
+        _site_packages = os.path.join(_venv, "lib")
+        if os.path.isdir(_site_packages):
+            for _d in os.listdir(_site_packages):
+                _sp = os.path.join(_site_packages, _d, "site-packages")
+                if os.path.isdir(_sp) and _sp not in sys.path:
+                    sys.path.insert(0, _sp)
+            break
+
+
+def measure_vitals(url, viewport_width=1920, viewport_height=1080, timeout_ms=30000, simulate_mobile=False):
+    from playwright.sync_api import sync_playwright
+
+    results = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 375 if simulate_mobile else viewport_width, "height": 812 if simulate_mobile else viewport_height},
+            user_agent="Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36" if simulate_mobile else None,
+            device_scale_factor=2 if simulate_mobile else 1,
+            ignore_https_errors=True,
+        )
+        page = context.new_page()
+
+        cdp = context.new_cdp_session(page)
+        cdp.send("Performance.enable")
+
+        observer_script = """
+        window.__webvitals = {lcp: null, lcp_element: null, lcp_url: null, cls_shifts: [], long_tasks: []};
+        new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+                window.__webvitals.lcp = entry.startTime;
+                window.__webvitals.lcp_element = entry.element ? entry.element.tagName + (entry.element.id ? '#' + entry.element.id : '') + (entry.element.className ? '.' + entry.element.className.toString().split(' ')[0] : '') : null;
+                window.__webvitals.lcp_url = entry.url || null;
+            }
+        }).observe({type: 'largest-contentful-paint', buffered: true});
+        new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+                if (!entry.hadRecentInput) {
+                    window.__webvitals.cls_shifts.push({
+                        time: entry.startTime,
+                        value: entry.value,
+                        sources: entry.sources ? entry.sources.map(s => s.node ? s.node.nodeName || 'unknown' : 'unknown') : []
+                    });
+                }
+            }
+        }).observe({type: 'layout-shift', buffered: true});
+        try {
+            new PerformanceObserver(list => {
+                for (const entry of list.getEntries()) {
+                    window.__webvitals.long_tasks.push({start: entry.startTime, duration: entry.duration});
+                }
+            }).observe({type: 'longtask', buffered: true});
+        } catch(e) {}
+        """
+
+        page.add_init_script(observer_script)
+        page.on("console", lambda msg: None)
+
+        nav_start = time.time()
+        try:
+            page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+        except Exception:
+            try:
+                page.goto(url, wait_until="load", timeout=timeout_ms)
+            except Exception as e:
+                results["error"] = str(e)
+                browser.close()
+                return results
+
+        load_time = time.time() - nav_start
+
+        page.wait_for_timeout(2000)
+
+        timing = page.evaluate("""() => {
+            const wv = window.__webvitals || {};
+            const nav = performance.getEntriesByType('navigation')[0];
+            const paint = performance.getEntriesByType('paint');
+            const fcp = paint.find(e => e.name === 'first-contentful-paint');
+
+            const resources = performance.getEntriesByType('resource').map(r => ({
+                name: r.name,
+                type: r.initiatorType,
+                duration: r.duration,
+                size: r.transferSize || 0,
+                startTime: r.startTime
+            }));
+
+            const cls_shifts = wv.cls_shifts || [];
+            let session_value = 0;
+            let session_entries = [];
+            let max_session = 0;
+            for (const entry of cls_shifts) {
+                if (session_entries.length > 0 && entry.time - session_entries[session_entries.length-1].time < 1000) {
+                    session_value += entry.value;
+                    session_entries.push(entry);
+                } else {
+                    if (session_value > max_session) max_session = session_value;
+                    session_value = entry.value;
+                    session_entries = [entry];
+                }
+            }
+            if (session_value > max_session) max_session = session_value;
+
+            return {
+                ttfb: nav ? nav.responseStart - nav.requestStart : null,
+                fcp: fcp ? fcp.startTime : null,
+                lcp: wv.lcp,
+                lcp_element: wv.lcp_element,
+                lcp_url: wv.lcp_url,
+                cls: max_session,
+                cls_shifts: cls_shifts,
+                dom_interactive: nav ? nav.domInteractive : null,
+                dom_complete: nav ? nav.domComplete : null,
+                load_event: nav ? nav.loadEventEnd : null,
+                redirect_time: nav ? nav.redirectEnd - nav.redirectStart : null,
+                dns_time: nav ? nav.domainLookupEnd - nav.domainLookupStart : null,
+                connect_time: nav ? nav.connectEnd - nav.connectStart : null,
+                ssl_time: nav ? nav.secureConnectionStart > 0 ? nav.connectEnd - nav.secureConnectionStart : 0 : null,
+                transfer_size: nav ? nav.transferSize : null,
+                dom_nodes: document.querySelectorAll('*').length,
+                long_tasks: wv.long_tasks || [],
+                resources: resources,
+                doc_size: document.documentElement.outerHTML.length,
+            }
+        }""")
+
+        inp = page.evaluate("""() => {
+            return new Promise(resolve => {
+                if (!('PerformanceObserver' in window)) {
+                    resolve(null);
+                    return;
+                }
+                let maxDuration = 0;
+                const observer = new PerformanceObserver(list => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.duration > maxDuration) maxDuration = entry.duration;
+                    }
+                });
+                try {
+                    observer.observe({type: 'event', buffered: true});
+                } catch(e) {
+                    resolve(null);
+                    return;
+                }
+                setTimeout(() => {
+                    observer.disconnect();
+                    resolve(maxDuration > 0 ? maxDuration : null);
+                }, 100);
+            });
+        }""")
+
+        results = {
+            "url": url,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "ttfb_ms": round(timing["ttfb"], 1) if timing["ttfb"] else None,
+            "fcp_ms": round(timing["fcp"], 1) if timing["fcp"] else None,
+            "lcp_ms": round(timing["lcp"], 1) if timing["lcp"] else None,
+            "lcp_element": timing.get("lcp_element"),
+            "lcp_url": timing.get("lcp_url"),
+            "cls": round(timing["cls"], 4) if timing["cls"] is not None else 0,
+            "cls_shifts": timing.get("cls_shifts", []),
+            "inp_ms": round(inp, 1) if inp else None,
+            "dom_interactive_ms": round(timing["dom_interactive"], 1) if timing["dom_interactive"] else None,
+            "dom_complete_ms": round(timing["dom_complete"], 1) if timing["dom_complete"] else None,
+            "load_event_ms": round(timing["load_event"], 1) if timing["load_event"] else None,
+            "redirect_ms": round(timing["redirect_time"], 1) if timing["redirect_time"] else None,
+            "dns_ms": round(timing["dns_time"], 1) if timing["dns_time"] else None,
+            "connect_ms": round(timing["connect_time"], 1) if timing["connect_time"] else None,
+            "ssl_ms": round(timing["ssl_time"], 1) if timing["ssl_time"] else None,
+            "transfer_size": timing.get("transfer_size"),
+            "dom_nodes": timing.get("dom_nodes"),
+            "doc_size": timing.get("doc_size"),
+            "long_tasks": timing.get("long_tasks", []),
+            "resources": timing.get("resources", []),
+            "wall_time_s": round(load_time, 2),
+        }
+
+        browser.close()
+
+    return results
+
+
+def rate(metric, value, thresholds):
+    if value is None:
+        return "N/A", "?"
+    good, needs_work = thresholds
+    if value <= good:
+        return "Good", "PASS"
+    elif value <= needs_work:
+        return "Needs Improvement", "WARN"
+    else:
+        return "Poor", "FAIL"
+
+
+def format_bytes(b):
+    if b is None:
+        return "N/A"
+    if b < 1024:
+        return f"{b} B"
+    elif b < 1024 * 1024:
+        return f"{b/1024:.1f} KB"
+    else:
+        return f"{b/(1024*1024):.1f} MB"
+
+
+def to_markdown(results, run_num=None):
+    if "error" in results:
+        return f"## Error\n\n{results['error']}\n"
+
+    lines = []
+    header = f"# Web Vitals: {results['url']}"
+    if run_num:
+        header += f" (Run {run_num})"
+    lines.append(header)
+    lines.append(f"*{results['timestamp']}*\n")
+
+    lcp_rating, lcp_status = rate("lcp", results["lcp_ms"], (2500, 4000))
+    fcp_rating, fcp_status = rate("fcp", results["fcp_ms"], (1800, 3000))
+    cls_rating, cls_status = rate("cls", results["cls"], (0.1, 0.25))
+    inp_rating, inp_status = rate("inp", results["inp_ms"], (200, 500))
+    ttfb_rating, ttfb_status = rate("ttfb", results["ttfb_ms"], (800, 1800))
+
+    all_pass = all(s == "PASS" for s in [lcp_status, cls_status, inp_status] if s != "?")
+    any_fail = any(s == "FAIL" for s in [lcp_status, fcp_status, cls_status, inp_status, ttfb_status])
+
+    if all_pass:
+        lines.append("**Core Web Vitals: PASSED**\n")
+    elif any_fail:
+        lines.append("**Core Web Vitals: FAILED**\n")
+    else:
+        lines.append("**Core Web Vitals: NEEDS WORK**\n")
+
+    lines.append("## Core Web Vitals\n")
+    lines.append("| Metric | Value | Rating | Status |")
+    lines.append("|--------|-------|--------|--------|")
+
+    def fmt_ms(v):
+        if v is None:
+            return "N/A"
+        if v >= 1000:
+            return f"{v/1000:.2f} s"
+        return f"{v:.0f} ms"
+
+    lines.append(f"| **LCP** (Largest Contentful Paint) | {fmt_ms(results['lcp_ms'])} | {lcp_rating} | {lcp_status} |")
+    lines.append(f"| **INP** (Interaction to Next Paint) | {fmt_ms(results['inp_ms'])} | {inp_rating} | {inp_status} |")
+    lines.append(f"| **CLS** (Cumulative Layout Shift) | {results['cls']:.4f} | {cls_rating} | {cls_status} |")
+    lines.append("")
+
+    lines.append("## Other Metrics\n")
+    lines.append("| Metric | Value | Rating | Status |")
+    lines.append("|--------|-------|--------|--------|")
+    lines.append(f"| **FCP** (First Contentful Paint) | {fmt_ms(results['fcp_ms'])} | {fcp_rating} | {fcp_status} |")
+    lines.append(f"| **TTFB** (Time to First Byte) | {fmt_ms(results['ttfb_ms'])} | {ttfb_rating} | {ttfb_status} |")
+    lines.append(f"| DOM Interactive | {fmt_ms(results['dom_interactive_ms'])} | | |")
+    lines.append(f"| DOM Complete | {fmt_ms(results['dom_complete_ms'])} | | |")
+    lines.append(f"| Load Event | {fmt_ms(results['load_event_ms'])} | | |")
+    lines.append(f"| Wall Time | {results['wall_time_s']:.2f} s | | |")
+    lines.append("")
+
+    lines.append("## Connection\n")
+    lines.append("| Phase | Duration |")
+    lines.append("|-------|----------|")
+    lines.append(f"| DNS Lookup | {fmt_ms(results['dns_ms'])} |")
+    lines.append(f"| TCP Connect | {fmt_ms(results['connect_ms'])} |")
+    lines.append(f"| SSL/TLS | {fmt_ms(results['ssl_ms'])} |")
+    lines.append(f"| Redirect | {fmt_ms(results['redirect_ms'])} |")
+    lines.append("")
+
+    lines.append("## Page Stats\n")
+    lines.append(f"- **DOM Nodes**: {results.get('dom_nodes', 'N/A')}")
+    lines.append(f"- **Document Size**: {format_bytes(results.get('doc_size'))}")
+    lines.append(f"- **Transfer Size**: {format_bytes(results.get('transfer_size'))}")
+    lines.append("")
+
+    if results.get("lcp_element"):
+        lines.append("## LCP Element\n")
+        lines.append(f"- **Element**: `{results['lcp_element']}`")
+        if results.get("lcp_url"):
+            lines.append(f"- **URL**: `{results['lcp_url']}`")
+        lines.append("")
+
+    if results.get("cls_shifts"):
+        shifts = [s for s in results["cls_shifts"] if s["value"] > 0.001]
+        if shifts:
+            lines.append("## Layout Shifts\n")
+            lines.append("| Time (ms) | Shift Value | Elements |")
+            lines.append("|-----------|-------------|----------|")
+            for s in shifts[:10]:
+                elements = ", ".join(s.get("sources", [])) or "unknown"
+                lines.append(f"| {s['time']:.0f} | {s['value']:.4f} | {elements} |")
+            lines.append("")
+
+    long_tasks = results.get("long_tasks", [])
+    if long_tasks:
+        lines.append(f"## Long Tasks ({len(long_tasks)})\n")
+        lines.append("| Start (ms) | Duration (ms) |")
+        lines.append("|------------|---------------|")
+        for t in sorted(long_tasks, key=lambda x: -x["duration"])[:10]:
+            lines.append(f"| {t['start']:.0f} | {t['duration']:.0f} |")
+        lines.append("")
+
+    resources = results.get("resources", [])
+    if resources:
+        by_type = {}
+        for r in resources:
+            t = r.get("type", "other")
+            if t not in by_type:
+                by_type[t] = {"count": 0, "size": 0, "duration": 0}
+            by_type[t]["count"] += 1
+            by_type[t]["size"] += r.get("size", 0)
+            by_type[t]["duration"] = max(by_type[t]["duration"], r.get("duration", 0))
+
+        lines.append("## Resources by Type\n")
+        lines.append("| Type | Count | Total Size | Slowest (ms) |")
+        lines.append("|------|-------|------------|--------------|")
+        for t, info in sorted(by_type.items(), key=lambda x: -x[1]["size"]):
+            lines.append(f"| {t} | {info['count']} | {format_bytes(info['size'])} | {info['duration']:.0f} |")
+        lines.append("")
+
+        slow = sorted(resources, key=lambda x: -x.get("duration", 0))[:5]
+        if slow:
+            lines.append("## Slowest Resources\n")
+            lines.append("| Resource | Duration (ms) | Size |")
+            lines.append("|----------|---------------|------|")
+            for r in slow:
+                name = r["name"].split("?")[0].split("/")[-1] or r["name"][:60]
+                lines.append(f"| `{name}` | {r['duration']:.0f} | {format_bytes(r.get('size', 0))} |")
+            lines.append("")
+
+    return "\n".join(lines)
+
+
+def to_markdown_summary(all_results):
+    lines = []
+    lines.append(f"# Web Vitals Summary ({len(all_results)} runs)\n")
+    lines.append(f"**URL**: {all_results[0]['url']}\n")
+
+    def avg(key):
+        vals = [r[key] for r in all_results if r.get(key) is not None]
+        return round(statistics.mean(vals), 1) if vals else None
+
+    def med(key):
+        vals = [r[key] for r in all_results if r.get(key) is not None]
+        return round(statistics.median(vals), 1) if vals else None
+
+    def fmt_ms(v):
+        if v is None:
+            return "N/A"
+        if v >= 1000:
+            return f"{v/1000:.2f} s"
+        return f"{v:.0f} ms"
+
+    cls_vals = [r["cls"] for r in all_results if r.get("cls") is not None]
+    avg_cls = round(statistics.mean(cls_vals), 4) if cls_vals else None
+    med_cls = round(statistics.median(cls_vals), 4) if cls_vals else None
+
+    lines.append("| Metric | Median | Average |")
+    lines.append("|--------|--------|---------|")
+    lines.append(f"| **LCP** | {fmt_ms(med('lcp_ms'))} | {fmt_ms(avg('lcp_ms'))} |")
+    lines.append(f"| **INP** | {fmt_ms(med('inp_ms'))} | {fmt_ms(avg('inp_ms'))} |")
+    lines.append(f"| **CLS** | {med_cls} | {avg_cls} |")
+    lines.append(f"| **FCP** | {fmt_ms(med('fcp_ms'))} | {fmt_ms(avg('fcp_ms'))} |")
+    lines.append(f"| **TTFB** | {fmt_ms(med('ttfb_ms'))} | {fmt_ms(avg('ttfb_ms'))} |")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Measure Core Web Vitals for a URL")
+    parser.add_argument("url", help="URL to measure")
+    parser.add_argument("--runs", type=int, default=1, help="Number of runs (default: 1)")
+    parser.add_argument("--mobile", action="store_true", help="Simulate mobile viewport")
+    parser.add_argument("--json", action="store_true", help="Output raw JSON")
+    parser.add_argument("--output", "-o", help="Write markdown to file")
+    parser.add_argument("--width", type=int, default=1920, help="Viewport width")
+    parser.add_argument("--height", type=int, default=1080, help="Viewport height")
+    parser.add_argument("--timeout", type=int, default=30000, help="Navigation timeout ms")
+    args = parser.parse_args()
+
+    url = args.url
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    all_results = []
+    for i in range(args.runs):
+        if args.runs > 1:
+            sys.stderr.write(f"Run {i+1}/{args.runs}...\n")
+        r = measure_vitals(url, args.width, args.height, args.timeout, args.mobile)
+        all_results.append(r)
+
+    if args.json:
+        print(json.dumps(all_results if args.runs > 1 else all_results[0], indent=2))
+        return
+
+    output = ""
+    if args.runs > 1:
+        output = to_markdown_summary(all_results)
+        for i, r in enumerate(all_results):
+            output += "\n---\n\n" + to_markdown(r, i + 1)
+    else:
+        output = to_markdown(all_results[0])
+
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(output)
+        sys.stderr.write(f"Written to {args.output}\n")
+    else:
+        print(output)
+
+
+if __name__ == "__main__":
+    main()
