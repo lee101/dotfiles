@@ -1,0 +1,36 @@
+# Force LF line endings for all shell scripts and sourceable files
+# Prevents CRLF breakage on Windows Git Bash (core.autocrlf=true)
+*.sh        text eol=lf
+*.bash      text eol=lf
+*.zsh       text eol=lf
+
+# Shell config files (no extension)
+bashrc      text eol=lf
+bash_profile text eol=lf
+zshrc       text eol=lf
+zshenv      text eol=lf
+oldzshrc    text eol=lf
+wslbashrc   text eol=lf
+wslbashrc.sh text eol=lf
+vimrc       text eol=lf
+vimrc.bak   text eol=lf
+irbrc       text eol=lf
+hgrc        text eol=lf
+tmux.conf   text eol=lf
+gitconfig   text eol=lf
+gitconfig.windows text eol=lf
+
+# Lib files (sourced shell scripts without extensions)
+lib/*       text eol=lf
+
+# Lua config
+*.lua       text eol=lf
+
+# Windows-specific files get CRLF
+*.ps1       text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# Markdown and docs - auto
+*.md        text
+*.json      text
