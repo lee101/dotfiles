@@ -19,6 +19,14 @@ detect_platform() {
 
 PLATFORM=$(detect_platform)
 
+# Interactive shells may define aliases that share names with helpers below.
+# Clear the known collisions before the function definitions are parsed so
+# alias expansion cannot break or silently rewrite them.
+for _cross_platform_alias in compress reswap; do
+    builtin unalias "$_cross_platform_alias" 2>/dev/null || true
+done
+unset _cross_platform_alias
+
 # Retrieve sudo password from current env or ~/.secretbashrc
 _get_sudo_password() {
     if [ -n "${MAC_PW:-}" ]; then
