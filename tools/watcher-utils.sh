@@ -90,10 +90,4 @@ export -f watcher_monitor
 export -f watcher_increase
 export -f watcher_dirs
 
-echo "File watcher utilities loaded. Commands:"
-echo "  ws / watcher_status   - Check current watcher usage"
-echo "  wclean / watcher_cleanup - Clean up excessive watchers"
-echo "  wr / watcher_reset    - Reset ALL watchers (aggressive)"
-echo "  wm / watcher_monitor  - Monitor usage in real-time"
-echo "  wi / watcher_increase - Increase limits (requires sudo)"
-echo "  wd / watcher_dirs     - Show watched directories"
+# Silently loaded - run 'watcher_status' or 'ws' for help
