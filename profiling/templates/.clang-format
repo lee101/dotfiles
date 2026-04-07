@@ -1,0 +1,19 @@
+---
+# Conservative clang-format config tuned for the stock-prediction C/CUDA code.
+# Enforces 4-space indent, K&R braces, 100-col limit. Won't reflow comments.
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Linux
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+PointerAlignment: Left
+SpaceAfterCStyleCast: false
+ReflowComments: false
+SortIncludes: false
+IncludeBlocks: Preserve
+AlignTrailingComments: true
+AlwaysBreakAfterReturnType: None
+Cpp11BracedListStyle: true

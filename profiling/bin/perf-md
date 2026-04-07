@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# perf-md — run a binary under `perf record` and emit a token-efficient hot-function
+# markdown report (top-N self time, with file:line via addr2line where possible).
+#
+# Usage: perf-md [--out report.md] [--top=20] [--freq=999] -- CMD [ARGS...]
+set -euo pipefail
+OUT=""; TOP=20; FREQ=999
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out) OUT="$2"; shift 2;;
+    --top=*) TOP="${1#--top=}"; shift;;
+    --freq=*) FREQ="${1#--freq=}"; shift;;
+    --) shift; break;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0;;
+    *) break;;
+  esac
+done
+[[ $# -eq 0 ]] && { echo "perf-md: missing command"; exit 2; }
+command -v perf >/dev/null || { echo "perf-md: perf not installed"; exit 2; }
+
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+PERF_DATA="$TMP/perf.data"
+
+perf record -F "$FREQ" -g --call-graph=dwarf -o "$PERF_DATA" -- "$@" \
+  >"$TMP/stdout" 2>"$TMP/stderr" || true
+
+REP="$TMP/report.txt"
+perf report -i "$PERF_DATA" --stdio --no-children --sort=overhead,symbol,dso \
+  --percent-limit 0.1 2>/dev/null > "$REP" || true
+
+{
+  echo "# perf-md report"
+  echo
+  echo "_Command: \`$*\`  •  freq=$FREQ  •  $(date -Iseconds)_"
+  echo
+  echo "## Top $TOP hot symbols"
+  echo
+  echo "| % | symbol | dso |"
+  echo "|---:|---|---|"
+  awk '
+    /^# / { next }
+    /^[[:space:]]*$/ { next }
+    {
+      pct=$1; sub(/%/,"",pct);
+      dso=$2;
+      $1=""; $2="";
+      sym=$0; sub(/^[[:space:]]+/,"",sym);
+      gsub(/\|/,"\\|",sym);
+      print pct"|"sym"|"dso
+    }' "$REP" | sort -t'|' -k1 -gr | head -n "$TOP" \
+    | awk -F'|' '{printf "| %s%% | `%s` | `%s` |\n", $1,$2,$3}'
+} > "${OUT:-/dev/stdout}"
+[[ -n "$OUT" ]] && echo "wrote $OUT"

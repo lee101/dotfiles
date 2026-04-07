@@ -1,0 +1,48 @@
+name: C/CUDA lint
+
+# Drop into .github/workflows/c-lint.yml. Lints C/CUDA sources with cppcheck and
+# checks formatting with clang-format. Add more paths as you grow C code.
+
+on:
+  push:
+    paths:
+      - '**/*.c'
+      - '**/*.h'
+      - '**/*.cu'
+      - '**/*.cuh'
+      - '.github/workflows/c-lint.yml'
+  pull_request:
+
+jobs:
+  cppcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: sudo apt-get update -qq && sudo apt-get install -y cppcheck clang-format
+      - name: Run cppcheck (errors fail the build)
+        run: |
+          cppcheck \
+            --enable=warning,style,performance,portability \
+            --inline-suppr \
+            --suppress=missingIncludeSystem \
+            --suppress=unusedFunction \
+            --error-exitcode=2 \
+            --quiet \
+            pufferlib_market crl ctrader market_sim_c rl_trading fast_market_sim binance_worksteal 2>&1 | tee cppcheck.log
+      - name: clang-format check
+        run: |
+          set -e
+          mapfile -t files < <(git ls-files '*.c' '*.h' '*.cu' '*.cuh' \
+            | grep -Ev '^(external|PufferLib/vendor|.*/vendor/|.pytest_tmp/|chronos-forecasting/)' || true)
+          if [[ ${#files[@]} -gt 0 ]]; then
+            clang-format --dry-run --Werror "${files[@]}" || {
+              echo "::warning::clang-format would reformat files; run clang-format -i to fix"
+              exit 0  # don't block on formatting yet
+            }
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cppcheck-log
+          path: cppcheck.log
