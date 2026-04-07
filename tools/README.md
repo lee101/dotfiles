@@ -30,6 +30,7 @@ cldperf profile [path]   # Profile code and identify bottlenecks
 cldperf optimize [path]  # Get optimization suggestions (--fix to apply)
 cldperf benchmark        # Run and analyze benchmarks
 cldperf memory           # Analyze memory usage and leaks
+cldperf native -- <cmd>  # Run callgrind + massif and emit a Markdown native report
 cldperf gpu -- <cmd>     # Run Nsight Systems and emit a Markdown CUDA report
 cldperf cuda -- <cmd>    # Alias for gpu
 ```
@@ -87,6 +88,24 @@ If you pass `--out` and omit `--prefix`, the profiler artifacts default to the s
 If you pass `--latest-link`, the tool also updates sibling `.nsys-rep` and `.sqlite` latest pointers.
 Use `--report api|kernels|transfers` to limit which sections are collected and rendered; policy flags automatically pull in the sections they need.
 Use `--timeout` and `--stats-timeout` to keep stuck profile or summary runs from hanging forever.
+
+### 🧵 native-prof-report - Native CPU/Heap Markdown Report
+Runs a native command under `callgrind` and `massif`, then emits a compact Markdown report with:
+- top CPU hotspots by instruction count
+- peak heap consumers by allocation stack
+- optional line-level CPU attribution for selected source files
+
+**Usage:**
+```bash
+native-prof-report -- ./build/app --flag value
+native-prof-report --source-file src/foo.cpp -- ./build/app
+native-prof-report --out native-report.md --prefix /tmp/native-run -- ./build/app
+cldperf native -- ./build/app
+```
+
+Notes:
+- line-level CPU attribution requires debug info, so prefer a `RelWithDebInfo` or dedicated profiling build
+- exact per-line heap attribution is not available here; use the reported peak allocation stacks instead
 
 ### 🤖 cldpr - Pull Request Creator
 Creates well-structured pull requests with AI-generated summaries.
