@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# c-inspect — produce an agent-friendly markdown index of a C/CUDA source tree.
+# For each source file, lists: line count, top-level functions (name + line),
+# struct/typedef definitions, and TODO/FIXME markers. Designed to be cheap on
+# tokens so an agent can decide which file:line to read next.
+#
+# Usage: c-inspect [--out report.md] PATH [PATH...]
+set -uo pipefail
+OUT=""
+PATHS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out) OUT="$2"; shift 2;;
+    -h|--help) sed -n '2,9p' "$0"; exit 0;;
+    *) PATHS+=("$1"); shift;;
+  esac
+done
+[[ ${#PATHS[@]} -eq 0 ]] && { echo "c-inspect: need a path"; exit 2; }
+
+emit() {
+  echo "# C source map"
+  echo
+  echo "_Generated $(date -Iseconds)_"
+  echo
+  while IFS= read -r f; do
+    [[ -f "$f" ]] || continue
+    lines=$(wc -l <"$f")
+    echo "## \`$f\` ($lines lines)"
+    echo
+    # Functions: lines that look like a definition opening brace at column 0,
+    # excluding control-flow keywords.
+    grep -nE '^[A-Za-z_].*\)[[:space:]]*\{[[:space:]]*$' "$f" 2>/dev/null \
+      | grep -vE '\b(if|for|while|switch|else|return)\b' \
+      | head -50 \
+      | awk -F: '{
+          ln=$1; sub(/^[^:]*:/, "", $0);
+          sig=$0; sub(/[[:space:]]*\{[[:space:]]*$/, "", sig);
+          if (length(sig) > 100) sig = substr(sig,1,100) "…";
+          printf "- L%s — `%s`\n", ln, sig
+        }'
+    # Structs / typedefs.
+    grep -nE '^(typedef[[:space:]]+struct|struct)[[:space:]]+[A-Za-z_]' "$f" 2>/dev/null \
+      | head -20 \
+      | awk -F: '{
+          ln=$1; sub(/^[^:]*:/, "", $0);
+          sig=$0; if (length(sig) > 80) sig = substr(sig,1,80) "…";
+          printf "- L%s — *type* `%s`\n", ln, sig
+        }'
+    # TODO / FIXME / HACK.
+    grep -nE 'TODO|FIXME|XXX|HACK' "$f" 2>/dev/null \
+      | head -20 \
+      | awk -F: '{
+          ln=$1; sub(/^[^:]*:/, "", $0);
+          msg=$0; sub(/^[[:space:]]*\/\*?[[:space:]]*/, "", msg);
+          if (length(msg) > 100) msg = substr(msg,1,100) "…";
+          printf "- L%s — ⚠ %s\n", ln, msg
+        }'
+    echo
+  done < <(find "${PATHS[@]}" -type f \( -name '*.c' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' -o -name '*.cpp' -o -name '*.hpp' \) -not -path '*/.venv*' -not -path '*/build/*' -not -path '*/vendor/*' -not -path '*/external/*' | sort)
+}
+
+if [[ -n "$OUT" ]]; then emit > "$OUT"; echo "wrote $OUT"; else emit; fi
