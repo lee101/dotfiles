@@ -1,10 +1,7 @@
 #!/bin/bash
-# ============================================================
-# Bash Configuration - Lee's dotfiles
-# ============================================================
-# This file contains bash-specific config. Shared aliases, functions,
 # and environment variables live in lib/common_shell.
-
+alias clinst='curl -fsSL https://claude.ai/install.sh | bash'
+alias cinst='npm install -g @openai/codex@latest'
 # Startup timing - set DEBUG_STARTUP=1 to enable
 [ -n "$DEBUG_STARTUP" ] && echo "Bashrc start: $(date +%s.%N)"
 
@@ -166,10 +163,16 @@ ali()  { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
 alis() { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
 
 gali() {
-    [ $# -eq 0 ] && { echo "Usage: gali alias_name='command'"; return 1; }
-    echo "alias $@" >> $HOME/.bashrc
-    source $HOME/.bashrc
-    echo "Alias added: $@"
+    [ $# -eq 0 ] && { echo "Usage: gali name='command'"; return 1; }
+    local def="$*"
+    local name="${def%%=*}"
+    [[ "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]] || { echo "Invalid alias name: $name"; return 1; }
+    [[ "$def" == *=* ]] || { echo "Missing '=' — usage: gali name='command'"; return 1; }
+    local val="${def#*=}"
+    eval "alias $def" 2>/dev/null || { echo "Invalid alias: $def"; return 1; }
+    echo "alias $def" >> "$HOME/.bashrc"
+    source "$HOME/.bashrc"
+    echo "Added & loaded: alias $def"
 }
 
 eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
@@ -288,5 +291,5 @@ algrp() {
 
 # opencode
 export PATH=/home/lee/.opencode/bin:$PATH
+. "$HOME/.cargo/env"
 export PATH="/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d:$PATH"
-

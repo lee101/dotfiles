@@ -46,7 +46,17 @@ export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0
 # ============================================================
 # Go
 export GOPATH=$HOME/go
-[ -d "/usr/local/go/bin" ] && export GOROOT=/usr/local/go
+if [ -d "/usr/local/go/bin" ]; then
+    export GOROOT=/usr/local/go
+elif [ -d "/usr/local/Cellar/go" ]; then
+    # Homebrew on macOS (Intel)
+    GOROOT_CANDIDATE=$(ls -d /usr/local/Cellar/go/*/libexec 2>/dev/null | tail -1)
+    [ -n "$GOROOT_CANDIDATE" ] && export GOROOT="$GOROOT_CANDIDATE"
+elif [ -d "/opt/homebrew/Cellar/go" ]; then
+    # Homebrew on macOS (Apple Silicon)
+    GOROOT_CANDIDATE=$(ls -d /opt/homebrew/Cellar/go/*/libexec 2>/dev/null | tail -1)
+    [ -n "$GOROOT_CANDIDATE" ] && export GOROOT="$GOROOT_CANDIDATE"
+fi
 [ -n "$GOROOT" ] && [[ ":$PATH:" != *":$GOROOT/bin:"* ]] && export PATH="$GOROOT/bin:$PATH"
 [[ ":$PATH:" != *":$GOPATH/bin:"* ]] && export PATH="$PATH:$GOPATH/bin"
 
@@ -401,6 +411,7 @@ alias jrv='jj resolve'
 # ============================================================
 # Git functions
 # ============================================================
+function findn { find . -name "$@"; }
 __auto_commit_message_from_diff() {
     local vcs="$1"
     shift
@@ -493,8 +504,6 @@ __jj_auto_commit_message() {
     printf '\n'
     jj diff --git 2>/dev/null || jj diff 2>/dev/null
 }
-
-findn() { find . -name "$@"; }
 
 gi() {
     [ "$#" -eq 0 ] && return 0
@@ -690,6 +699,7 @@ alias cldf='cld --continue --fork-session'
 alias cldr='cld --resume'
 alias cldp='cld --print'
 alias cldd='claude --dangerously-skip-permissions'
+alias clds='claude --dangerously-skip-permissions --model sonnet'
 
 alias cr='claude-review'
 alias creview='claude-review'
@@ -795,7 +805,15 @@ cxn() {
 
 cxm() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=medium "$@"
+        "$CODEX_LOCAL" --yolo3 --config model=gpt-5.4-mini "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxim() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 --config model=gpt-5.4-mini --auto-next-idea "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -1053,7 +1071,7 @@ cldgdf() {
 # ============================================================
 # System aliases
 # ============================================================
-alias reswap='sudo swapoff -a && sudo swapon -a'
+# reswap defined in cross_platform_utils
 alias monoff='sleep 1; xset dpms force off'
 alias usage='du -sh .[!.]* * | sort -h'
 alias usag='du -sh * * | sort -h'
@@ -1252,11 +1270,11 @@ else
 fi
 
 # ============================================================
-# Pyenv
+# Pyenv (zsh inits before oh-my-zsh; bash needs it here)
 # ============================================================
 export PYENV_ROOT="$HOME/.pyenv"
 [ -d "$PYENV_ROOT/bin" ] && export PATH="$PYENV_ROOT/bin:$PATH"
-if [ -d "$PYENV_ROOT" ] && command -v pyenv >/dev/null 2>&1; then
+if [ -z "$ZSH_VERSION" ] && [ -d "$PYENV_ROOT" ] && command -v pyenv >/dev/null 2>&1; then
     eval "$(pyenv init --path)"
 fi
 
@@ -1316,9 +1334,9 @@ else
 fi
 
 # ============================================================
-# Bun completions
+# Bun completions (zsh only — _bun uses #compdef syntax)
 # ============================================================
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+[ -n "$ZSH_VERSION" ] && [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # Nix
 [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ] && . "$HOME/.nix-profile/etc/profile.d/nix.sh"
