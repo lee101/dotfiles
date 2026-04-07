@@ -213,6 +213,45 @@ All tools are already in this directory. To use them system-wide:
 - `setup_chrome_profile.sh` - Setup Chrome profiles
 - `simple_chrome_backup.sh` - Simple Chrome backup utility
 
+### :globe_with_meridians: webvitals - Core Web Vitals Measurement
+Measures Core Web Vitals (LCP, CLS, INP, FCP, TTFB) using Playwright + Chrome DevTools Protocol.
+
+**Usage:**
+```bash
+webvitals <url>                    # Measure web vitals
+webvitals https://example.com --runs=3    # Average over 3 runs
+webvitals https://example.com --mobile    # Simulate mobile viewport
+webvitals https://example.com --json      # Output raw JSON
+```
+
+**Features:**
+- Largest Contentful Paint (LCP) with element identification
+- Cumulative Layout Shift (CLS) with source detection
+- Interaction to Next Paint (INP) measurement
+- Resource waterfall and long task analysis
+- Connection timing breakdown (DNS, TCP, SSL)
+- Multi-run averaging and statistics
+
+**Requirements:** `playwright` Python package + Chromium
+
+### :link: blc - Broken Link Checker
+Crawls a website and reports broken links with clean markdown output.
+
+**Usage:**
+```bash
+blc <url>                          # Check for broken links (depth 2)
+blc https://example.com --depth=3  # Crawl deeper
+blc https://example.com --external # Also check external links
+blc https://example.com --json     # Output raw JSON
+```
+
+**Features:**
+- Concurrent link checking with configurable workers
+- Internal and external link checking
+- Grouped results by status code
+- Pages-with-most-broken-links summary
+- Works with stdlib only (optional requests/beautifulsoup4 for speed)
+
 ### Additional Tools
 - `dustg` - Git-aware disk usage analyzer (respects .gitignore)
 - `curls` - Simple curl wrapper

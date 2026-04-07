@@ -19,6 +19,14 @@ detect_platform() {
 
 PLATFORM=$(detect_platform)
 
+# Interactive shells may define aliases that share names with helpers below.
+# Clear the known collisions before the function definitions are parsed so
+# alias expansion cannot break or silently rewrite them.
+for _cross_platform_alias in compress reswap; do
+    builtin unalias "$_cross_platform_alias" 2>/dev/null || true
+done
+unset _cross_platform_alias
+
 # Retrieve sudo password from current env or ~/.secretbashrc
 _get_sudo_password() {
     if [ -n "${MAC_PW:-}" ]; then
@@ -495,6 +503,39 @@ mem_info() {
             ;;
         Git|Cygwin|MinGw)
             wmic OS get TotalVisibleMemorySize,FreePhysicalMemory
+            ;;
+    esac
+}
+
+# Swap/memory reset (cross-platform)
+reswap() {
+    case "$PLATFORM" in
+        Mac)
+            echo "Purging disk cache and reclaiming memory..."
+            sudo_run purge
+            echo "Memory purge complete. macOS manages swap automatically."
+            vm_stat | head -8
+            ;;
+        Linux)
+            if command -v swapoff >/dev/null 2>&1; then
+                echo "Resetting swap..."
+                sudo_run swapoff -a && sudo_run swapon -a
+                echo "Swap reset complete."
+                free -h | grep -i swap
+            else
+                echo "swapoff not available. Try: sudo sysctl vm.drop_caches=3"
+            fi
+            ;;
+        Git|Cygwin|MinGw)
+            echo "Clearing standby memory..."
+            powershell.exe -command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue; [System.GC]::Collect()"
+            echo "Note: Windows swap (pagefile) reset requires a reboot or:"
+            echo "  1. Control Panel > System > Advanced > Performance > Virtual Memory"
+            echo "  2. Set to 'No paging file', reboot, then re-enable"
+            ;;
+        *)
+            echo "Unsupported platform: $PLATFORM"
+            return 1
             ;;
     esac
 }
