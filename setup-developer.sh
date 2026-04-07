@@ -457,6 +457,7 @@ main() {
     g++ \
     make \
     cmake \
+    ccache \
     pkg-config \
     curl \
     wget \
@@ -483,6 +484,8 @@ main() {
     ripgrep \
     fd-find \
     fzf \
+    valgrind \
+    linux-perf \
     bat \
     direnv \
     zsh \
