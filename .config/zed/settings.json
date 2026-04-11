@@ -11,6 +11,7 @@
     "model_parameters": []
   },
   "base_keymap": "JetBrains",
+  "restore_on_startup": "last_session",
   "buffer_font_family": "DejaVu Sans Mono",
   "buffer_font_features": {
     "calt": 0
