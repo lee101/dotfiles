@@ -3,13 +3,31 @@
 """
 Link all the files from the current dir to the homedir as dotfiles.
 
-Works only on Unix-like operating systems that support symlinks (obviously)
+Works on Unix-like operating systems and Windows (falls back to copying
+when symlinks require elevated privileges).
 """
 
 import os
+import platform
+import shutil
 from fnmatch import fnmatch
 from shutil import rmtree
 from optparse import OptionParser
+
+
+def create_link(source, destination):
+    """Create a symlink, falling back to copy on Windows if symlinks need admin."""
+    try:
+        os.symlink(source, destination)
+    except OSError:
+        if platform.system() == 'Windows' or os.name == 'nt':
+            if os.path.isdir(source):
+                shutil.copytree(source, destination)
+            else:
+                shutil.copy2(source, destination)
+            print('  (copied - symlinks require admin or Developer Mode on Windows)')
+        else:
+            raise
 
 # Parse commmandline options
 parser = OptionParser()
@@ -52,7 +70,7 @@ for filename in files:
             continue
 
     print('Creating a link to %s at %s.' % (source, destination))
-    os.symlink(source, destination)
+    create_link(source, destination)
 
 print('Done.')
 
@@ -82,7 +100,7 @@ if os.path.exists(lib_source):
                     continue
             
             print('Creating a link to %s at %s.' % (source, destination))
-            os.symlink(source, destination)
+            create_link(source, destination)
 
 # Handle Neovim configuration separately
 nvim_source_init = os.path.join(cwd, 'init.lua')
@@ -111,7 +129,7 @@ if os.path.exists(nvim_source_init) or os.path.exists(nvim_source_lua):
         
         if not os.path.lexists(nvim_dest_init):
             print('Creating link %s -> %s' % (nvim_source_init, nvim_dest_init))
-            os.symlink(nvim_source_init, nvim_dest_init)
+            create_link(nvim_source_init, nvim_dest_init)
     
     # Link lua directory
     if os.path.exists(nvim_source_lua):
@@ -131,7 +149,7 @@ if os.path.exists(nvim_source_init) or os.path.exists(nvim_source_lua):
         
         if not os.path.lexists(nvim_dest_lua):
             print('Creating link %s -> %s' % (nvim_source_lua, nvim_dest_lua))
-            os.symlink(nvim_source_lua, nvim_dest_lua)
+            create_link(nvim_source_lua, nvim_dest_lua)
 
 # Also link .config files
 config_source = os.path.join(cwd, '.config')
@@ -175,7 +193,7 @@ if os.path.exists(config_source):
                         continue
                         
             print('Creating link %s -> %s' % (src, dst))
-            os.symlink(src, dst)
+            create_link(src, dst)
 
 # Link Windows-specific gitconfig on Windows only
 import platform
@@ -194,7 +212,7 @@ if platform.system() == 'Windows' or os.name == 'nt':
                 print('Not overwriting %s since it exists and force (-f) is not in effect' % destination)
         if not os.path.lexists(destination):
             print('Creating a link to %s at %s.' % (win_gitconfig, destination))
-            os.symlink(win_gitconfig, destination)
+            create_link(win_gitconfig, destination)
 
 # Link .codex directory contents for Codex CLI configuration
 codex_source = os.path.join(cwd, '.codex')
@@ -228,4 +246,4 @@ if os.path.exists(codex_source):
                         continue
 
             print('Creating link %s -> %s' % (src, dst))
-            os.symlink(src, dst)
+            create_link(src, dst)

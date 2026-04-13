@@ -25,3 +25,4 @@ bin/setup-ssh-keys.sh
 
 # Screenshots directory
 screenshots/
+gitconfig.remote
