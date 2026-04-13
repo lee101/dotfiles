@@ -852,8 +852,20 @@ function cxa() {
 alias cxf='codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto'
 
 function cld {
-  ANTHROPIC_API_KEY="" 
-  bun run "$(which claude)" --dangerously-skip-permissions "$@"
+  ANTHROPIC_API_KEY=""
+  # On Windows, `which claude` returns an npm shell wrapper that bun can't parse.
+  # Resolve the actual JS entry point from the wrapper script.
+  local claude_bin
+  claude_bin="$(which claude)"
+  if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    local npm_prefix
+    npm_prefix="$(dirname "$claude_bin")"
+    local cli_js="$npm_prefix/node_modules/@anthropic-ai/claude-code/cli.js"
+    if [ -f "$cli_js" ]; then
+      claude_bin="$cli_js"
+    fi
+  fi
+  bun run "$claude_bin" --dangerously-skip-permissions "$@"
 }
 
 function codex_wrapper {
