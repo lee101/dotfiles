@@ -28,6 +28,15 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+-- Compatibility shim: override deprecated helper so older plugins (e.g. pinned
+-- nvim-cmp) don't emit the 0.12 deprecation warning on startup.
+vim.tbl_add_reverse_lookup = function(o)
+  for k, v in pairs(o) do
+    o[v] = k
+  end
+  return o
+end
+
 -- Suppress specific error messages globally
 local orig_vim_schedule = vim.schedule
 vim.schedule = function(fn)
@@ -274,17 +283,16 @@ require("lazy").setup({
     },
     {
       "neovim/nvim-lspconfig", -- LSP configuration
-      tag = "v0.1.6", -- Stable tag compatible with nvim 0.9.4
       event = "BufReadPre", -- Lazy load on file open
       dependencies = {
-        { "williamboman/mason.nvim", tag = "v1.8.0" },
-        { "williamboman/mason-lspconfig.nvim", tag = "v1.24.0" },
-        { "hrsh7th/nvim-cmp", tag = "v0.0.1" },
-        { "hrsh7th/cmp-nvim-lsp", commit = "44b16d11215dce86f253ce0c30949813c0a90765" },
-        { "hrsh7th/cmp-buffer", commit = "3022dbc9166796b644a841a02de8dd1cc1d311fa" },
-        { "hrsh7th/cmp-path", commit = "91ff86cd9c29299a64f968ebb45846c485725f23" },
-        { "L3MON4D3/LuaSnip", tag = "v2.1.0" },
-        { "saadparwaiz1/cmp_luasnip", commit = "05a9ab28b53f71d1aece421ef32fee2cb857a843" },
+        "williamboman/mason.nvim",
+        "williamboman/mason-lspconfig.nvim",
+        "hrsh7th/nvim-cmp",
+        "hrsh7th/cmp-nvim-lsp",
+        "hrsh7th/cmp-buffer",
+        "hrsh7th/cmp-path",
+        "L3MON4D3/LuaSnip",
+        "saadparwaiz1/cmp_luasnip",
       },
       config = function()
         -- Enhanced mason setup for Windows
@@ -921,7 +929,7 @@ require("lazy").setup({
       end
     },
     {
-      "ggandor/leap.nvim",
+      url = "https://codeberg.org/andyg/leap.nvim",
       dependencies = { "tpope/vim-repeat" },
       config = function()
         -- Use new mapping API (add_default_mappings deprecated)
@@ -935,6 +943,22 @@ require("lazy").setup({
       config = function()
         require("numb").setup()
       end
+    },
+    {
+      "supermaven-inc/supermaven-nvim",
+      event = "InsertEnter",
+      config = function()
+        require("supermaven-nvim").setup({
+          -- Use Ctrl-y to accept so we don't clash with <Tab> (Copilot-era muscle memory)
+          keymaps = {
+            accept_suggestion = "<C-y>",
+            clear_suggestion = "<C-]>",
+            accept_word = "<C-l>",
+          },
+          ignore_filetypes = { TelescopePrompt = true, ["fzf-lua"] = true },
+          color = { suggestion_color = "#808080", cterm = 244 },
+        })
+      end,
     },
     {
       "hrsh7th/nvim-cmp",
