@@ -85,6 +85,10 @@ vim.opt.smartcase = true
 vim.opt.hidden = false
 vim.opt.laststatus = 2
 
+-- Trim chatty startup messages so stray warnings (e.g. terminal DSR timeout)
+-- don't trip the "Press ENTER" prompt.
+vim.opt.shortmess:append("IWc")
+
 -- Auto-reload settings for external file changes
 vim.opt.autoread = true  -- Automatically read file when changed outside of vim
 
