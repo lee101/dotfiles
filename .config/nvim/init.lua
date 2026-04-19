@@ -949,18 +949,13 @@ require("lazy").setup({
       end
     },
     {
-      "supermaven-inc/supermaven-nvim",
+      dir = "/nvme0n1-disk/code/text-generator-nvim",
+      name = "text-generator-nvim",
       event = "InsertEnter",
       config = function()
-        require("supermaven-nvim").setup({
-          -- Use Ctrl-y to accept so we don't clash with <Tab> (Copilot-era muscle memory)
-          keymaps = {
-            accept_suggestion = "<C-y>",
-            clear_suggestion = "<C-]>",
-            accept_word = "<C-l>",
-          },
-          ignore_filetypes = { TelescopePrompt = true, ["fzf-lua"] = true },
-          color = { suggestion_color = "#808080", cterm = 244 },
+        require("text-generator").setup({
+          min_probability = 0.4,
+          max_tokens = 48,
         })
       end,
     },
