@@ -12,7 +12,8 @@ to `file:line` instead of paging through 20MB of perf/ncu output.
 | `valgrind-md` | valgrind memcheck/helgrind/drd (XML mode) | unique errors with deepest user frame |
 | `perf-md` | `perf record` + `perf report` | top-N hot symbols, sorted by self-overhead |
 | `ncu-md` | Nsight Compute | per-kernel SM%, mem%, occupancy, regs, smem |
-| `nsys-md` | Nsight Systems | top kernels and memcpys by total time |
+| `nsys-md` | Nsight Systems | top kernels, memcpys, and NVTX ranges by total time |
+| `profile-md` | saved `.nsys-rep` / `.ncu-rep` / `trtexec` logs | markdown analysis of offline profiler artifacts |
 | `cuda-sanitize-md` | compute-sanitizer | per-error stacks, ERROR SUMMARY line |
 | `asan-build` | clang ASan + UBSan | quick triage runner for single-file C |
 | `c-inspect` | `find` + `awk` | source-tree map: per-file functions, types, TODOs |
@@ -56,7 +57,17 @@ perf-md --out /tmp/perf.md -- ./pufferlib_market/build/bench
 ncu-md --out /tmp/ncu.md --kernels '.*kernel.*' -- ./build/cuda_bench
 nsys-md --out /tmp/nsys.md -- ./build/cuda_bench
 cuda-sanitize-md --out /tmp/cs.md -- ./build/cuda_bench
+
+# 6. Offline analysis of saved profiler artifacts
+profile-md /tmp/e2e_profile.nsys-rep
+profile-md /tmp/attn_profile.ncu-rep
+profile-md /tmp/trtexec.log --out /tmp/trtexec.md
 ```
+
+The Nsight Systems markdown now includes:
+- an executive summary,
+- a bottleneck ranking across CUDA API, kernel, transfer, and NVTX stages,
+- a dedicated NVTX range table when range tracing is present.
 
 ## RTX 5090 / Blackwell notes
 
