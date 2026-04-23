@@ -693,6 +693,68 @@ alias ntop='nvtop'
 # ============================================================
 # Claude / Codex / AI tool aliases
 # ============================================================
+__claude_external_path() {
+    local cmd_name="${1:-claude}"
+
+    if type -P "$cmd_name" >/dev/null 2>&1; then
+        type -P "$cmd_name"
+        return 0
+    fi
+
+    if command -v whence >/dev/null 2>&1; then
+        whence -p "$cmd_name" 2>/dev/null && return 0
+    fi
+
+    return 1
+}
+
+__claude_cmd_works() {
+    local cmd="$1"
+    local rc
+
+    [ -n "$cmd" ] || return 1
+    [ -x "$cmd" ] || return 1
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 5 "$cmd" --version >/dev/null 2>&1
+        rc=$?
+        [ "$rc" -eq 0 ] || [ "$rc" -eq 124 ]
+        return
+    fi
+
+    "$cmd" --version >/dev/null 2>&1
+}
+
+get_claude_cmd() {
+    local candidate
+
+    for candidate in \
+        "$(__claude_external_path claude 2>/dev/null)" \
+        "$HOME/.local/bin/claude" \
+        "/usr/local/bin/claude" \
+        "/usr/bin/claude" \
+        "/bin/claude"
+    do
+        [ -n "$candidate" ] || continue
+        __claude_cmd_works "$candidate" || continue
+        printf '%s\n' "$candidate"
+        return 0
+    done
+
+    return 1
+}
+
+claude() {
+    local cmd
+    cmd="$(get_claude_cmd)" || {
+        echo "Error: no working Claude CLI found." >&2
+        echo "Install it with: curl -fsSL https://claude.ai/install.sh | bash" >&2
+        return 1
+    }
+
+    command "$cmd" "$@"
+}
+
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cldc='cld --continue'
 alias cldf='cld --continue --fork-session'
@@ -745,7 +807,7 @@ alias cdxed='$CODEX_BUN exec --dangerously-bypass-approvals-and-sandbox'
 # Local Codex Infinity build - cx* aliases
 cx() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -754,7 +816,7 @@ cx() {
 
 cxxh() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=xhigh "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --config model_reasoning_effort=xhigh "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -763,7 +825,7 @@ cxxh() {
 
 cxxhn() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4  --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5  --config model_reasoning_effort=xhigh --auto-next-idea "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -772,7 +834,7 @@ cxxhn() {
 
 cxxhni() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4  --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5  --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -781,7 +843,7 @@ cxxhni() {
 
 cxhni() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 "$@" --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 "$@" --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -789,7 +851,7 @@ cxhni() {
 }
 cxi() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --auto-next-idea "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --auto-next-idea "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -797,7 +859,7 @@ cxi() {
 
 cxn() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --auto-next-steps "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -805,7 +867,7 @@ cxn() {
 
 cxm() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --config model=gpt-5.4-mini "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --config model_reasoning_effort=medium "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -821,7 +883,7 @@ cxim() {
 
 cxl() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=low "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --config model_reasoning_effort=low "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -829,7 +891,7 @@ cxl() {
 
 cxh() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --config model_reasoning_effort=high "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --config model_reasoning_effort=high "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -893,7 +955,7 @@ cxsni() {
 
 cxni() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.4 --auto-next-idea --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built"; return 1
     fi
@@ -1053,9 +1115,7 @@ $plan_content"
 }
 
 cld() {
-    # Call Claude directly. Running the ELF binary through "bun run"
-    # causes parse errors like "Unexpected ... ELF".
-    ANTHROPIC_API_KEY="" command claude --dangerously-skip-permissions "$@"
+    ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions "$@"
 }
 
 cldgdfaa() {
