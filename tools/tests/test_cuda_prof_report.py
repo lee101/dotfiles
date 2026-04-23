@@ -71,6 +71,12 @@ Time (%),Total Size (bytes),Instances,Avg (bytes),Med (bytes),Min (bytes),Max (b
 30.0,262144,3,87381.3,65536.0,1024,131072,0.0,[CUDA memcpy DtoH]
 """
 
+NVTX_OUTPUT = """Processing [/tmp/sample.sqlite] with [/opt/reports/nvtx_sum.py]...
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Style,Range
+80.0,8000,8,1000.0,1000.0,900,1100,0.0,Push/Pop,forward_pass
+20.0,2000,2,1000.0,1000.0,900,1100,0.0,Push/Pop,data_prep
+"""
+
 STATS_BUNDLE_OUTPUT = """Generating SQLite file /tmp/sample.sqlite from /tmp/sample.nsys-rep
 Processing [/tmp/sample.sqlite] with [/opt/reports/cuda_api_sum.py]...
 Time (%),Total Time (ns),Num Calls,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
@@ -126,6 +132,10 @@ def _fake_nsys_script(exit_code: int = 0, emit_sqlite: bool = False) -> str:
                 elif name == "cuda_gpu_mem_size_sum":
                     print("Time (%),Total Size (bytes),Instances,Avg (bytes),Med (bytes),Min (bytes),Max (bytes),StdDev (bytes),Operation")
                     print("100.0,1048576,2,524288.0,524288.0,524288,524288,0.0,[CUDA memcpy HtoD]")
+                elif name == "nvtx_sum":
+                    print("Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Style,Range")
+                    print("80.0,8000,8,1000.0,1000.0,900,1100,0.0,Push/Pop,forward_pass")
+                    print("20.0,2000,2,1000.0,1000.0,900,1100,0.0,Push/Pop,data_prep")
                 else:
                     print(f"SKIPPED: no data for {{name}}")
                 print()
@@ -396,6 +406,7 @@ class MarkdownTests(unittest.TestCase):
                 "cuda_gpu_kern_sum": parse_nsys_csv_output("cuda_gpu_kern_sum", KERNEL_SKIPPED),
                 "cuda_gpu_mem_time_sum": parse_nsys_csv_output("cuda_gpu_mem_time_sum", MEM_TIME_OUTPUT),
                 "cuda_gpu_mem_size_sum": parse_nsys_csv_output("cuda_gpu_mem_size_sum", MEM_SIZE_OUTPUT),
+                "nvtx_sum": parse_nsys_csv_output("nvtx_sum", NVTX_OUTPUT),
             },
             profile_stderr="WARNING: mock warning from profiler",
         )
@@ -406,6 +417,9 @@ class MarkdownTests(unittest.TestCase):
         self.assertIn("Allocation/setup overhead dominates", markdown)
         self.assertIn("DtoH", markdown)
         self.assertIn("HtoD", markdown)
+        self.assertIn("forward_pass", markdown)
+        self.assertIn("## NVTX Ranges", markdown)
+        self.assertIn("## Bottleneck Ranking", markdown)
         self.assertIn("## Profiler Notes", markdown)
         self.assertIn("## Recommendations", markdown)
         self.assertIn("mock warning from profiler", markdown)
@@ -420,6 +434,7 @@ class MarkdownTests(unittest.TestCase):
                 "cuda_gpu_kern_sum": parse_nsys_csv_output("cuda_gpu_kern_sum", KERNEL_SKIPPED),
                 "cuda_gpu_mem_time_sum": parse_nsys_csv_output("cuda_gpu_mem_time_sum", MEM_TIME_OUTPUT),
                 "cuda_gpu_mem_size_sum": parse_nsys_csv_output("cuda_gpu_mem_size_sum", MEM_SIZE_OUTPUT),
+                "nvtx_sum": parse_nsys_csv_output("nvtx_sum", NVTX_OUTPUT),
             },
         )
         markdown = render_markdown(artifacts, top=1)
@@ -434,6 +449,7 @@ class MarkdownTests(unittest.TestCase):
                 "cuda_gpu_kern_sum": parse_nsys_csv_output("cuda_gpu_kern_sum", KERNEL_SKIPPED),
                 "cuda_gpu_mem_time_sum": parse_nsys_csv_output("cuda_gpu_mem_time_sum", MEM_TIME_OUTPUT),
                 "cuda_gpu_mem_size_sum": parse_nsys_csv_output("cuda_gpu_mem_size_sum", MEM_SIZE_OUTPUT),
+                "nvtx_sum": parse_nsys_csv_output("nvtx_sum", NVTX_OUTPUT),
             },
         )
         markdown = render_markdown(artifacts, report_sections=["api"])
@@ -562,6 +578,10 @@ class ProfilingTests(unittest.TestCase):
                         print()
                         print("Processing [/tmp/sample.sqlite] with [/opt/reports/cuda_gpu_mem_size_sum.py]...")
                         print("SKIPPED: no mem size data")
+                        print()
+                        print("Processing [/tmp/sample.sqlite] with [/opt/reports/nvtx_sum.py]...")
+                        print("Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Style,Range")
+                        print("80.0,8000,8,1000.0,1000.0,900,1100,0.0,Push/Pop,forward_pass")
                         raise SystemExit(0)
                     raise SystemExit(1)
                     """
@@ -578,6 +598,7 @@ class ProfilingTests(unittest.TestCase):
             self.assertEqual(artifacts.exit_code, 0)
             self.assertEqual(int(count_file.read_text()), 2)
             self.assertEqual(artifacts.reports["cuda_api_sum"].rows[0]["Name"], "cudaMalloc")
+            self.assertIn("nvtx_sum", artifacts.reports)
 
     def test_evaluate_policy_checks(self) -> None:
         artifacts = _make_artifacts(
