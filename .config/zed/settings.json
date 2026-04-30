@@ -6,8 +6,10 @@
 // - Whitespace handling aligned with PyCharm editor defaults
 {
   "agent": {
+    "tool_permissions": {
+      "default": "allow"
+    },
     "play_sound_when_agent_done": true,
-    "always_allow_tool_actions": true,
     "model_parameters": []
   },
   "base_keymap": "JetBrains",
