@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# valgrind-md — run a binary under valgrind memcheck and produce a token-efficient
+# markdown report listing each error once with file:line for the deepest user frame.
+#
+# Usage: valgrind-md [--out report.md] [--tool=memcheck|helgrind|drd] -- CMD [ARGS...]
+set -euo pipefail
+OUT=""
+TOOL="memcheck"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out) OUT="$2"; shift 2;;
+    --tool=*) TOOL="${1#--tool=}"; shift;;
+    --) shift; break;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0;;
+    *) break;;
+  esac
+done
+[[ $# -eq 0 ]] && { echo "valgrind-md: missing command"; exit 2; }
+
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+LOG="$TMP/vg.xml"
+
+valgrind --tool="$TOOL" --xml=yes --xml-file="$LOG" \
+  --leak-check=full --show-leak-kinds=definite,possible \
+  --errors-for-leak-kinds=definite \
+  --error-exitcode=0 \
+  "$@" >"$TMP/stdout" 2>"$TMP/stderr" || true
+
+python3 - "$LOG" "$TOOL" "$*" <<'PY' > "${OUT:-/dev/stdout}"
+import sys, xml.etree.ElementTree as ET, html, datetime, os, collections
+log, tool, cmd = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    root = ET.parse(log).getroot()
+except Exception as e:
+    print(f"# valgrind-md\n\nERROR parsing log: {e}")
+    sys.exit(0)
+
+errors = root.findall("error")
+print("# Valgrind report")
+print()
+print(f"_Tool: `{tool}`  •  Command: `{cmd}`  •  {datetime.datetime.now().isoformat(timespec='seconds')}_")
+print()
+by_kind = collections.Counter(e.findtext("kind") or "?" for e in errors)
+print("## Summary\n")
+print("| Kind | Count |\n|---|---|")
+for k, v in sorted(by_kind.items(), key=lambda x: -x[1]):
+    print(f"| {k} | {v} |")
+print(f"| **total** | **{len(errors)}** |\n")
+if not errors:
+    print("No errors detected.")
+    sys.exit(0)
+
+# Dedupe by (kind, top-user-frame)
+seen = {}
+for e in errors:
+    kind = e.findtext("kind") or "?"
+    what = (e.findtext("xwhat/text") or e.findtext("what") or "").strip()
+    frames = e.findall("stack/frame")
+    user = None
+    for f in frames:
+        d = f.findtext("dir") or ""
+        fn = f.findtext("file") or ""
+        ln = f.findtext("line") or ""
+        if fn and "/usr/" not in d and "valgrind" not in (f.findtext("obj") or ""):
+            user = f"{d}/{fn}:{ln}" if d else f"{fn}:{ln}"
+            break
+    key = (kind, user, what)
+    seen.setdefault(key, [0, frames])
+    seen[key][0] += 1
+
+print(f"## Errors ({len(seen)} unique)\n")
+for (kind, user, what), (count, frames) in sorted(seen.items(), key=lambda x:-x[1][0]):
+    loc = user or "(no user frame)"
+    print(f"### {kind} × {count}  — `{loc}`")
+    print(f"\n{what}\n")
+    print("<details><summary>stack</summary>\n")
+    print("```")
+    for f in frames[:10]:
+        fn = f.findtext("fn") or "?"
+        d = f.findtext("dir") or ""
+        fi = f.findtext("file") or ""
+        ln = f.findtext("line") or ""
+        loc = f"{d}/{fi}:{ln}" if fi else (f.findtext("obj") or "?")
+        print(f"  {fn}  ({loc})")
+    print("```\n</details>\n")
+PY
+[[ -n "$OUT" ]] && echo "wrote $OUT"

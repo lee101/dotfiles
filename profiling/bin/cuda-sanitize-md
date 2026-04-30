@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# cuda-sanitize-md — run compute-sanitizer (memcheck/racecheck/initcheck/synccheck)
+# and emit a markdown report with per-error file:line and stack.
+#
+# Usage: cuda-sanitize-md [--out report.md] [--tool=memcheck|racecheck|initcheck|synccheck] -- CMD [ARGS...]
+set -euo pipefail
+OUT=""; TOOL="memcheck"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out) OUT="$2"; shift 2;;
+    --tool=*) TOOL="${1#--tool=}"; shift;;
+    --) shift; break;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0;;
+    *) break;;
+  esac
+done
+[[ $# -eq 0 ]] && { echo "cuda-sanitize-md: missing command"; exit 2; }
+command -v compute-sanitizer >/dev/null || { echo "cuda-sanitize-md: compute-sanitizer not installed"; exit 2; }
+
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+LOG="$TMP/cs.txt"
+compute-sanitizer --tool="$TOOL" --print-limit 50 --error-exitcode 0 \
+  --log-file "$LOG" -- "$@" >"$TMP/stdout" 2>"$TMP/stderr" || true
+
+{
+  echo "# compute-sanitizer ($TOOL)"
+  echo
+  echo "_Command: \`$*\`  •  $(date -Iseconds)_"
+  echo
+  if grep -q "ERROR SUMMARY: 0 errors" "$LOG" 2>/dev/null; then
+    echo "**No errors detected.**"
+  else
+    summary=$(grep -E "ERROR SUMMARY:" "$LOG" | tail -1)
+    echo "**$summary**"
+    echo
+    echo "## Errors"
+    echo
+    echo '```'
+    awk '/========= /{p=!/ COMPUTE-SANITIZER|ERROR SUMMARY/} p' "$LOG" | head -200
+    echo '```'
+  fi
+} > "${OUT:-/dev/stdout}"
+[[ -n "$OUT" ]] && echo "wrote $OUT"

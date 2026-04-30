@@ -25,15 +25,17 @@ DEFAULT_REPORTS = (
     "cuda_gpu_kern_sum",
     "cuda_gpu_mem_time_sum",
     "cuda_gpu_mem_size_sum",
+    "nvtx_sum",
 )
 
 REPORT_SECTIONS = {
     "api": ("cuda_api_sum",),
     "kernels": ("cuda_gpu_kern_sum",),
     "transfers": ("cuda_gpu_mem_time_sum", "cuda_gpu_mem_size_sum"),
+    "nvtx": ("nvtx_sum",),
     "all": DEFAULT_REPORTS,
 }
-DEFAULT_REPORT_SECTIONS = ("api", "kernels", "transfers")
+DEFAULT_REPORT_SECTIONS = ("api", "kernels", "transfers", "nvtx")
 
 
 @dataclass
@@ -437,6 +439,18 @@ def _top_rows(report: StatsReport, limit: int = 5) -> list[dict[str, str]]:
     return [row for _, row in top]
 
 
+def _row_label(row: dict[str, str]) -> str:
+    for field in ("Name", "Operation", "Kernel Name", "Range", "Label"):
+        value = row.get(field)
+        if value:
+            return value
+    return "unknown"
+
+
+def _row_total_ns(row: dict[str, str]) -> float | None:
+    return _to_float(row.get("Total Time (ns)") or row.get("Total (ns)") or row.get("Sum (ns)"))
+
+
 def _positive_int(value: str) -> int:
     try:
         parsed = int(value)
@@ -543,10 +557,22 @@ def _build_summary_lines(
         if mem_time.rows:
             mem_total = _report_total_ns(mem_time)
             top_mem = _top_rows(mem_time, 1)[0]
-            name = top_mem.get("Name") or top_mem.get("Operation") or "unknown"
+            name = _row_label(top_mem)
             lines.append(f"GPU memory operations consumed {_fmt_ns(mem_total)} total device time; hottest transfer: `{name}`.")
         else:
             lines.append("No GPU memory transfer activity was captured in this run.")
+
+    if "nvtx" in sections:
+        nvtx_report = _report(reports, "nvtx_sum")
+        if nvtx_report.rows:
+            nvtx_total = _report_total_ns(nvtx_report)
+            top_range = _top_rows(nvtx_report, 1)[0]
+            range_name = _row_label(top_range)
+            lines.append(
+                f"Captured {len(nvtx_report.rows)} NVTX range rows with {_fmt_ns(nvtx_total)} total range time; hottest range: `{range_name}`."
+            )
+        else:
+            lines.append("No NVTX ranges were captured in this run.")
 
     if artifacts.exit_code != 0:
         lines.append(f"Target command exited with code `{artifacts.exit_code}`.")
@@ -575,6 +601,7 @@ def _build_use_lines(
     api_report = _report(reports, "cuda_api_sum") if "api" in sections else _empty_report("cuda_api_sum")
     mem_report = _report(reports, "cuda_gpu_mem_time_sum") if "transfers" in sections else _empty_report("cuda_gpu_mem_time_sum")
     kernel_report = _report(reports, "cuda_gpu_kern_sum") if "kernels" in sections else _empty_report("cuda_gpu_kern_sum")
+    nvtx_report = _report(reports, "nvtx_sum") if "nvtx" in sections else _empty_report("nvtx_sum")
 
     saturation = "No clear saturation signal."
     strong_api_signal = False
@@ -600,6 +627,9 @@ def _build_use_lines(
         saturation = "Kernel execution dominates traced GPU work."
     elif not strong_api_signal and mem_ns > 0:
         saturation = "GPU time is dominated by copies or memory ops."
+    elif not strong_api_signal and nvtx_report.rows and kernel_ns == 0 and mem_ns == 0:
+        top = _top_rows(nvtx_report, 1)[0]
+        saturation = f"NVTX-only run: hottest range is `{_row_label(top)}`."
 
     errors: list[str] = []
     for report in reports.values():
@@ -630,6 +660,7 @@ def _build_recommendation_lines(
     api_report = _report(reports, "cuda_api_sum") if "api" in sections else _empty_report("cuda_api_sum")
     kernel_report = _report(reports, "cuda_gpu_kern_sum") if "kernels" in sections else _empty_report("cuda_gpu_kern_sum")
     mem_time_report = _report(reports, "cuda_gpu_mem_time_sum") if "transfers" in sections else _empty_report("cuda_gpu_mem_time_sum")
+    nvtx_report = _report(reports, "nvtx_sum") if "nvtx" in sections else _empty_report("nvtx_sum")
 
     if artifacts.exit_code != 0:
         recommendations.append("Fix the target command or profiler failure first; the rest of the profile may be incomplete.")
@@ -655,6 +686,14 @@ def _build_recommendation_lines(
             recommendations.append("GPU memory transfer time exceeds kernel time. Focus on transfer volume, overlap, and batching before micro-optimizing kernels.")
         elif kernel_ns > mem_ns * 1.2:
             recommendations.append("Kernel time exceeds transfer time. Profile launch shape, occupancy, and math throughput next.")
+
+    if nvtx_report.rows:
+        top_nvtx = _top_rows(nvtx_report, 1)[0]
+        top_nvtx_ns = _row_total_ns(top_nvtx) or 0.0
+        if top_nvtx_ns > 0 and top_nvtx_ns > (_gpu_active_ns(reports) * 0.5):
+            recommendations.append(
+                f"One NVTX range, `{_row_label(top_nvtx)}`, dominates the trace. Split that stage into finer-grained markers before optimizing internals."
+            )
 
     if not recommendations:
         recommendations.append("No single bottleneck dominated this run. Compare against another workload or collect hardware metrics for a sharper signal.")
@@ -825,6 +864,101 @@ def _transfer_rows(
     return rows
 
 
+def _nvtx_table(report: StatsReport, limit: int) -> list[str]:
+    if not report.rows:
+        if report.skipped:
+            return [f"No data. `{report.skipped}`"]
+        return ["No data."]
+    rows = []
+    for row in _top_rows(report, limit):
+        rows.append(
+            [
+                _row_label(row),
+                row.get("Style", "?"),
+                row.get("Instances", "?"),
+                _fmt_pct(_to_float(row.get("Time (%)"))),
+                _fmt_ns(_row_total_ns(row)),
+                _fmt_ns(_to_float(row.get("Avg (ns)"))),
+            ]
+        )
+    return _render_table(["Range", "Style", "Instances", "Time %", "Total", "Avg"], rows)
+
+
+def _bottleneck_rows(artifacts: ProfileArtifacts, report_sections: Iterable[str] | None = None) -> list[list[str]]:
+    sections = set(report_sections or DEFAULT_REPORT_SECTIONS)
+    candidates: list[tuple[float, str, str, str, str, str]] = []
+
+    if "api" in sections:
+        report = _report(artifacts.reports, "cuda_api_sum")
+        if report.rows:
+            top = _top_rows(report, 1)[0]
+            total_ns = _row_total_ns(top) or 0.0
+            candidates.append(
+                (
+                    total_ns,
+                    "CUDA API",
+                    _row_label(top),
+                    _fmt_ns(total_ns),
+                    _fmt_pct(_to_float(top.get("Time (%)"))),
+                    top.get("Num Calls", top.get("Instances", "?")),
+                )
+            )
+
+    if "kernels" in sections:
+        report = _report(artifacts.reports, "cuda_gpu_kern_sum")
+        if report.rows:
+            top = _top_rows(report, 1)[0]
+            total_ns = _row_total_ns(top) or 0.0
+            candidates.append(
+                (
+                    total_ns,
+                    "GPU Kernel",
+                    _row_label(top),
+                    _fmt_ns(total_ns),
+                    _fmt_pct(_to_float(top.get("Time (%)"))),
+                    top.get("Instances", top.get("Num Calls", "?")),
+                )
+            )
+
+    if "transfers" in sections:
+        report = _report(artifacts.reports, "cuda_gpu_mem_time_sum")
+        if report.rows:
+            top = _top_rows(report, 1)[0]
+            total_ns = _row_total_ns(top) or 0.0
+            candidates.append(
+                (
+                    total_ns,
+                    "Transfer",
+                    _row_label(top),
+                    _fmt_ns(total_ns),
+                    _fmt_pct(_to_float(top.get("Time (%)"))),
+                    top.get("Count", top.get("Instances", top.get("Num Calls", "?"))),
+                )
+            )
+
+    if "nvtx" in sections:
+        report = _report(artifacts.reports, "nvtx_sum")
+        if report.rows:
+            top = _top_rows(report, 1)[0]
+            total_ns = _row_total_ns(top) or 0.0
+            candidates.append(
+                (
+                    total_ns,
+                    "NVTX",
+                    _row_label(top),
+                    _fmt_ns(total_ns),
+                    _fmt_pct(_to_float(top.get("Time (%)"))),
+                    top.get("Instances", "?"),
+                )
+            )
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    rows: list[list[str]] = []
+    for idx, (_, area, name, total, pct, count) in enumerate(candidates, 1):
+        rows.append([str(idx), area, name, total, pct, str(count)])
+    return rows
+
+
 def render_markdown(
     artifacts: ProfileArtifacts,
     top: int = 5,
@@ -873,6 +1007,11 @@ def render_markdown(
     for item in _build_recommendation_lines(artifacts, report_sections=sections):
         lines.append(f"- {item}")
 
+    bottlenecks = _bottleneck_rows(artifacts, report_sections=sections)
+    if bottlenecks:
+        lines.extend(["", "## Bottleneck Ranking", ""])
+        lines.extend(_render_table(["Rank", "Area", "Item", "Total", "Time %", "Count"], bottlenecks))
+
     if policy_checks:
         lines.extend(["", "## Policy Checks", ""])
         for check in policy_checks:
@@ -912,6 +1051,10 @@ def render_markdown(
                 lines.append(f"No data. `{mem_time.skipped}`")
             else:
                 lines.append("No data.")
+
+    if "nvtx" in sections:
+        lines.extend(["", "## NVTX Ranges", ""])
+        lines.extend(_nvtx_table(_report(artifacts.reports, "nvtx_sum"), top))
 
     return "\n".join(lines) + "\n"
 

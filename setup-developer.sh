@@ -182,24 +182,36 @@ install_nodejs() {
 }
 
 install_claude_code() {
+  local claude_status=1
+
   if command -v claude >/dev/null 2>&1; then
+    if command -v timeout >/dev/null 2>&1; then
+      timeout 5 claude --version >/dev/null 2>&1
+      claude_status=$?
+    else
+      claude --version >/dev/null 2>&1
+      claude_status=$?
+    fi
+  fi
+
+  if [ "$claude_status" -eq 0 ] || [ "$claude_status" -eq 124 ]; then
     log_info "Claude Code CLI already installed."
     return
   fi
 
-  if ! command -v npm >/dev/null 2>&1; then
-    log_warn "npm not found; skipping Claude Code CLI install."
+  if ! command -v curl >/dev/null 2>&1; then
+    log_warn "curl not found; skipping Claude Code CLI install."
     return
   fi
 
-  log_info "Installing Claude Code CLI via npm..."
-  npm install -g @anthropic-ai/claude-code
+  log_info "Installing Claude Code CLI via Anthropic native installer..."
+  curl -fsSL https://claude.ai/install.sh | bash
 
   if command -v claude >/dev/null 2>&1; then
     POST_INSTALL_NOTES+=("Claude Code installed. Run 'claude' to authenticate.")
   else
-    log_warn "npm install completed but 'claude' was not found on PATH."
-    POST_INSTALL_NOTES+=("If needed, add your npm global bin directory to PATH, then run 'claude'.")
+    log_warn "Claude install completed but 'claude' was not found on PATH."
+    POST_INSTALL_NOTES+=("If needed, open a new shell or add the installer target directory to PATH, then run 'claude'.")
   fi
 }
 
