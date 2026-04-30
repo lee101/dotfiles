@@ -1,0 +1,19 @@
+---
+# Conservative clang-tidy ruleset for production C in this monorepo.
+# Disables checks that fight C-with-restrict-and-attributes style.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  performance-*,
+  portability-*,
+  readability-misleading-indentation,
+  readability-non-const-parameter,
+  readability-inconsistent-declaration-parameter-name,
+  misc-unused-parameters
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: file

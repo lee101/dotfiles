@@ -68,7 +68,8 @@ pymem-report --out report.md --flame report.html -- python script.py
 
 ### 🛰️ cuda-prof-report - CUDA/Nsight Markdown Report
 Runs a command under Nsight Systems and emits a Markdown report with CUDA API hotspots,
-kernel summaries, transfer breakdowns, simple USE-style heuristics, and next-step recommendations.
+kernel summaries, transfer breakdowns, NVTX range tables, bottleneck ranking, simple USE-style heuristics,
+and next-step recommendations.
 
 **Usage:**
 ```bash
@@ -88,6 +89,7 @@ If you pass `--out` and omit `--prefix`, the profiler artifacts default to the s
 If you pass `--latest-link`, the tool also updates sibling `.nsys-rep` and `.sqlite` latest pointers.
 Use `--report api|kernels|transfers` to limit which sections are collected and rendered; policy flags automatically pull in the sections they need.
 Use `--timeout` and `--stats-timeout` to keep stuck profile or summary runs from hanging forever.
+If you already have saved profiler artifacts, use `profile-md` from `profiling/bin/` to turn `.nsys-rep`, `.ncu-rep`, or `trtexec` logs into markdown without rerunning the workload.
 
 ### 🧵 native-prof-report - Native CPU/Heap Markdown Report
 Runs a native command under `callgrind` and `massif`, then emits a compact Markdown report with:
