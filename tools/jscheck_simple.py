@@ -1,51 +1,119 @@
 #!/usr/bin/env python3
 
+import os
+import subprocess
 import sys
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+import tempfile
+import textwrap
+
 
 def check_js_errors(url):
-    # Setup Chrome options
-    chrome_options = Options()
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
-    
-    # Create driver
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    script = textwrap.dedent(
+        r"""
+        const { chromium } = require('@playwright/test');
+
+        (async () => {
+          const url = process.argv[2];
+          const executablePath = process.env.CHROME_BIN || '/usr/bin/google-chrome';
+          const browser = await chromium.launch({
+            headless: true,
+            executablePath,
+            args: ['--no-sandbox', '--disable-dev-shm-usage'],
+          });
+          const page = await browser.newPage();
+          const errors = [];
+          const failed = [];
+          const ignoredHosts = [
+            'googleads.g.doubleclick.net',
+            'pagead2.googlesyndication.com',
+            'securepubads.g.doubleclick.net',
+          ];
+          const ignored = (u) => {
+            try {
+              const parsed = new URL(u);
+              return ignoredHosts.includes(parsed.hostname);
+            } catch (_) {
+              return false;
+            }
+          };
+
+          page.on('console', (msg) => {
+            if (msg.type() === 'error') {
+              const text = msg.text();
+              if (ignored(text)) return;
+              const loc = msg.location();
+              if (loc && loc.url && ignored(loc.url)) return;
+              const where = loc && loc.url ? ` ${loc.url}:${loc.lineNumber || 0}` : '';
+              errors.push(`${text}${where}`);
+            }
+          });
+          page.on('response', (resp) => {
+            if (resp.status() >= 400 && !ignored(resp.url())) {
+              failed.push(`HTTP ${resp.status()} ${resp.request().method()} ${resp.url()}`);
+            }
+          });
+          page.on('pageerror', (err) => {
+            errors.push(err.stack || err.message || String(err));
+          });
+          page.on('requestfailed', (req) => {
+            if (ignored(req.url())) return;
+            failed.push(`${req.method()} ${req.url()} ${req.failure() ? req.failure().errorText : ''}`);
+          });
+
+          const started = Date.now();
+          try {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.waitForTimeout(3000);
+          } finally {
+            console.log(`Loaded ${url} in ${Date.now() - started}ms`);
+            if (errors.length) {
+              console.log(`Found ${errors.length} JavaScript errors:`);
+              for (const err of errors) console.log(`[ERROR] ${err}`);
+            } else {
+              console.log('No JavaScript errors found');
+            }
+            if (failed.length) {
+              console.log(`Found ${failed.length} failed/4xx requests:`);
+              for (const req of failed.slice(0, 40)) console.log(`[REQUEST_FAILED] ${req}`);
+            }
+            await browser.close();
+          }
+          process.exit(errors.length ? 1 : 0);
+        })().catch((err) => {
+          console.error(err && (err.stack || err.message) || err);
+          process.exit(2);
+        });
+        """
+    )
+
+    with tempfile.NamedTemporaryFile("w", suffix=".cjs", delete=False) as f:
+        f.write(script)
+        script_path = f.name
+
     try:
-        print(f"Loading {url}...")
-        driver.get(url)
-        
-        # Get browser logs
-        logs = driver.get_log('browser')
-        
-        # Filter for errors
-        errors = [log for log in logs if log['level'] in ['SEVERE', 'ERROR']]
-        
-        if errors:
-            print(f"\nFound {len(errors)} JavaScript errors:")
-            for error in errors:
-                print(f"[{error['level']}] {error['message']}")
-        else:
-            print("\n✅ No JavaScript errors found!")
-            
+        env = os.environ.copy()
+        env["NODE_PATH"] = os.pathsep.join(
+            p
+            for p in [
+                os.path.join(os.getcwd(), "node_modules"),
+                "/mnt/fast/code/netwrck/node_modules",
+                env.get("NODE_PATH", ""),
+            ]
+            if p
+        )
+        return subprocess.call(["node", script_path, url], env=env)
     finally:
-        driver.quit()
+        try:
+            os.unlink(script_path)
+        except OSError:
+            pass
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: jscheck_simple.py <url>")
         sys.exit(1)
-    
-    url = sys.argv[1]
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url
-    
-    check_js_errors(url)
+    sys.exit(check_js_errors(sys.argv[1]))
