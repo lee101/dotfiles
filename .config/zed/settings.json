@@ -5,7 +5,21 @@
 // - Monokai dark theme to match Cursor and JetBrains usage
 // - Whitespace handling aligned with PyCharm editor defaults
 {
+  "cli_default_open_behavior": "existing_window",
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "git_panel": {
+    "dock": "left"
+  },
   "agent": {
+    "dock": "right",
     "tool_permissions": {
       "default": "allow"
     },

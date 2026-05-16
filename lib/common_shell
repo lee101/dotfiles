@@ -1114,6 +1114,7 @@ $plan_content"
     rm -f "$plan_file"
 }
 
+unalias cld 2>/dev/null || true
 cld() {
     ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions "$@"
 }

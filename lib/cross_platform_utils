@@ -27,8 +27,14 @@ for _cross_platform_alias in compress reswap; do
 done
 unset _cross_platform_alias
 
-# Retrieve sudo password from current env or ~/.secretbashrc
+# Retrieve sudo password from current env or ~/.secretbashrc.
+# SUDO_PW is the cross-platform name; MAC_PW is kept for existing macOS setups.
 _get_sudo_password() {
+    if [ -n "${SUDO_PW:-}" ]; then
+        printf '%s' "$SUDO_PW"
+        return 0
+    fi
+
     if [ -n "${MAC_PW:-}" ]; then
         printf '%s' "$MAC_PW"
         return 0
@@ -38,20 +44,26 @@ _get_sudo_password() {
     if [ -f "$secret_file" ]; then
         # shellcheck disable=SC1090
         . "$secret_file"
+        if [ -n "${SUDO_PW:-}" ]; then
+            printf '%s' "$SUDO_PW"
+            return 0
+        fi
         if [ -n "${MAC_PW:-}" ]; then
             printf '%s' "$MAC_PW"
             return 0
         fi
     fi
 
-    echo "MAC_PW is not set; add it to ~/.secretbashrc" >&2
     return 1
 }
 
 sudo_run() {
     local pw
-    pw="$(_get_sudo_password)" || return 1
-    printf '%s\n' "$pw" | sudo -S "$@"
+    if pw="$(_get_sudo_password)"; then
+        printf '%s\n' "$pw" | sudo -S "$@"
+    else
+        sudo "$@"
+    fi
 }
 
 # Package manager abstraction
@@ -519,9 +531,13 @@ reswap() {
         Linux)
             if command -v swapoff >/dev/null 2>&1; then
                 echo "Resetting swap..."
-                sudo_run swapoff -a && sudo_run swapon -a
-                echo "Swap reset complete."
-                free -h | grep -i swap
+                if sudo_run swapoff -a && sudo_run swapon -a; then
+                    echo "Swap reset complete."
+                    free -h | grep -i swap
+                else
+                    echo "Swap reset failed. Re-run from an interactive shell or set SUDO_PW in ~/.secretbashrc." >&2
+                    return 1
+                fi
             else
                 echo "swapoff not available. Try: sudo sysctl vm.drop_caches=3"
             fi
