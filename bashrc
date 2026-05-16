@@ -256,7 +256,6 @@ alias tx='tmux attach'
 alias tls='tmux ls'
 alias tn='tmux new -s'
 alias cldd='claude --dangerously-skip-permissions'
-alias cld='claude --dangerously-skip-permissions'
 alias cldc='claude --dangerously-skip-permissions --chrome'
 alias clds='claude --dangerously-skip-permissions --model sonnet'
 alias cldsc='claude --dangerously-skip-permissions --model sonnet --chrome'
@@ -293,3 +292,7 @@ algrp() {
 export PATH=/home/lee/.opencode/bin:$PATH
 . "$HOME/.cargo/env"
 export PATH="/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d:$PATH"
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+# <<< grok installer <<<
