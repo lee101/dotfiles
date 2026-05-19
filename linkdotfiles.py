@@ -9,6 +9,7 @@ Works only on Unix-like operating systems that support symlinks (obviously)
 import os
 import sys
 from fnmatch import fnmatch
+from pathlib import Path
 from shutil import rmtree
 from optparse import OptionParser
 
@@ -20,6 +21,8 @@ parser.add_option("-q", "--quiet", dest="quiet", default=False, action="store_tr
                   help="only print warnings and errors")
 
 (options, args) = parser.parse_args()
+script_dir = Path(__file__).resolve().parent
+os.chdir(script_dir)
 
 def log(message):
     if not options.quiet:
@@ -29,8 +32,8 @@ def warn(message):
     print(message, file=sys.stderr)
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig.windows']
-cwd = os.path.realpath(os.getcwd())
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig.windows', 'vscode-extensions.txt']
+cwd = str(script_dir)
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)
 

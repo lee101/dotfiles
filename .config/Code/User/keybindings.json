@@ -1,0 +1,94 @@
+[
+    {
+        "key": "ctrl+g",
+        "command": "editor.action.referenceSearch.trigger"
+    },
+    {
+        "key": "ctrl+shift+e",
+        "command": "workbench.view.explorer"
+    },
+    {
+        "key": "alt+y",
+        "command": "editor.action.addSelectionToNextFindMatch",
+        "when": "editorFocus"
+    },
+    {
+        "key": "shift+alt+y",
+        "command": "cursorUndo",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+left",
+        "command": "workbench.action.navigateBack"
+    },
+    {
+        "key": "alt+right",
+        "command": "workbench.action.navigateForward"
+    },
+    {
+        "key": "ctrl+d",
+        "command": "editor.action.deleteLines",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+y",
+        "command": "redo",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+z",
+        "command": "redo",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+d",
+        "command": "editor.action.copyLinesDownAction",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+down",
+        "command": "editor.action.copyLinesDownAction",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+up",
+        "command": "editor.action.copyLinesUpAction",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "shift+alt+j",
+        "command": "editor.action.insertCursorBelow",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "shift+alt+k",
+        "command": "editor.action.insertCursorAbove",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+j",
+        "command": "editor.emmet.action.wrapWithAbbreviation",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+down",
+        "command": "workbench.action.editor.nextChange"
+    },
+    {
+        "key": "ctrl+shift+up",
+        "command": "workbench.action.editor.previousChange"
+    },
+    {
+        "key": "f3",
+        "command": "editor.action.goToImplementation",
+        "when": "editorHasImplementationProvider && editorTextFocus"
+    },
+    {
+        "key": "alt+shift+left",
+        "command": "workbench.action.previousEditor"
+    },
+    {
+        "key": "alt+shift+right",
+        "command": "workbench.action.nextEditor"
+    }
+]

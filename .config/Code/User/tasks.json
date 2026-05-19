@@ -1,0 +1,62 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Python: Ruff Check",
+            "type": "shell",
+            "command": "uvx ruff check --output-format text ${workspaceFolder}",
+            "problemMatcher": []
+        },
+        {
+            "label": "Python: Ruff Fix",
+            "type": "shell",
+            "command": "uvx ruff check --fix ${workspaceFolder}",
+            "problemMatcher": []
+        },
+        {
+            "label": "Python: Run pytest",
+            "type": "shell",
+            "command": "uvx pytest",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Go: Test ./...",
+            "type": "shell",
+            "command": "go test ./...",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$go"
+        },
+        {
+            "label": "Go: Build ./...",
+            "type": "shell",
+            "command": "go build ./...",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$go"
+        },
+        {
+            "label": "C/CUDA: Configure (CMake Release)",
+            "type": "shell",
+            "command": "cmake -S ${workspaceFolder} -B ${workspaceFolder}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+            "problemMatcher": []
+        },
+        {
+            "label": "C/CUDA: Build (Ninja)",
+            "type": "shell",
+            "command": "cmake --build ${workspaceFolder}/build --config Release",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "C/CUDA: Run clang-format",
+            "type": "shell",
+            "command": "find \"${workspaceFolder}\" -type f \\( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' -o -name '*.cu' -o -name '*.cuh' \\) -print0 | xargs -0 clang-format -i",
+            "problemMatcher": []
+        }
+    ]
+}
