@@ -1,0 +1,63 @@
+{
+    "security.workspace.trust.untrustedFiles": "open",
+    "github.copilot.advanced": {
+        "debug.overrideEngine": "codegen",
+        "debug.testOverrideProxyUrl": "https://text-generator.io",
+        "debug.overrideProxyUrl": "https://text-generator.io"
+    },
+    "github.copilot.enable": {
+        "*": true,
+        "yaml": false,
+        "plaintext": false,
+        "markdown": true
+    },
+    "window.restoreWindows": "all",
+    "window.openFilesInNewWindow": "off",
+    "workbench.startupEditor": "none",
+    "workbench.colorTheme": "One Dark Pro",
+    "workbench.iconTheme": "vs-seti",
+    "workbench.sideBar.location": "left",
+    "editor.fontFamily": "'DejaVu Sans Mono', 'Droid Sans Mono', 'monospace', monospace",
+    "editor.fontLigatures": false,
+    "editor.fontSize": 15,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.trimAutoWhitespace": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.autoSave": "onFocusChange",
+    "files.associations": {
+        "*.cu": "cpp",
+        "*.cuh": "cpp"
+    },
+    "python.analysis.typeCheckingMode": "basic",
+    "python.languageServer": "Pylance",
+    "python.formatting.provider": "none",
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll.ruff": "explicit"
+        }
+    },
+    "go.useLanguageServer": true,
+    "go.formatTool": "gofmt",
+    "[go]": {
+        "editor.defaultFormatter": "golang.go",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "diffEditor.ignoreTrimWhitespace": false
+}
