@@ -7,6 +7,12 @@ model_reasoning_effort = "high"
 [projects."/mnt/fast/code/netwrck"]
 trust_level = "trusted"
 
+[projects."/home/lee/code/hiresnz2"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/codex-local-20260525"]
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
@@ -16,3 +22,6 @@ web_search = true
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.3-codex"
+
+[tui.model_availability_nux]
+"gpt-5.5" = 3
