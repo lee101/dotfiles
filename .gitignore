@@ -30,3 +30,6 @@ screenshots/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Compiled go tools (built from tools/cmd via build.sh)
+/tools/gtree
