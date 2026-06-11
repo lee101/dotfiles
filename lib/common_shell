@@ -357,6 +357,18 @@ alias gmerge='git mergetool'
 # Difftastic
 alias gdft='difft'
 alias gdfts='difft --display side-by-side'
+alias gdftd='git -c diff.external=difft diff'                  # structural diff
+alias gswt='git -c diff.external=difft show --ext-diff'        # structural show
+alias glgt='git -c diff.external=difft log -p --ext-diff'      # structural log
+
+# Delta (override per-command pager; .gitconfig sets pager.diff=less so core.pager alone is ignored)
+# syntax-highlighted fg + subtle dark green/red bg (not the heavy default tint); global delta.side-by-side=true so force inline on non-s variants
+alias gdfd='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.diff=delta diff'
+alias gdfds='git -c delta.side-by-side=true -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.diff=delta diff'
+alias gdfdc='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.diff=delta diff --cached'
+alias gswd='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.show=delta show'
+alias gswds='git -c delta.side-by-side=true -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.show=delta show'
+alias glgd='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.log=delta log -p'
 
 # Git push workflows
 alias gpsh='SKIP_TESTS=1 git push --no-verify'

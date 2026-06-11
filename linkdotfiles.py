@@ -32,7 +32,7 @@ def warn(message):
     print(message, file=sys.stderr)
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig.windows', 'vscode-extensions.txt']
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig.windows', 'vscode-extensions.txt', 'cursor-extensions.txt', 'devin-extensions.txt']
 cwd = str(script_dir)
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)

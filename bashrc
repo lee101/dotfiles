@@ -1,4 +1,7 @@
 #!/bin/bash
+alias dvn='devin --permission-mode dangerous'
+alias dvni="~/programs/Devin/bin/devin-desktop"
+alias crs='cursor-agent --yolo'
 # and environment variables live in lib/common_shell.
 alias clinst='curl -fsSL https://claude.ai/install.sh | bash'
 alias cinst='npm install -g @openai/codex@latest'
