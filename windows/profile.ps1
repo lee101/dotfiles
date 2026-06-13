@@ -187,6 +187,8 @@ function findn {
 # Navigation
 function u { cd .. }
 function c { cd ~/code }
+function z { zoxide query -i @args | ForEach-Object { Set-Location $_ } }
+function zi { zoxide query -i @args | ForEach-Object { Set-Location $_ } }
 
 # Docker
 function dps { docker ps }
@@ -240,10 +242,10 @@ Set-Alias -Name ll -Value Get-ChildItem
 Set-Alias -Name which -Value Get-Command
 
 # Python aliases
-function pin { pip install $args }
-function pinu { pip install -U $args }
-function pfr { pip freeze }
-function pfrr { pip freeze > requirements.txt }
+function pin { uv pip install @args }
+function pinu { uv pip install -U @args }
+function pfr { uv pip freeze }
+function pfrr { uv pip freeze > requirements.txt }
 
 # Node.js/Yarn/NPM aliases
 function ni { npm install $args }
@@ -333,10 +335,121 @@ function pn { pnpm $args }
 function yt { yarn test $args }
 function yr { yarn remove $args }
 
-# Codex shortcuts (if you use it)
-function cx { codex $args }
-function cxa { codex --auto-edit $args }
-function cxf { codex --full-auto $args }
+# ==========================================
+# Claude Code aliases (mirrors bashrc)
+# ==========================================
+function cld { claude --dangerously-skip-permissions @args }
+function cldd { claude --dangerously-skip-permissions @args }
+function cla { claude @args }
+function cldc { cld --continue @args }
+function cldf { cld --continue --fork-session @args }
+function cldr { cld --resume @args }
+function cldp { cld --print @args }
+
+# Claude review aliases
+function cr { claude-review @args }
+function creview { claude-review @args }
+function crc { claude-review --staged @args }
+function crw { claude-review @args }
+
+# Claude Git workflow functions
+function cldcmt {
+    # Claude commit: stage all, generate commit message, push
+    git add -A
+    git diff --cached | claude --print "Write a concise commit message for these changes" | ForEach-Object {
+        git commit -m $_
+    }
+}
+
+function cldgcmep {
+    # Claude add+commit+push workflow
+    git add -A
+    $msg = git diff --cached | claude --print "Write a concise commit message for these changes"
+    git commit -m $msg
+    $branch = git rev-parse --abbrev-ref HEAD
+    git push --set-upstream origin $branch
+}
+
+function cldfix {
+    # Claude fix issues in current changes
+    git diff | claude "Fix any issues in these changes"
+}
+
+function cldpr {
+    # Claude PR generator
+    $base = git merge-base HEAD main 2>$null
+    if (-not $base) { $base = git merge-base HEAD master 2>$null }
+    git diff "$base..HEAD" | claude "Generate a PR title and description for these changes"
+}
+
+# Short aliases for Claude Git workflows
+function ccmt { cldcmt }
+function cgcmep { cldgcmep }
+function cfix { cldfix }
+function cpr { cldpr }
+
+# Claude + Git diff functions
+function cldgdfaa {
+    param([string]$prompt)
+    if (-not $prompt) {
+        Write-Host "Usage: cldgdfaa 'your prompt text'"
+        return
+    }
+    $diff = git diff
+    $staged = git diff --cached
+    "$prompt`n`nHere are all the changes in the repository:`n`n$diff`n$staged" | claude
+}
+
+function cldgdf {
+    param([string]$prompt)
+    if (-not $prompt) {
+        Write-Host "Usage: cldgdf 'your prompt text'"
+        return
+    }
+    $diff = git diff
+    "$prompt`n`nHere are the unstaged changes:`n`n$diff" | claude
+}
+
+# ==========================================
+# Codex CLI aliases
+# ==========================================
+function cx { codex @args }
+function cxa { codex --auto-edit @args }
+function cxf { codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto @args }
+function cdx { codex @args }
+function cdxd { codex --dangerously-bypass-approvals-and-sandbox @args }
+function cdxf { codex --full-auto @args }
+function cdxr { codex --sandbox read-only @args }
+function cdxw { codex --sandbox workspace-write @args }
+function cdxa { codex apply @args }
+function cdxe { codex exec @args }
+function cdxs { codex --search @args }
+function cdxed { codex exec --dangerously-bypass-approvals-and-sandbox @args }
+
+# Tooling parity helpers
+function btop {
+    $btopWin = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\aristocratos.btop4win_Microsoft.Winget.Source_8wekyb3d8bbwe\btop4win\btop4win.exe"
+    if (Test-Path $btopWin) {
+        & $btopWin @args
+    } else {
+        Write-Host "btop4win is not installed." -ForegroundColor Yellow
+    }
+}
+function bt { btop @args }
+function dtop { dua interactive @args }
+function bench { hyperfine @args }
+function http { xh @args }
+function topc {
+    if (Get-Command btop -ErrorAction SilentlyContinue) {
+        btop @args
+    } else {
+        Get-Process | Sort-Object CPU -Descending | Select-Object -First 30
+    }
+}
+function tx { tmux attach @args }
+function tls { tmux ls @args }
+function tn { tmux new -s @args }
+function lg { lazygit @args }
 
 # IP address functions
 function my-ip {
@@ -400,12 +513,16 @@ function Get-DirSize {
 }
 
 # Environment variables
-$env:EDITOR = "code"
+$env:EDITOR = "nvim"
+$env:GIT_EDITOR = "nvim"
+$env:VISUAL = "nvim"
 
 # PATH Configuration - Add common development tool paths
 $pathsToAdd = @(
     # uv (Python package installer)
     "$env:USERPROFILE\.local\bin",
+    # WinGet command shims
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Links",
     # Node.js global modules
     "$env:APPDATA\npm",
     # Yarn global binaries
@@ -422,7 +539,9 @@ $pathsToAdd = @(
     "${env:ProgramFiles}\Git\bin",
     # Additional common paths
     "$env:USERPROFILE\.cargo\bin",
-    "$env:USERPROFILE\go\bin"
+    "$env:USERPROFILE\go\bin",
+    # btop4win package layout does not always expose a working shim
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\aristocratos.btop4win_Microsoft.Winget.Source_8wekyb3d8bbwe\btop4win"
 )
 
 # Add paths to current session PATH if they exist and aren't already there
@@ -464,8 +583,16 @@ function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
-function o { explorer.exe . }
-function oo { explorer.exe $args }
+
+# Open in Windows File Explorer (cross-platform parity with bash 'o'/'oo')
+function o {
+    param($Path = ".")
+    explorer.exe $Path
+}
+function oo {
+    param($Path = ".")
+    explorer.exe $Path
+}
 
 # Environment management
 function reload {
@@ -481,12 +608,23 @@ function refresh-env {
 }
 
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "gh", "hub", "code", "nvim", "python", "pip", "uv", "fzf")
+    $tools = @("node", "npm", "yarn", "git", "gh", "claude", "codex", "code", "nvim", "python", "uv", "fzf", "bun", "rg", "fd", "bat", "eza", "delta", "jq", "yq", "zoxide", "btop", "tmux", "lazygit", "sshpass", "dust", "hyperfine", "procs", "sd", "xh", "tokei")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
-            Write-Host "✓ $tool" -ForegroundColor Green
+            Write-Host "[OK] $tool" -ForegroundColor Green
         } else {
-            Write-Host "✗ $tool" -ForegroundColor Red
+            Write-Host "[--] $tool" -ForegroundColor Red
+        }
+    }
+}
+
+function check-optional-tools {
+    $tools = @("gitui", "difft", "dua", "btm")
+    foreach ($tool in $tools) {
+        if (Get-Command $tool -ErrorAction SilentlyContinue) {
+            Write-Host "[OK] $tool" -ForegroundColor Green
+        } else {
+            Write-Host "[optional] $tool" -ForegroundColor Yellow
         }
     }
 }
@@ -548,6 +686,10 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     }
 } else {
     Write-Host "Note: fzf not found in PATH. Install with: choco install fzf" -ForegroundColor Yellow
+}
+
+if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+    Invoke-Expression (& { (zoxide init powershell | Out-String) })
 }
 
 # Better tab completion

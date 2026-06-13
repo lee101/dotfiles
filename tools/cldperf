@@ -13,6 +13,9 @@ Commands:
     optimize [path]     Suggest optimizations for slow code
     benchmark           Run and analyze benchmarks
     memory              Analyze memory usage and leaks
+    native              Run callgrind + massif and emit a Markdown native profile
+    gpu                 Run Nsight Systems and emit a Markdown CUDA report
+    cuda                Alias for gpu
     compare             Compare performance between commits/branches
     monitor             Real-time performance monitoring suggestions
 
@@ -29,7 +32,9 @@ Examples:
     cldperf optimize --fix           # Auto-apply optimizations
     cldperf benchmark                # Run and analyze benchmarks
     cldperf memory --verbose         # Detailed memory analysis
+    cldperf native -- ./build/app    # Native CPU + heap profile in Markdown
     cldperf compare main feature     # Compare branch performance
+    cldperf gpu -- ./build/app       # Profile a CUDA binary with Nsight Systems
 
 Performance Tools Available:
     - Go: pprof, trace, benchmarks
@@ -44,6 +49,14 @@ EOF
 # Parse command
 COMMAND=$1
 shift
+
+if [[ "$COMMAND" == "gpu" || "$COMMAND" == "cuda" ]]; then
+    exec "$(dirname "$0")/cuda-prof-report" "$@"
+fi
+
+if [[ "$COMMAND" == "native" ]]; then
+    exec "$(dirname "$0")/native-prof-report" "$@"
+fi
 
 # Default values
 VERBOSE=false

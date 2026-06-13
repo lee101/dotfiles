@@ -142,101 +142,82 @@ if (Test-Path $libPath) {
     }
 }
 
-# Handle Neovim configuration
-$nvimSourceInit = Join-Path $currentDir "init.lua"
-$nvimSourceLua = Join-Path $currentDir "lua"
-$nvimSourceDir = Join-Path $currentDir "nvim"
+# Handle Neovim configuration (improved for Git Bash + PowerShell + full config)
+# We prefer the root init.lua + lua/ (the active one with user.* modules and Lazy bootstrap).
+# We also support the nvim/ subdir for any extra files (lazy-lock etc.).
+# We link to BOTH the Windows-preferred AppData location AND the XDG ~/.config/nvim location.
+# This makes `vi` / `nvim` work consistently from PowerShell, Git Bash, WSL, etc.
 
-# Prefer the nvim directory if it exists, otherwise use init.lua and lua in root
-if (Test-Path $nvimSourceDir) {
-    Write-Host ""
-    Write-Host "Setting up Neovim configuration from nvim directory..." -ForegroundColor Cyan
-    $nvimConfigDir = Join-Path $homeDir "AppData\Local\nvim"
-    
+$nvimSourceInit = Join-Path $currentDir "init.lua"
+$nvimSourceLua  = Join-Path $currentDir "lua"
+$nvimSourceDir  = Join-Path $currentDir "nvim"   # secondary / extra files
+
+$targets = @(
+    (Join-Path $homeDir "AppData\Local\nvim"),   # Windows Neovim default (used by the exe)
+    (Join-Path $homeDir ".config\nvim")          # XDG / Git Bash / WSL / many tools friendly path
+)
+
+foreach ($nvimConfigDir in $targets) {
     if (!(Test-Path $nvimConfigDir)) {
         New-Item -ItemType Directory -Path $nvimConfigDir -Force | Out-Null
-        Write-Host "Created nvim config directory: $nvimConfigDir" -ForegroundColor Green
+        Write-Host "Created Neovim config dir: $nvimConfigDir" -ForegroundColor Green
     }
-    
-    # Link the entire nvim directory contents
-    $nvimItems = Get-ChildItem -Path $nvimSourceDir
-    foreach ($item in $nvimItems) {
-        $sourcePath = $item.FullName
-        $targetPath = Join-Path $nvimConfigDir $item.Name
-        
-        Write-Host "Processing nvim: $($item.Name)" -ForegroundColor White
-        
-        if (Test-Path $targetPath) {
-            if ($Force) {
-                Write-Host "  Removing existing: $targetPath" -ForegroundColor Yellow
-                Remove-Item $targetPath -Force -Recurse
-            } else {
-                Write-Host "  Skipping (exists): $targetPath" -ForegroundColor Gray
-                continue
-            }
-        }
-        
-        try {
-            New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath -Force:$Force | Out-Null
-            Write-Host "  Created link: $targetPath -> $sourcePath" -ForegroundColor Green
-        } catch {
-            Write-Host "  Failed to create link: $($_.Exception.Message)" -ForegroundColor Red
-        }
-    }
-} elseif ((Test-Path $nvimSourceInit) -or (Test-Path $nvimSourceLua)) {
+
     Write-Host ""
-    Write-Host "Setting up Neovim configuration from root files..." -ForegroundColor Cyan
-    $nvimConfigDir = Join-Path $homeDir "AppData\Local\nvim"
-    
-    if (!(Test-Path $nvimConfigDir)) {
-        New-Item -ItemType Directory -Path $nvimConfigDir -Force | Out-Null
-        Write-Host "Created nvim config directory: $nvimConfigDir" -ForegroundColor Green
-    }
-    
-    # Link init.lua
+    Write-Host "Linking Neovim config into $nvimConfigDir ..." -ForegroundColor Cyan
+
+    # Primary: root init.lua (the real config with Lazy + require("user.*"))
     if (Test-Path $nvimSourceInit) {
         $targetInit = Join-Path $nvimConfigDir "init.lua"
-        if (Test-Path $targetInit) {
-            if ($Force) {
-                Write-Host "Removing existing init.lua" -ForegroundColor Yellow
-                Remove-Item $targetInit -Force
-            } else {
-                Write-Host "Skipping init.lua (exists)" -ForegroundColor Gray
-            }
-        }
-        
+        if ((Test-Path $targetInit) -and $Force) { Remove-Item $targetInit -Force -ErrorAction SilentlyContinue }
         if (!(Test-Path $targetInit)) {
             try {
                 New-Item -ItemType SymbolicLink -Path $targetInit -Target $nvimSourceInit -Force:$Force | Out-Null
-                Write-Host "Created link: $targetInit -> $nvimSourceInit" -ForegroundColor Green
+                Write-Host "  Linked init.lua" -ForegroundColor Green
             } catch {
-                Write-Host "Failed to create init.lua link: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "  (init.lua link may need admin / Dev Mode): $($_.Exception.Message)" -ForegroundColor Yellow
+                # Fallback copy for robustness on Git Bash / restricted envs
+                Copy-Item $nvimSourceInit $targetInit -Force -ErrorAction SilentlyContinue
             }
         }
     }
-    
-    # Link lua directory
+
+    # Primary: root lua/ (contains user/ with options, keymaps, lsp-optimized, etc.)
     if (Test-Path $nvimSourceLua) {
         $targetLua = Join-Path $nvimConfigDir "lua"
-        if (Test-Path $targetLua) {
-            if ($Force) {
-                Write-Host "Removing existing lua directory" -ForegroundColor Yellow
-                Remove-Item $targetLua -Force -Recurse
-            } else {
-                Write-Host "Skipping lua directory (exists)" -ForegroundColor Gray
-            }
-        }
-        
+        if ((Test-Path $targetLua) -and $Force) { Remove-Item $targetLua -Force -Recurse -ErrorAction SilentlyContinue }
         if (!(Test-Path $targetLua)) {
             try {
                 New-Item -ItemType SymbolicLink -Path $targetLua -Target $nvimSourceLua -Force:$Force | Out-Null
-                Write-Host "Created link: $targetLua -> $nvimSourceLua" -ForegroundColor Green
+                Write-Host "  Linked lua/" -ForegroundColor Green
             } catch {
-                Write-Host "Failed to create lua directory link: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "  (lua/ link may need admin): $($_.Exception.Message)" -ForegroundColor Yellow
+                Copy-Item -Recurse -Force $nvimSourceLua $targetLua -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    # Also bring in anything useful from the nvim/ subdir (lazy-lock.json, extra plugins, etc.)
+    if (Test-Path $nvimSourceDir) {
+        $items = Get-ChildItem -Path $nvimSourceDir -Force | Where-Object { $_.Name -notin @('init.lua', 'lua') }
+        foreach ($item in $items) {
+            $dest = Join-Path $nvimConfigDir $item.Name
+            if ((Test-Path $dest) -and $Force) { Remove-Item $dest -Force -Recurse -ErrorAction SilentlyContinue }
+            if (!(Test-Path $dest)) {
+                try {
+                    New-Item -ItemType SymbolicLink -Path $dest -Target $item.FullName -Force:$Force | Out-Null
+                    Write-Host "  Linked extra: $($item.Name)" -ForegroundColor DarkGreen
+                } catch {
+                    Copy-Item -Recurse -Force $item.FullName $dest -ErrorAction SilentlyContinue
+                }
             }
         }
     }
 }
+
+# One-time helpful note for Git Bash users
+Write-Host ""
+Write-Host "Neovim linking done for both AppData and ~/.config/nvim (Git Bash friendly)." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Dotfile linking complete!" -ForegroundColor Green

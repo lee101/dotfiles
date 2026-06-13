@@ -1,6 +1,6 @@
 # Flamegraph Analyzer
 
-Convert SVG flamegraphs and Python profile data to readable markdown descriptions with hot paths analysis.
+Convert flamegraphs, Go `pprof` data, Python profile data, Perfetto traces, Nsight-style exports, and perf CSV logs to readable markdown summaries.
 
 ## Installation
 
@@ -16,6 +16,21 @@ uv pip install -e .
 ```bash
 # Analyze SVG flamegraph
 flamegraph-analyzer flamegraph.svg
+
+# Analyze Go pprof directly
+flamegraph-analyzer cpu.pprof -o cpu-analysis.md
+
+# Analyze harness perf CSV
+flamegraph-analyzer perf.csv -o perf-analysis.md
+
+# Analyze Perfetto or Chrome trace JSON
+flamegraph-analyzer trace.json -o trace-analysis.md
+
+# Analyze binary Perfetto traces when trace_processor_shell is installed
+TRACE_PROCESSOR_BIN=trace_processor_shell flamegraph-analyzer capture.perfetto-trace -o trace-analysis.md
+
+# Analyze exported Nsight CSV
+flamegraph-analyzer nsight.csv -o nsight-analysis.md
 
 # Save to file
 flamegraph-analyzer flamegraph.svg -o analysis.md
@@ -38,8 +53,12 @@ python flamegraph_analyzer/main.py profile.prof -o analysis.md
 
 ## Features
 
-- **SVG Flamegraph parsing**: Extracts function names, time percentages, and sample counts
+- **SVG flamegraph parsing**: Extracts function names and timings from classic flamegraphs and Graphviz SVG emitted by `go tool pprof -svg`
+- **Go pprof support**: Parses raw `.pprof` files via `go tool pprof -top`
 - **Python profile support**: Parses .profile and .prof files from cProfile/profile modules
+- **Perfetto trace support**: Parses exported Perfetto or Chrome trace JSON, and can optionally query binary Perfetto traces through `trace_processor_shell`
+- **Nsight-style CSV support**: Parses exported CSV summaries, classifies compute/memcpy/memset/sync activity, and surfaces kernel occupancy/bandwidth metrics when present
+- **Perf CSV support**: Summarizes FPS, frame spikes, draw/update maxima, and heap ranges from benchmark logs
 - **Hot paths analysis**: Identifies performance bottlenecks and critical paths
 - **Markdown output**: Generates readable reports with:
   - Summary statistics
@@ -52,6 +71,7 @@ python flamegraph_analyzer/main.py profile.prof -o analysis.md
 
 The tool generates markdown with:
 - Ranked function performance tables with file locations
+- Trace-level summaries of device work, host work, transfer-heavy operations, and aggregate transfer bandwidth
 - ASCII bar charts for time distribution
 - Detailed breakdowns of performance hotspots (functions >threshold%)
 - Per-call timing statistics

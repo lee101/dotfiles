@@ -1,15 +1,33 @@
+# Windows-specific git config overrides
+# Link via linkdotfiles.ps1 or include from main .gitconfig:
+#   [include]
+#       path = ~/.gitconfig.windows
+
 [core]
-	sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
-	autocrlf = true
-	editor = notepad
+    # Windows line ending handling (safer default on Win)
+    autocrlf = true
+    # Git Bash / FS perms
+    filemode = false
+    # Enable long paths (requires git >= 2.22 + windows config)
+    longpaths = true
+    # symlinks often need extra setup on Windows
+    symlinks = false
+    # Use delta if present (common on Win via winget)
+    pager = delta --paging=never
 
 [credential]
-	helper = manager
+    # Use Windows Credential Manager
+    helper = manager
 
-[credential "https://github.com"]
-	helper = 
-	helper = !'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential
+[init]
+    defaultBranch = main
 
-[credential "https://gist.github.com"]
-	helper = 
-	helper = !'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential
+[fetch]
+    prune = true
+
+[pull]
+    rebase = false
+
+[safe]
+    # Allow in dev containers / mounts common on Win
+    directory = *

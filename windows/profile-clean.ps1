@@ -76,7 +76,7 @@ function ya { yarn add $args }
 function ys { yarn start }
 
 # Utility functions
-function o { explorer.exe . }
+function o { param($p="."); explorer.exe $p }
 function pbcopy { $input | Set-Clipboard }
 function pbpaste { Get-Clipboard }
 

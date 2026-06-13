@@ -30,6 +30,9 @@ cldperf profile [path]   # Profile code and identify bottlenecks
 cldperf optimize [path]  # Get optimization suggestions (--fix to apply)
 cldperf benchmark        # Run and analyze benchmarks
 cldperf memory           # Analyze memory usage and leaks
+cldperf native -- <cmd>  # Run callgrind + massif and emit a Markdown native report
+cldperf gpu -- <cmd>     # Run Nsight Systems and emit a Markdown CUDA report
+cldperf cuda -- <cmd>    # Alias for gpu
 ```
 
 **Features:**
@@ -53,6 +56,56 @@ jscheck <url>                          # Check a URL for JS errors
 export CHROME_PROFILE_PATH="/path"     # Use specific Chrome profile
 jscheck https://example.com
 ```
+
+### 🧠 pymem-report - Python Memory Report (Markdown + Flamegraph)
+Runs a Python command under memray and emits a markdown summary plus optional flamegraph.
+
+**Usage:**
+```bash
+pymem-report -- python -m your_module --args
+pymem-report --out report.md --flame report.html -- python script.py
+```
+
+### 🛰️ cuda-prof-report - CUDA/Nsight Markdown Report
+Runs a command under Nsight Systems and emits a Markdown report with CUDA API hotspots,
+kernel summaries, transfer breakdowns, simple USE-style heuristics, and next-step recommendations.
+
+**Usage:**
+```bash
+cuda-prof-report -- ./build/bitbankc_forecast_bench --context 512 --horizon 24
+cuda-prof-report --top 10 -- ./build/bitbankc_forecast_bench --context 512 --horizon 24
+cuda-prof-report --report api -- ./build/app
+cuda-prof-report --report kernels --report transfers -- ./build/app
+cuda-prof-report --timeout 30 --stats-timeout 10 -- ./build/app
+cuda-prof-report --require-kernels --max-api-time-pct cudaMalloc=20 -- ./build/app
+cuda-prof-report --out cuda-report.md --prefix /tmp/bench_cuda -- ./app
+cuda-prof-report --out cuda-report.md --latest-link latest-cuda.md -- ./app
+cldperf gpu -- ./build/app
+cldperf cuda -- ./build/app
+```
+
+If you pass `--out` and omit `--prefix`, the profiler artifacts default to the same path stem as the markdown file.
+If you pass `--latest-link`, the tool also updates sibling `.nsys-rep` and `.sqlite` latest pointers.
+Use `--report api|kernels|transfers` to limit which sections are collected and rendered; policy flags automatically pull in the sections they need.
+Use `--timeout` and `--stats-timeout` to keep stuck profile or summary runs from hanging forever.
+
+### 🧵 native-prof-report - Native CPU/Heap Markdown Report
+Runs a native command under `callgrind` and `massif`, then emits a compact Markdown report with:
+- top CPU hotspots by instruction count
+- peak heap consumers by allocation stack
+- optional line-level CPU attribution for selected source files
+
+**Usage:**
+```bash
+native-prof-report -- ./build/app --flag value
+native-prof-report --source-file src/foo.cpp -- ./build/app
+native-prof-report --out native-report.md --prefix /tmp/native-run -- ./build/app
+cldperf native -- ./build/app
+```
+
+Notes:
+- line-level CPU attribution requires debug info, so prefer a `RelWithDebInfo` or dedicated profiling build
+- exact per-line heap attribution is not available here; use the reported peak allocation stacks instead
 
 ### 🤖 cldpr - Pull Request Creator
 Creates well-structured pull requests with AI-generated summaries.
@@ -159,6 +212,45 @@ All tools are already in this directory. To use them system-wide:
 - `export_chrome_profile.sh` - Export Chrome profiles
 - `setup_chrome_profile.sh` - Setup Chrome profiles
 - `simple_chrome_backup.sh` - Simple Chrome backup utility
+
+### :globe_with_meridians: webvitals - Core Web Vitals Measurement
+Measures Core Web Vitals (LCP, CLS, INP, FCP, TTFB) using Playwright + Chrome DevTools Protocol.
+
+**Usage:**
+```bash
+webvitals <url>                    # Measure web vitals
+webvitals https://example.com --runs=3    # Average over 3 runs
+webvitals https://example.com --mobile    # Simulate mobile viewport
+webvitals https://example.com --json      # Output raw JSON
+```
+
+**Features:**
+- Largest Contentful Paint (LCP) with element identification
+- Cumulative Layout Shift (CLS) with source detection
+- Interaction to Next Paint (INP) measurement
+- Resource waterfall and long task analysis
+- Connection timing breakdown (DNS, TCP, SSL)
+- Multi-run averaging and statistics
+
+**Requirements:** `playwright` Python package + Chromium
+
+### :link: blc - Broken Link Checker
+Crawls a website and reports broken links with clean markdown output.
+
+**Usage:**
+```bash
+blc <url>                          # Check for broken links (depth 2)
+blc https://example.com --depth=3  # Crawl deeper
+blc https://example.com --external # Also check external links
+blc https://example.com --json     # Output raw JSON
+```
+
+**Features:**
+- Concurrent link checking with configurable workers
+- Internal and external link checking
+- Grouped results by status code
+- Pages-with-most-broken-links summary
+- Works with stdlib only (optional requests/beautifulsoup4 for speed)
 
 ### Additional Tools
 - `dustg` - Git-aware disk usage analyzer (respects .gitignore)
