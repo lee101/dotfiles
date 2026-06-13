@@ -1,0 +1,4 @@
+interface:
+  display_name: "SEO + Web Vitals"
+  short_description: "Improve metadata, sitemaps, LCP, CLS, INP, and indexability."
+  default_prompt: "Optimize SEO and Core Web Vitals for this site or repo. Audit metadata, structured data, sitemap, robots, canonical URLs, route indexability, LCP, CLS, INP, FCP, and TTFB; run webvitals benchmarks when a URL is available; implement focused fixes and run relevant tests."
