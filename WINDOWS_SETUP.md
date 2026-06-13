@@ -140,6 +140,29 @@ vi <file>    # Opens with Neovim
 nvim <file>  # Opens with Neovim
 ```
 
+### Linux-Parity CLI Tools
+
+The quick setup installs these tools for both PowerShell and Git Bash:
+
+| Tool | Why it is included |
+|------|--------------------|
+| `dust`, `dustg` | Faster, clearer disk usage; `dustg` applies repo `.gitignore` exclusions |
+| `btop`, `bt` | Linux-style system monitor through btop4win |
+| `hyperfine`, `bench` | Repeatable command benchmarking |
+| `procs` | More readable `ps` replacement |
+| `sd` | Practical find/replace for scripts and one-offs |
+| `xh`, `http` | Friendly curl/httpie-style HTTP client |
+| `tokei` | Codebase language and line statistics |
+
+These heavier tools are useful but are left optional on Windows because they can need several GB of temporary build space or extra native dependencies:
+
+| Tool | Install | Notes |
+|------|---------|-------|
+| `difft` | `cargo install difftastic` | Syntax-aware diffs for reviews |
+| `dua`, `dtop` | `cargo install dua-cli` | Interactive disk usage explorer |
+| `btm` | `cargo install bottom` | Alternate terminal monitor if `btop` is not the right fit |
+| `gitui` | `cargo install gitui` | Fast Git TUI; Windows builds can need working OpenSSL/Perl dependencies |
+
 ## File Structure After Setup
 
 ```

@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""Generate a markdown memory report (and optional flamegraph) for a Python command."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable
+
+
+def _bytes_to_mb(value: int) -> float:
+    return value / (1024 * 1024)
+
+
+def _default_prefix() -> str:
+    return datetime.now(timezone.utc).strftime("memray_%Y%m%d_%H%M%S")
+
+
+def _parse_frame(stack_trace: str) -> str:
+    if not stack_trace:
+        return "unknown"
+    frames = stack_trace.split("|")
+    frame = frames[0] if frames else stack_trace
+    parts = frame.split(";")
+    if len(parts) >= 3:
+        func, file, line = parts[0], parts[1], parts[2]
+        return f"{file}:{line} ({func})"
+    return frame
+
+
+def _load_csv_rows(csv_path: Path, top_n: int) -> list[dict]:
+    rows = []
+    with csv_path.open(newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                size = int(row.get("size", 0))
+                allocs = int(row.get("num_allocations", 0))
+            except ValueError:
+                continue
+            rows.append(
+                {
+                    "size": size,
+                    "num_allocations": allocs,
+                    "allocator": row.get("allocator", ""),
+                    "thread_name": row.get("thread_name", ""),
+                    "stack_trace": row.get("stack_trace", ""),
+                }
+            )
+
+    rows.sort(key=lambda r: r["size"], reverse=True)
+    return rows[:top_n]
+
+
+def _render_markdown(
+    cmd: Iterable[str],
+    bin_path: Path,
+    csv_path: Path,
+    flame_path: Path | None,
+    rows: list[dict],
+) -> str:
+    lines = [
+        "# Python Memory Report",
+        "",
+        f"- Command: `{' '.join(cmd)}`",
+        f"- Results: `{bin_path}`",
+        f"- CSV: `{csv_path}`",
+    ]
+    if flame_path is not None:
+        lines.append(f"- Flamegraph: `{flame_path}`")
+
+    lines.append("")
+    lines.append("## Top Allocations")
+    lines.append("")
+    lines.append("| Size (MB) | Allocs | Allocator | Thread | Location |")
+    lines.append("| ---: | ---: | --- | --- | --- |")
+    for row in rows:
+        lines.append(
+            f"| {_bytes_to_mb(row['size']):.2f} | {row['num_allocations']} | "
+            f"{row['allocator']} | {row['thread_name']} | {_parse_frame(row['stack_trace'])} |"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run a Python command under memray and emit a markdown summary."
+    )
+    parser.add_argument("--out", type=Path, default=None, help="Markdown output path")
+    parser.add_argument("--bin", type=Path, default=None, help="Memray .bin output path")
+    parser.add_argument("--csv", type=Path, default=None, help="CSV output path")
+    parser.add_argument("--flame", type=Path, default=None, help="Flamegraph HTML output path")
+    parser.add_argument("--no-flame", action="store_true", help="Skip flamegraph generation")
+    parser.add_argument("--top", type=int, default=20, help="Top allocations to include")
+    parser.add_argument(
+        "--python",
+        type=Path,
+        default=None,
+        help="Python interpreter to run memray with (uses -m memray).",
+    )
+    parser.add_argument("command", nargs=argparse.REMAINDER, help="Command to run after --")
+
+    args = parser.parse_args()
+
+    if not args.command or args.command[0] != "--":
+        raise SystemExit("Usage: pymem-report [options] -- <python command>")
+    cmd = args.command[1:]
+    if not cmd:
+        raise SystemExit("No command provided after --")
+
+    memray_bin = None
+    if args.python is None:
+        memray_bin = shutil.which("memray")
+        if memray_bin is None:
+            fallback = Path(__file__).resolve().parent / ".venv" / "bin" / "memray"
+            if fallback.exists():
+                memray_bin = str(fallback)
+            else:
+                raise SystemExit("memray not found in PATH; install it first.")
+
+    prefix = _default_prefix()
+    bin_path = args.bin or Path(f"{prefix}.bin")
+    csv_path = args.csv or bin_path.with_suffix(".csv")
+    flame_path = None if args.no_flame else (args.flame or bin_path.with_suffix(".html"))
+
+    memray_args = []
+    if cmd[0].startswith("python"):
+        if len(cmd) < 2:
+            raise SystemExit("Expected python -m/-c or a script path")
+        if cmd[1] == "-m":
+            if len(cmd) < 3:
+                raise SystemExit("Expected module name after python -m")
+            memray_args = ["-m", cmd[2], *cmd[3:]]
+        elif cmd[1] == "-c":
+            if len(cmd) < 3:
+                raise SystemExit("Expected command string after python -c")
+            memray_args = ["-c", cmd[2], *cmd[3:]]
+        else:
+            memray_args = [cmd[1], *cmd[2:]]
+    else:
+        memray_args = cmd
+
+    if args.python is not None:
+        python = str(args.python)
+        run_cmd = [python, "-m", "memray", "run", "-o", str(bin_path), *memray_args]
+        transform_cmd = [
+            python,
+            "-m",
+            "memray",
+            "transform",
+            "csv",
+            "-o",
+            str(csv_path),
+            str(bin_path),
+        ]
+        flame_cmd = None
+        if flame_path is not None:
+            flame_cmd = [
+                python,
+                "-m",
+                "memray",
+                "flamegraph",
+                "-o",
+                str(flame_path),
+                str(bin_path),
+            ]
+    else:
+        run_cmd = [memray_bin, "run", "-o", str(bin_path), *memray_args]
+        transform_cmd = [memray_bin, "transform", "csv", "-o", str(csv_path), str(bin_path)]
+        flame_cmd = None
+        if flame_path is not None:
+            flame_cmd = [
+                memray_bin,
+                "flamegraph",
+                "-o",
+                str(flame_path),
+                str(bin_path),
+            ]
+
+    subprocess.run(run_cmd, check=True)
+    subprocess.run(transform_cmd, check=True)
+    if flame_cmd is not None:
+        subprocess.run(flame_cmd, check=True)
+
+    rows = _load_csv_rows(csv_path, args.top)
+    markdown = _render_markdown(cmd, bin_path, csv_path, flame_path, rows)
+
+    if args.out:
+        args.out.write_text(markdown)
+        print(f"Wrote markdown report to {args.out}")
+    else:
+        print(markdown)
+
+
+if __name__ == "__main__":
+    main()

@@ -41,10 +41,30 @@ gst  # Should run 'git status'
 ### Test Your Setup
 ```powershell
 check-tools  # See what tools are installed
+check-optional-tools  # See heavier optional tools
 gst          # Test git status alias
 c            # Navigate to code directory
 reload       # Reload profile anytime
 ```
+
+### Extra Linux-Parity Tools
+
+`quick-setup-windows.ps1` also installs a small set of Unix-style CLI tools that work well in both PowerShell and Git Bash:
+
+- `dust` / `dustg` - disk usage, with `dustg` respecting repo `.gitignore`
+- `btop` / `bt` - system monitor through btop4win
+- `hyperfine` / `bench` - command benchmarking
+- `procs` - modern `ps`
+- `sd` - simpler `sed`-style find/replace
+- `xh` / `http` - HTTP client
+- `tokei` - code line statistics
+
+Optional heavier tools worth installing when you have a few GB free:
+
+- `difft` - syntax-aware diffs (`cargo install difftastic` or winget package if available)
+- `dua` / `dtop` - interactive disk usage (`cargo install dua-cli`)
+- `btm` - alternate terminal system monitor (`cargo install bottom`)
+- `gitui` - terminal Git UI (`cargo install gitui`; can need OpenSSL/Perl build dependencies on Windows)
 
 ## Troubleshooting
 

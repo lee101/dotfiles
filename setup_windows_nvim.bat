@@ -1,40 +1,32 @@
 @echo off
-echo Setting up Windows nvim configuration...
+echo Setting up Windows nvim configuration (AppData + .config for Git Bash)...
 
-REM Check if nvim is installed
 where nvim >nul 2>&1
 if %errorlevel% neq 0 (
-    echo nvim not found in PATH. Installing via winget...
-    winget install Neovim.Neovim
-    echo Please restart your terminal after installation.
+    echo nvim not found. winget install Neovim.Neovim first.
     pause
     exit /b 1
 )
 
-echo nvim found: 
-where nvim
+set "DOTFILES=%~dp0"
+set "TARGET1=%USERPROFILE%\AppData\Local\nvim"
+set "TARGET2=%USERPROFILE%\.config\nvim"
 
-REM Create config directory
-if not exist "%USERPROFILE%\.config\nvim" (
-    mkdir "%USERPROFILE%\.config\nvim"
-    echo Created nvim config directory
+for %%T in ("%TARGET1%" "%TARGET2%") do (
+    if not exist "%%~T" mkdir "%%~T" >nul 2>&1
+    echo Linking into %%~T ...
+    mklink "%%~T\init.lua" "%DOTFILES%init.lua" >nul 2>&1
+    mklink /D "%%~T\lua" "%DOTFILES%lua" >nul 2>&1
+    if exist "%DOTFILES%nvim" (
+        for %%F in ("%DOTFILES%nvim\*") do (
+            if /I not "%%~nxF"=="init.lua" if /I not "%%~nxF"=="lua" (
+                mklink "%%~T\%%~nxF" "%%~F" >nul 2>&1
+            )
+        )
+    )
 )
 
-REM Create symlink to dotfiles (run as admin if needed)
-echo Creating symlink to dotfiles...
-mklink /D "%USERPROFILE%\.config\nvim" "C:\Users\%USERNAME%\code\dotfiles\.config\nvim" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Failed to create symlink. Trying alternative method...
-    xcopy "C:\Users\%USERNAME%\code\dotfiles\.config\nvim\*" "%USERPROFILE%\.config\nvim\" /E /I /Y
-    echo Copied config files instead of symlink
-)
-
 echo.
-echo Windows nvim setup complete!
-echo.
-echo To test:
-echo 1. Open Git Bash
-echo 2. Run: nvim --version
-echo 3. Run: nvim test.lua
-echo.
-pause 
+echo Neovim setup done for both PowerShell and Git Bash.
+echo Open a new terminal and run "vi" or "nvim".
+pause

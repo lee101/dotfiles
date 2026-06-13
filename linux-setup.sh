@@ -4,6 +4,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sudo snap install eza
 
+# Python memory tooling (memray) for pymem-report
+if command -v uv >/dev/null; then
+  if [ ! -d "${HOME}/code/dotfiles/tools/.venv" ]; then
+    python3 -m venv "${HOME}/code/dotfiles/tools/.venv"
+  fi
+  uv pip install --python "${HOME}/code/dotfiles/tools/.venv/bin/python" memray rich psutil
+else
+  echo "uv not found; skipping memray install. Install uv and re-run to enable pymem-report."
+fi
+
 # Ensure Ghostty terminfo exists so tmux works when TERM is xterm-ghostty
 if command -v tic >/dev/null; then
   echo "Installing Ghostty terminfo entry..."
@@ -12,6 +22,15 @@ if command -v tic >/dev/null; then
   echo "Installing Kitty terminfo entry..."
   tic -x -o "${HOME}/.terminfo" "${SCRIPT_DIR}/terminfo/kitty.terminfo"
 fi
+
+# Install Jujutsu (jj) - Git-compatible VCS
+echo "Installing Jujutsu (jj)..."
+mkdir -p /tmp/jj_extract
+curl -Lo /tmp/jj.tar.gz "https://github.com/jj-vcs/jj/releases/download/v0.39.0/jj-v0.39.0-x86_64-unknown-linux-musl.tar.gz"
+tar xf /tmp/jj.tar.gz -C /tmp/jj_extract
+sudo install /tmp/jj_extract/jj /usr/local/bin/
+rm -rf /tmp/jj.tar.gz /tmp/jj_extract
+jj --version
 
 # Essential Git tools setup
 echo "Installing Git and essential Git tools..."
@@ -73,7 +92,7 @@ sudo apt-get install -y libarrow-dev libparquet-dev
 
 sudo apt install nasm
 
-sudo apt install zile plocate hstr
+sudo apt install zile plocate hstr strace
 # Install/update Neovim to latest stable via snap
 sudo snap install nvim --classic
 sudo snap refresh nvim --channel=stable
