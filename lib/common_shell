@@ -66,6 +66,7 @@ fi
 export CUDA_HOME='/usr/local/cuda-12.0'
 
 # Various tools
+[ -d "$HOME/.cargo/bin" ] && [[ ":$PATH:" != *":$HOME/.cargo/bin:"* ]] && export PATH="$HOME/.cargo/bin:$PATH"
 [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
 [ -d "$HOME/programs" ] && [[ ":$PATH:" != *":$HOME/programs:"* ]] && export PATH="$PATH:$HOME/programs"
 [ -d "$HOME/.rvm/bin" ] && export PATH="$PATH:$HOME/.rvm/bin"

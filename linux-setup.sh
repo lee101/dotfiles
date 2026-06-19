@@ -66,6 +66,14 @@ sudo mv difft /usr/local/bin/
 
 echo "Delta and difft installed successfully"
 
+# Install zellij (terminal multiplexer)
+echo "Installing zellij..."
+curl -L "https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz" | tar -xz
+sudo chmod +x zellij
+sudo install zellij /usr/local/bin/
+rm -f zellij
+zellij --version
+
 # Install tig
 sudo apt install tig -y
 

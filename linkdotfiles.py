@@ -32,7 +32,7 @@ def warn(message):
     print(message, file=sys.stderr)
 
 # Skip these files (uses fnmatch matching)
-skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig.windows', 'vscode-extensions.txt']
+skip_list = ['.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh', 'lua', 'init.lua', 'gitconfig', 'gitconfig.windows', 'vscode-extensions.txt']
 cwd = str(script_dir)
 homedir = os.path.expanduser('~')
 files = os.listdir(cwd)
@@ -68,6 +68,24 @@ for filename in files:
     os.symlink(source, destination)
 
 log('Done.')
+
+# Handle gitconfig via [include] so global git config writes (e.g. safe.directory from CI runners)
+# don't pollute the tracked dotfiles/gitconfig file.
+gitconfig_source = os.path.join(cwd, 'gitconfig')
+gitconfig_dest = os.path.join(homedir, '.gitconfig')
+if os.path.exists(gitconfig_source):
+    include_line = '[include]\n\tpath = %s\n' % gitconfig_source
+    if os.path.lexists(gitconfig_dest) and os.path.islink(gitconfig_dest):
+        log('Replacing .gitconfig symlink with include-based file')
+        os.remove(gitconfig_dest)
+    if not os.path.exists(gitconfig_dest):
+        log('Creating .gitconfig with [include] path = %s' % gitconfig_source)
+        with open(gitconfig_dest, 'w') as f:
+            f.write(include_line)
+    elif include_line not in open(gitconfig_dest).read():
+        log('Adding [include] to existing .gitconfig')
+        with open(gitconfig_dest, 'a') as f:
+            f.write('\n' + include_line)
 
 # Handle lib directory files (like git_aliases)
 lib_source = os.path.join(cwd, 'lib')
