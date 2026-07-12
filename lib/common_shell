@@ -794,15 +794,15 @@ CODEX_LOCAL="$HOME/code/codex/codex-rs/target/release/codex"
 CODEX_BUN="$HOME/.bun/bin/codex"
 
 # Upstream codex (via bun) - ccx* aliases
-alias ccx='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.5 --config model_reasoning_effort=xhigh'
-alias ccxl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.5 --config model_reasoning_effort=low'
-alias ccxm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.5 --config model_reasoning_effort=medium'
-alias ccxh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.5 --config model_reasoning_effort=high'
-alias ccxf='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.5 --config model_reasoning_effort=high'
-alias ccxs='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=xhigh'
-alias ccxsl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=low'
-alias ccxsm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=medium'
-alias ccxsh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.4-mini --config model_reasoning_effort=high'
+alias ccx='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol--config model_reasoning_effort=xhigh'
+alias ccxl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=low'
+alias ccxm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=medium'
+alias ccxh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=high'
+alias ccxf='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=high'
+alias ccxs='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=xhigh'
+alias ccxsl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low'
+alias ccxsm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium'
+alias ccxsh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high'
 
 # Standard codex aliases (use bun)
 alias cdx='$CODEX_BUN'
