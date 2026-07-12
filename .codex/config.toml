@@ -25,6 +25,33 @@ trust_level = "trusted"
 [projects."/vfast/data/code/dictator"]
 trust_level = "trusted"
 
+[projects."/home/lee/code/stock"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/animacule"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/biohub"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/codex-local-20260525"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/food-optimization"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/app-site"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/binancego"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/prediction2"]
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
