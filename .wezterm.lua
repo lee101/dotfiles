@@ -70,13 +70,28 @@ config.check_for_updates = false
 config.keys = {
   { key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
   { key = "w", mods = "CTRL", action = act.CloseCurrentTab({ confirm = false }) },
+
+  -- Familiar split-pane shortcuts from Windows Terminal, VS Code, and tmux-like layouts.
   { key = "d", mods = "ALT|SHIFT", action = act.SplitPane({ direction = "Right", size = { Percent = 50 } }) },
+  { key = "D", mods = "CTRL|SHIFT", action = act.SplitPane({ direction = "Right", size = { Percent = 50 } }) },
+  { key = "E", mods = "CTRL|SHIFT", action = act.SplitPane({ direction = "Right", size = { Percent = 50 } }) },
+  { key = "O", mods = "CTRL|SHIFT", action = act.SplitPane({ direction = "Down", size = { Percent = 50 } }) },
+  { key = "5", mods = "CTRL|SHIFT", action = act.SplitPane({ direction = "Right", size = { Percent = 50 } }) },
   { key = "-", mods = "CTRL|SHIFT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
   { key = "\\", mods = "CTRL|SHIFT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
+  { key = "_", mods = "CTRL|SHIFT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
+  { key = "|", mods = "CTRL|SHIFT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
+
   { key = "LeftArrow", mods = "ALT", action = act.ActivatePaneDirection("Left") },
   { key = "RightArrow", mods = "ALT", action = act.ActivatePaneDirection("Right") },
   { key = "UpArrow", mods = "ALT", action = act.ActivatePaneDirection("Up") },
   { key = "DownArrow", mods = "ALT", action = act.ActivatePaneDirection("Down") },
+  { key = "LeftArrow", mods = "ALT|SHIFT", action = act.AdjustPaneSize({ "Left", 5 }) },
+  { key = "RightArrow", mods = "ALT|SHIFT", action = act.AdjustPaneSize({ "Right", 5 }) },
+  { key = "UpArrow", mods = "ALT|SHIFT", action = act.AdjustPaneSize({ "Up", 3 }) },
+  { key = "DownArrow", mods = "ALT|SHIFT", action = act.AdjustPaneSize({ "Down", 3 }) },
+  { key = "Enter", mods = "ALT|SHIFT", action = act.TogglePaneZoomState },
+
   { key = "f", mods = "CTRL|SHIFT", action = act.Search("CurrentSelectionOrEmptyString") },
   { key = "F11", mods = "NONE", action = act.ToggleFullScreen },
 }
