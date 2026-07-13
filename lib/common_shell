@@ -864,7 +864,7 @@ cxxhni() {
 
 cxhni() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol "$@" --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
     else
         echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
         return 1
@@ -894,13 +894,31 @@ cxm() {
     fi
 }
 
-cxnm() {
+cxll() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxlm() {
     if [ -x "$CODEX_LOCAL" ]; then
         "$CODEX_LOCAL" --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
     else
         echo "Local codex not built"; return 1
     fi
 }
+
+cxlh() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
+    else
+        echo "Local codex not built"; return 1
+    fi
+}
+
+cxnm() { cxlm "$@"; }
 
 cxt() {
     if [ -x "$CODEX_LOCAL" ]; then
@@ -942,7 +960,7 @@ txh() { cxt "$@"; }
 
 cxim() {
     if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 --config model=gpt-5.6-sol --auto-next-idea "$@"
+        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=medium --auto-next-idea "$@"
     else
         echo "Local codex not built"; return 1
     fi
