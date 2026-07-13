@@ -33,3 +33,4 @@ __pycache__/
 
 # Compiled go tools (built from tools/cmd via build.sh)
 /tools/gtree
+tools/netwrck-route-prof
