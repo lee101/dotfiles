@@ -82,6 +82,7 @@ function gw { git whatchanged }
 function gdfb { git diff master... }
 function gdfbm { git diff main... }
 function gdfbd { git diff develop... }
+function sscp { ssh -o StrictHostKeyChecking=no administrator@93.127.141.100 @args }
 
 # Modern Git tools
 function lg { lazygit }
@@ -236,16 +237,25 @@ function extract {
 Set-Alias -Name k -Value kubectl
 
 # Common shortcuts
-Set-Alias -Name ll -Value Get-ChildItem
 Set-Alias -Name which -Value Get-Command
 
+function ls { Get-ChildItem @args }
+function ll { Get-ChildItem -Force @args }
+function la { Get-ChildItem -Force @args }
+function l { Get-ChildItem @args }
+function lt { Get-ChildItem -Force @args | Sort-Object LastWriteTime -Descending }
+function lsize { Get-ChildItem -Force @args | Sort-Object Length -Descending }
+function lrecent { lt @args }
+
 # Python aliases
-function pin { pip install $args }
-function pinu { pip install -U $args }
-function pfr { pip freeze }
-function pfrr { pip freeze > requirements.txt }
+function pip { uv pip @args }
+function pin { uv pip install @args }
+function pinu { uv pip install -U @args }
+function pfr { uv pip freeze @args }
+function pfrr { uv pip freeze > requirements.txt }
 
 # Node.js/Yarn/NPM aliases
+if (Test-Path Alias:ni) { Remove-Item Alias:ni -Force }
 function ni { npm install $args }
 function nig { npm install -g $args }
 function nis { npm install --save $args }
@@ -411,9 +421,69 @@ function cldgdf {
 # ==========================================
 # Codex CLI aliases
 # ==========================================
-function cx { codex @args }
+$script:CodexLocalCandidates = @(
+    "$HOME\code\codex-infinity\codex-rs\target\release\codex.exe",
+    "$HOME\code\codex\codex-rs\target\release\codex.exe",
+    "$HOME\code\codex-infinity\codex-rs\target\release\codex",
+    "$HOME\code\codex\codex-rs\target\release\codex"
+)
+
+function Get-CodexLocal {
+    foreach ($candidate in $script:CodexLocalCandidates) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+    return $null
+}
+
+function Invoke-CodexLocal {
+    param([string[]]$CodexArgs)
+    $codexLocal = Get-CodexLocal
+    if ($codexLocal) {
+        & $codexLocal @CodexArgs
+        return
+    }
+    if (Get-Command codex -ErrorAction SilentlyContinue) {
+        codex @CodexArgs
+        return
+    }
+    Write-Host "Codex not found. Install codex or build local Codex under ~/code/codex-infinity or ~/code/codex." -ForegroundColor Yellow
+}
+
+function Invoke-CodexModel {
+    param(
+        [string]$Model,
+        [string]$ReasoningEffort,
+        [string[]]$CodexArgs = @()
+    )
+    Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "-m", $Model, "--config", "model_reasoning_effort=$ReasoningEffort") + $CodexArgs)
+}
+
+function cx { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox") + $args) }
+function cxi { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--auto-next-idea") + $args) }
+function cxn { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--auto-next-steps") + $args) }
+function cxl { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=low") + $args) }
+function cxm { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=medium") + $args) }
+function cxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high") + $args) }
+function cxxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=xhigh") + $args) }
+function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high", "--full-auto") + $args) }
+function cxll { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "low" -CodexArgs $args }
+function cxlm { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "medium" -CodexArgs $args }
+function cxlh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "high" -CodexArgs $args }
+function cxt { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
+function cxtl { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "low" -CodexArgs $args }
+function cxtm { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "medium" -CodexArgs $args }
+function cxth { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "high" -CodexArgs $args }
+function cxbuild {
+    $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs") { "$HOME\code\codex" } else { $null }
+    if (-not $codexDir) {
+        Write-Host "No local Codex checkout found under ~/code/codex-infinity or ~/code/codex" -ForegroundColor Yellow
+        return
+    }
+    Push-Location $codexDir
+    try { cargo build --release -p codex } finally { Pop-Location }
+}
+
 function cxa { codex --auto-edit @args }
-function cxf { codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto @args }
 function cdx { codex @args }
 function cdxd { codex --dangerously-bypass-approvals-and-sandbox @args }
 function cdxf { codex --full-auto @args }
