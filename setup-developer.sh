@@ -271,6 +271,25 @@ install_rust() {
   POST_INSTALL_NOTES+=("Rust installed. Run 'source ~/.cargo/env' or restart your shell to use cargo and rustc.")
 }
 
+install_rust_cli_tools() {
+  local cargo_bin="${HOME}/.cargo/bin"
+  if [[ -d "${cargo_bin}" && ":${PATH}:" != *":${cargo_bin}:"* ]]; then
+    export PATH="${cargo_bin}:${PATH}"
+  fi
+
+  if ! command -v cargo >/dev/null 2>&1; then
+    log_warn "cargo not found; skipping Rust CLI tools."
+    return
+  fi
+
+  if command -v dust >/dev/null 2>&1 && [[ "$(command -v dust)" != /snap/bin/* ]]; then
+    log_info "dust already installed outside Snap ($(command -v dust))."
+  else
+    log_info "Installing dust via cargo to avoid Snap mount confinement..."
+    cargo install du-dust
+  fi
+}
+
 install_docker() {
   if command -v docker >/dev/null 2>&1; then
     log_info "Docker already installed ($(docker --version | head -n1))."
@@ -515,6 +534,7 @@ main() {
   install_difftastic
   install_go
   install_rust
+  install_rust_cli_tools
   install_docker
   link_dotfiles
 

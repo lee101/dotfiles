@@ -4,7 +4,7 @@ alias dvni="~/programs/Devin/bin/devin-desktop"
 alias crs='cursor-agent --yolo'
 alias crsa='cursor agent --trust --yolo --print '
 # and environment variables live in lib/common_shell.
-alias clinst='curl -fsSL https://claude.ai/install.sh | bash'
+alias clinst='bun install -g @anthropic-ai/claude-code@latest'
 alias cinst='npm install -g @openai/codex@latest'
 # Startup timing - set DEBUG_STARTUP=1 to enable
 [ -n "$DEBUG_STARTUP" ] && echo "Bashrc start: $(date +%s.%N)"
@@ -259,6 +259,7 @@ export PATH="/home/administrator/.pixi/bin:$PATH"
 alias tx='tmux attach'
 alias tls='tmux ls'
 alias tn='tmux new -s'
+alias cld='claude --dangerously-skip-permissions'
 alias cldd='claude --dangerously-skip-permissions'
 alias cldc='claude --dangerously-skip-permissions --chrome'
 alias clds='claude --dangerously-skip-permissions --model sonnet'
@@ -300,3 +301,4 @@ export PATH="/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d:$PATH"
 # >>> grok installer >>>
 export PATH="$HOME/.grok/bin:$PATH"
 # <<< grok installer <<<
+alias sscp='ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
