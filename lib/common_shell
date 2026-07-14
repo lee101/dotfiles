@@ -876,7 +876,7 @@ cxni() {
 
 # Codex build helper
 cxbuild() {
-    cd ~/code/codex && cargo build --release -p codex && echo "Built: $CODEX_LOCAL"
+    ( cd ~/code/codex/codex-rs && cargo build --release --bin codex ) && echo "Built: $CODEX_LOCAL"
 }
 
 # ── Two-phase Codex pipeline: Plan (spark) → Execute (codex) → Git (spark) ──
