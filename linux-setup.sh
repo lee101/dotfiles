@@ -66,6 +66,14 @@ sudo mv difft /usr/local/bin/
 
 echo "Delta and difft installed successfully"
 
+# Install zellij (terminal multiplexer)
+echo "Installing zellij..."
+curl -L "https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz" | tar -xz
+sudo chmod +x zellij
+sudo install zellij /usr/local/bin/
+rm -f zellij
+zellij --version
+
 # Install tig
 sudo apt install tig -y
 
@@ -292,6 +300,52 @@ gh auth login
 gh extension install github/gh-copilot
 
 sudo apt install -y ripgrep
+
+# ── Rust build acceleration ──────────────────────────────────────────
+echo "Setting up Rust build optimizations..."
+
+# Install mold linker
+sudo apt install -y mold
+
+# Install sccache (build cache)
+if ! command -v sccache >/dev/null; then
+  cargo install sccache
+fi
+
+# Detect fast disk for caches (prefer nvme scratch, fall back to home)
+if [ -d "/nvme0n1-disk" ]; then
+  FAST_DISK="/nvme0n1-disk"
+elif [ -d "/scratch" ]; then
+  FAST_DISK="/scratch"
+else
+  FAST_DISK="${HOME}"
+fi
+
+mkdir -p "${FAST_DISK}/sccache" "${FAST_DISK}/cargo-target"
+
+# Write cargo config
+mkdir -p "${HOME}/.cargo"
+cat > "${HOME}/.cargo/config.toml" << CARGOEOF
+[build]
+jobs = $(nproc)
+rustc-wrapper = "sccache"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+target-dir = "${FAST_DISK}/cargo-target"
+CARGOEOF
+
+# Persist sccache env vars (idempotent)
+for rcfile in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
+  if [ -f "$rcfile" ] && ! grep -q SCCACHE_DIR "$rcfile"; then
+    cat >> "$rcfile" << SCCEOF
+
+# Rust sccache
+export SCCACHE_DIR=${FAST_DISK}/sccache
+export SCCACHE_CACHE_SIZE=50G
+SCCEOF
+  fi
+done
+
+echo "Rust build acceleration configured (mold + sccache + $(nproc) jobs)"
 
 # Install lynx text-based web browser
 echo "Installing lynx browser..."

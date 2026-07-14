@@ -1,10 +1,55 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
 
 [default]
 model_reasoning_effort = "high"
 
 [projects."/mnt/fast/code/netwrck"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/hiresnz2"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/codex-local-20260525"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/dotfiles"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/prediction2"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/binancego"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/dictator"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/stock"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/animacule"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/biohub"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/codex-local-20260525"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/food-optimization"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/app-site"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/binancego"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/prediction2"]
 trust_level = "trusted"
 
 [sandbox_workspace_write]
@@ -16,3 +61,6 @@ web_search = true
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.3-codex"
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4

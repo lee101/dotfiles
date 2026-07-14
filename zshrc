@@ -258,3 +258,5 @@ typeset -U PATH
 if [[ "$(uname -s)" == "Darwin" ]] && [ -x /usr/local/bin/go-wrapper ]; then
     alias go="/usr/local/bin/go-wrapper"
 fi
+
+. "$HOME/.local/bin/env"

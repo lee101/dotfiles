@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Debug Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Go: Debug Main Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Go: Debug Package Tests",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "C/C++: Debug build/a.out",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/a.out",
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        }
+    ]
+}
