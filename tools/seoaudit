@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""
+seoaudit - one-shot SEO + performance audit for a site.
+
+Combines:
+  - per-page <head> checks (title, meta description, canonical, OG/Twitter, JSON-LD, h1, word count)
+  - optional JS rendering (Playwright) so single-page apps are audited as a crawler that runs JS sees them
+  - Core Web Vitals via the sibling `webvitals` tool (LCP / CLS / FCP / TTFB)
+  - broken-link crawl via the sibling `blc` tool
+
+Outputs a single clean Markdown report.
+
+Usage:
+    seoaudit https://dictatorflow.com
+    seoaudit https://dictatorflow.com --render            # run JS before reading <head> (SPA mode)
+    seoaudit https://dictatorflow.com --paths / /blog /docs /about
+    seoaudit https://dictatorflow.com --sitemap           # audit every URL in /sitemap.xml
+    seoaudit https://dictatorflow.com --render --vitals --links --out seo-report.md
+
+Exit code is non-zero if any page has a blocking issue (missing/duplicate title or
+missing meta description), so it can gate CI.
+"""
+
+import sys
+import os
+import re
+import argparse
+import subprocess
+import json
+from urllib.parse import urljoin, urlparse
+from collections import Counter
+
+TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Reuse the same venv discovery the other tools use.
+_VENV_SEARCH_PATHS = [
+    os.path.join(TOOLS_DIR, ".venv"),
+    "/nvme0n1-disk/code/netwrck/.venv",
+]
+for _venv in _VENV_SEARCH_PATHS:
+    if os.path.isdir(_venv):
+        _lib = os.path.join(_venv, "lib")
+        if os.path.isdir(_lib):
+            for _d in os.listdir(_lib):
+                _sp = os.path.join(_lib, _d, "site-packages")
+                if os.path.isdir(_sp) and _sp not in sys.path:
+                    sys.path.insert(0, _sp)
+            break
+
+try:
+    import requests
+    from bs4 import BeautifulSoup
+    HAS_DEPS = True
+except ImportError:
+    HAS_DEPS = False
+
+import urllib.request
+import urllib.error
+import ssl
+
+
+# ---------------------------------------------------------------------------
+# Fetching
+# ---------------------------------------------------------------------------
+
+def fetch_static(url, timeout=15):
+    """Fetch raw HTML without executing JavaScript."""
+    if HAS_DEPS:
+        r = requests.get(url, timeout=timeout, headers={"User-Agent": "seoaudit/1.0"})
+        return r.status_code, r.text
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    req = urllib.request.Request(url, headers={"User-Agent": "seoaudit/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+            return resp.status, resp.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, ""
+
+
+def fetch_rendered(url, timeout=30000):
+    """Fetch HTML after the page's JavaScript has run (SPA mode)."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_context(ignore_https_errors=True).new_page()
+        page.goto(url, wait_until="networkidle", timeout=timeout)
+        # give React head hoisting a beat to settle
+        page.wait_for_timeout(400)
+        html = page.content()
+        browser.close()
+        return 200, html
+
+
+# ---------------------------------------------------------------------------
+# Per-page analysis
+# ---------------------------------------------------------------------------
+
+def analyze(url, html, status):
+    soup = BeautifulSoup(html, "html.parser") if HAS_DEPS else None
+    if soup is None:
+        raise SystemExit("seoaudit needs beautifulsoup4 (pip install requests beautifulsoup4)")
+
+    def meta(attr, val):
+        tag = soup.find("meta", attrs={attr: val})
+        return tag.get("content", "").strip() if tag and tag.get("content") else ""
+
+    title = soup.title.string.strip() if soup.title and soup.title.string else ""
+    desc = meta("name", "description")
+    canonical_tag = soup.find("link", attrs={"rel": "canonical"})
+    canonical = canonical_tag.get("href", "").strip() if canonical_tag else ""
+    robots = meta("name", "robots")
+    og_title = meta("property", "og:title")
+    og_image = meta("property", "og:image")
+    og_desc = meta("property", "og:description")
+    tw_card = meta("name", "twitter:card")
+    h1s = [h.get_text(strip=True) for h in soup.find_all("h1")]
+    imgs = soup.find_all("img")
+    imgs_no_alt = sum(1 for i in imgs if not i.get("alt"))
+    text = soup.get_text(" ", strip=True)
+    words = len(text.split())
+
+    ld_types = []
+    for s in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        try:
+            data = json.loads(s.string or "{}")
+            for obj in (data if isinstance(data, list) else [data]):
+                t = obj.get("@type")
+                if t:
+                    ld_types.append(t)
+        except Exception:
+            ld_types.append("INVALID")
+
+    issues = []
+    if status >= 400:
+        issues.append(f"HTTP {status}")
+    if not title:
+        issues.append("missing <title>")
+    if not desc:
+        issues.append("missing meta description")
+    if len(title) > 65:
+        issues.append(f"title too long ({len(title)} chars)")
+    if desc and len(desc) > 165:
+        issues.append(f"description too long ({len(desc)} chars)")
+    if not canonical:
+        issues.append("no canonical")
+    if not h1s:
+        issues.append("no <h1>")
+    elif len(h1s) > 1:
+        issues.append(f"{len(h1s)} <h1> tags")
+    if not og_image:
+        issues.append("no og:image")
+
+    return {
+        "url": url, "status": status, "title": title, "desc": desc,
+        "canonical": canonical, "robots": robots, "og_title": og_title,
+        "og_image": og_image, "og_desc": og_desc, "tw_card": tw_card,
+        "h1": h1s, "words": words, "imgs": len(imgs), "imgs_no_alt": imgs_no_alt,
+        "ld_types": ld_types, "issues": issues,
+    }
+
+
+# ---------------------------------------------------------------------------
+# URL discovery
+# ---------------------------------------------------------------------------
+
+def urls_from_sitemap(base):
+    sm = urljoin(base, "/sitemap.xml")
+    status, xml = fetch_static(sm)
+    locs = re.findall(r"<loc>(.*?)</loc>", xml)
+    return locs or [base]
+
+
+# ---------------------------------------------------------------------------
+# Sibling tools
+# ---------------------------------------------------------------------------
+
+def run_sibling(name, args):
+    path = os.path.join(TOOLS_DIR, name)
+    try:
+        out = subprocess.run(
+            [sys.executable, path, *args],
+            capture_output=True, text=True, timeout=180,
+        )
+        return out.stdout or out.stderr
+    except Exception as e:  # noqa
+        return f"_({name} failed: {e})_"
+
+
+# ---------------------------------------------------------------------------
+# Report
+# ---------------------------------------------------------------------------
+
+def truncate(s, n=60):
+    s = s or ""
+    return s if len(s) <= n else s[: n - 1] + "…"
+
+
+def main():
+    ap = argparse.ArgumentParser(description="One-shot SEO + performance audit.")
+    ap.add_argument("url")
+    ap.add_argument("--paths", nargs="*", help="explicit paths to audit (default: just the URL)")
+    ap.add_argument("--sitemap", action="store_true", help="audit every URL in /sitemap.xml")
+    ap.add_argument("--render", action="store_true", help="run JS before reading <head> (SPA mode)")
+    ap.add_argument("--vitals", action="store_true", help="include Core Web Vitals (homepage)")
+    ap.add_argument("--links", action="store_true", help="include a broken-link crawl")
+    ap.add_argument("--all", action="store_true", help="shorthand for --render --vitals --links --sitemap")
+    ap.add_argument("--out", help="write the report to a file as well as stdout")
+    args = ap.parse_args()
+
+    if args.all:
+        args.render = args.vitals = args.links = args.sitemap = True
+
+    base = args.url.rstrip("/")
+    if args.sitemap:
+        targets = urls_from_sitemap(base)
+    elif args.paths:
+        targets = [urljoin(base + "/", p.lstrip("/")) for p in args.paths]
+    else:
+        targets = [base]
+
+    fetch = fetch_rendered if args.render else fetch_static
+
+    rows = []
+    for u in targets:
+        try:
+            status, html = fetch(u)
+            rows.append(analyze(u, html, status))
+        except Exception as e:  # noqa
+            rows.append({"url": u, "status": 0, "issues": [f"fetch error: {e}"],
+                         "title": "", "desc": "", "ld_types": [], "h1": [],
+                         "canonical": "", "og_image": "", "words": 0,
+                         "imgs": 0, "imgs_no_alt": 0})
+
+    # ---- build markdown ----
+    out = []
+    mode = "JS-rendered" if args.render else "static HTML"
+    out.append(f"# SEO Audit: {base}")
+    out.append(f"*mode: {mode} · pages: {len(rows)}*\n")
+
+    total_issues = sum(len(r["issues"]) for r in rows)
+    dup_titles = [t for t, c in Counter(r["title"] for r in rows if r["title"]).items() if c > 1]
+
+    out.append("## Summary\n")
+    out.append(f"- **Pages audited**: {len(rows)}")
+    out.append(f"- **Total issues**: {total_issues}")
+    out.append(f"- **Pages with JSON-LD**: {sum(1 for r in rows if r['ld_types'])}/{len(rows)}")
+    out.append(f"- **Duplicate titles**: {len(dup_titles)}"
+               + (f" — {', '.join(truncate(t,40) for t in dup_titles)}" if dup_titles else ""))
+    out.append("")
+
+    out.append("## Per-page checks\n")
+    out.append("| Page | Title | Desc | Canon | JSON-LD | H1 | Words | Issues |")
+    out.append("|------|-------|------|-------|---------|----|-------|--------|")
+    for r in rows:
+        path = urlparse(r["url"]).path or "/"
+        ld = ",".join(sorted(set(r["ld_types"]))) or "—"
+        out.append(
+            f"| `{path}` | {'✅' if r['title'] else '❌'} | {'✅' if r['desc'] else '❌'} "
+            f"| {'✅' if r['canonical'] else '❌'} | {ld} | {len(r['h1'])} | {r['words']} "
+            f"| {'; '.join(r['issues']) or '—'} |"
+        )
+    out.append("")
+
+    # detail any page that has issues
+    flagged = [r for r in rows if r["issues"]]
+    if flagged:
+        out.append("## Details for flagged pages\n")
+        for r in flagged:
+            out.append(f"### `{urlparse(r['url']).path or '/'}`")
+            out.append(f"- title: {truncate(r['title'], 90) or '—'}")
+            out.append(f"- description: {truncate(r['desc'], 120) or '—'}")
+            out.append(f"- canonical: {r['canonical'] or '—'}")
+            out.append(f"- og:image: {r['og_image'] or '—'} · twitter:card: {r.get('tw_card') or '—'}")
+            out.append(f"- images without alt: {r['imgs_no_alt']}/{r['imgs']}")
+            out.append(f"- **issues**: {', '.join(r['issues'])}")
+            out.append("")
+
+    if args.vitals:
+        out.append("## Core Web Vitals (homepage)\n")
+        out.append(run_sibling("webvitals", [base, "--runs=3"]).strip())
+        out.append("")
+
+    if args.links:
+        out.append("## Broken links\n")
+        out.append(run_sibling("blc", [base, "--depth=2"]).strip())
+        out.append("")
+
+    report = "\n".join(out)
+    print(report)
+    if args.out:
+        with open(args.out, "w") as f:
+            f.write(report + "\n")
+        print(f"\n_Report written to {args.out}_", file=sys.stderr)
+
+    # blocking issues for CI gating
+    blocking = any(
+        any(i.startswith(("missing <title>", "missing meta description")) for i in r["issues"])
+        for r in rows
+    ) or bool(dup_titles)
+    sys.exit(1 if blocking else 0)
+
+
+if __name__ == "__main__":
+    main()

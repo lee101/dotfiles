@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# asan-build — compile a single C source with AddressSanitizer + UBSan in one shot
+# and run it. Useful as a quick triage step before valgrind (faster, finds more bugs).
+#
+# Usage: asan-build SRC.c [-- run-args]
+set -euo pipefail
+[[ $# -ge 1 ]] && SRC="$1" || { echo "usage: asan-build src.c [-- args]"; exit 2; }
+shift || true
+[[ "${1:-}" == "--" ]] && shift || true
+OUT=$(mktemp /tmp/asan-XXXXXX)
+trap 'rm -f "$OUT"' EXIT
+clang -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -Wall -Wextra "$SRC" -o "$OUT" -lm
+ASAN_OPTIONS=detect_leaks=1:abort_on_error=0 UBSAN_OPTIONS=print_stacktrace=1 \
+  "$OUT" "$@"

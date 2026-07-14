@@ -2,29 +2,40 @@
 # Common functions for Claude tools
 
 # Find Claude CLI command
+claude_cmd_works() {
+    local cmd="$1"
+    local rc
+
+    [[ -n "$cmd" && -x "$cmd" ]] || return 1
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 5 "$cmd" --version >/dev/null 2>&1
+        rc=$?
+        [[ "$rc" -eq 0 || "$rc" -eq 124 ]]
+        return
+    fi
+
+    "$cmd" --version >/dev/null 2>&1
+}
+
 find_claude_cmd() {
-    # Check common command names (claude is the newer name)
-    for cmd in claude cld; do
-        if command -v "$cmd" &> /dev/null; then
-            echo "$cmd"
+    local resolved=""
+
+    if resolved=$(type -P claude 2>/dev/null); then
+        if claude_cmd_works "$resolved"; then
+            echo "$resolved"
             return 0
         fi
-    done
-    
+    fi
+
     # Check common installation paths
-    for path in "$HOME/.local/bin/cld" "$HOME/.local/bin/claude" "/usr/local/bin/cld" "/usr/local/bin/claude"; do
-        if [[ -x "$path" ]]; then
+    for path in "$HOME/.local/bin/claude" "/usr/local/bin/claude" "/usr/bin/claude" "/bin/claude"; do
+        if claude_cmd_works "$path"; then
             echo "$path"
             return 0
         fi
     done
-    
-    # Check if running in Claude Code environment
-    if [[ -n "$CLAUDE_CODE" ]] && command -v claude &> /dev/null; then
-        echo "claude"
-        return 0
-    fi
-    
+
     return 1
 }
 
@@ -33,8 +44,8 @@ get_claude_cmd() {
     local cmd=$(find_claude_cmd)
     if [[ -z "$cmd" ]]; then
         echo "Error: Claude CLI not found." >&2
-        echo "Please ensure 'cld' or 'claude' is installed and in your PATH." >&2
-        echo "Install from: https://claude.ai/cli" >&2
+        echo "Please install or repair Claude Code:" >&2
+        echo "  curl -fsSL https://claude.ai/install.sh | bash" >&2
         exit 1
     fi
     echo "$cmd"

@@ -182,24 +182,36 @@ install_nodejs() {
 }
 
 install_claude_code() {
+  local claude_status=1
+
   if command -v claude >/dev/null 2>&1; then
+    if command -v timeout >/dev/null 2>&1; then
+      timeout 5 claude --version >/dev/null 2>&1
+      claude_status=$?
+    else
+      claude --version >/dev/null 2>&1
+      claude_status=$?
+    fi
+  fi
+
+  if [ "$claude_status" -eq 0 ] || [ "$claude_status" -eq 124 ]; then
     log_info "Claude Code CLI already installed."
     return
   fi
 
-  if ! command -v npm >/dev/null 2>&1; then
-    log_warn "npm not found; skipping Claude Code CLI install."
+  if ! command -v curl >/dev/null 2>&1; then
+    log_warn "curl not found; skipping Claude Code CLI install."
     return
   fi
 
-  log_info "Installing Claude Code CLI via npm..."
-  npm install -g @anthropic-ai/claude-code
+  log_info "Installing Claude Code CLI via Anthropic native installer..."
+  curl -fsSL https://claude.ai/install.sh | bash
 
   if command -v claude >/dev/null 2>&1; then
     POST_INSTALL_NOTES+=("Claude Code installed. Run 'claude' to authenticate.")
   else
-    log_warn "npm install completed but 'claude' was not found on PATH."
-    POST_INSTALL_NOTES+=("If needed, add your npm global bin directory to PATH, then run 'claude'.")
+    log_warn "Claude install completed but 'claude' was not found on PATH."
+    POST_INSTALL_NOTES+=("If needed, open a new shell or add the installer target directory to PATH, then run 'claude'.")
   fi
 }
 
@@ -257,6 +269,25 @@ install_rust() {
   curl -fsSL https://sh.rustup.rs -o "${script}"
   sh "${script}" -y --profile default
   POST_INSTALL_NOTES+=("Rust installed. Run 'source ~/.cargo/env' or restart your shell to use cargo and rustc.")
+}
+
+install_rust_cli_tools() {
+  local cargo_bin="${HOME}/.cargo/bin"
+  if [[ -d "${cargo_bin}" && ":${PATH}:" != *":${cargo_bin}:"* ]]; then
+    export PATH="${cargo_bin}:${PATH}"
+  fi
+
+  if ! command -v cargo >/dev/null 2>&1; then
+    log_warn "cargo not found; skipping Rust CLI tools."
+    return
+  fi
+
+  if command -v dust >/dev/null 2>&1 && [[ "$(command -v dust)" != /snap/bin/* ]]; then
+    log_info "dust already installed outside Snap ($(command -v dust))."
+  else
+    log_info "Installing dust via cargo to avoid Snap mount confinement..."
+    cargo install du-dust
+  fi
 }
 
 install_docker() {
@@ -503,6 +534,7 @@ main() {
   install_difftastic
   install_go
   install_rust
+  install_rust_cli_tools
   install_docker
   link_dotfiles
 

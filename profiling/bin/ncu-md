@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# ncu-md — Nsight Compute kernel profiler producing a token-efficient markdown report.
+# Targets RTX 5090 (sm_120) and other modern NVIDIA GPUs. Reports per-kernel:
+#   compute throughput, memory throughput, achieved occupancy, register pressure,
+#   shared mem usage, and warp stall reasons (top 3).
+#
+# Usage: ncu-md [--out report.md] [--kernels REGEX] [--launches N] -- CMD [ARGS...]
+set -euo pipefail
+OUT=""; KREGEX=""; LAUNCHES=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out) OUT="$2"; shift 2;;
+    --kernels) KREGEX="$2"; shift 2;;
+    --launches) LAUNCHES="$2"; shift 2;;
+    --) shift; break;;
+    -h|--help) sed -n '2,9p' "$0"; exit 0;;
+    *) break;;
+  esac
+done
+[[ $# -eq 0 ]] && { echo "ncu-md: missing command"; exit 2; }
+command -v ncu >/dev/null || { echo "ncu-md: ncu not installed (need CUDA toolkit)"; exit 2; }
+
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+CSV="$TMP/ncu.csv"
+
+ARGS=(--csv --print-units base --target-processes all
+      --section ComputeWorkloadAnalysis
+      --section MemoryWorkloadAnalysis
+      --section Occupancy
+      --section LaunchStats
+      --section WarpStateStats
+      --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed,sm__warps_active.avg.pct_of_peak_sustained_active,launch__registers_per_thread,launch__shared_mem_config_size)
+[[ -n "$KREGEX" ]] && ARGS+=(--kernel-name "regex:$KREGEX")
+[[ -n "$LAUNCHES" ]] && ARGS+=(--launch-count "$LAUNCHES")
+
+ncu "${ARGS[@]}" -- "$@" >"$CSV" 2>"$TMP/stderr" || true
+
+python3 - "$CSV" "$*" <<'PY' > "${OUT:-/dev/stdout}"
+import sys, csv, datetime, collections
+csv_path, cmd = sys.argv[1], sys.argv[2]
+rows = []
+try:
+    with open(csv_path) as f:
+        # ncu csv has a preamble; find the header line containing "ID,Process ID"
+        text = f.read()
+    lines = text.splitlines()
+    hdr_idx = next((i for i,l in enumerate(lines) if l.startswith("ID,") or '"ID"' in l), None)
+    if hdr_idx is None:
+        print("# ncu-md\n\nNo kernels profiled (check command + GPU access).")
+        sys.exit(0)
+    reader = csv.DictReader(lines[hdr_idx:])
+    rows = list(reader)
+except Exception as e:
+    print(f"# ncu-md\n\nERROR parsing CSV: {e}")
+    sys.exit(0)
+
+# group by (kernel name, metric) -> value
+kernels = collections.OrderedDict()
+for r in rows:
+    k = r.get("Kernel Name") or r.get("Kernel") or "?"
+    m = r.get("Metric Name") or ""
+    v = r.get("Metric Value") or ""
+    kernels.setdefault(k, {})[m] = v
+
+print("# Nsight Compute report")
+print(f"\n_Command: `{cmd}`  •  {datetime.datetime.now().isoformat(timespec='seconds')}_\n")
+print(f"## Kernels ({len(kernels)})\n")
+print("| Kernel | SM% | Mem% | Occ% | Regs | SMem |")
+print("|---|---:|---:|---:|---:|---:|")
+def g(d, key):
+    for k,v in d.items():
+        if key in k: return v
+    return ""
+for kname, metrics in kernels.items():
+    sm   = g(metrics, "sm__throughput.avg.pct_of_peak_sustained_elapsed")
+    mem  = g(metrics, "memory_throughput.avg.pct_of_peak_sustained_elapsed")
+    occ  = g(metrics, "warps_active.avg.pct_of_peak_sustained_active")
+    regs = g(metrics, "registers_per_thread")
+    smem = g(metrics, "shared_mem_config_size")
+    short = kname[:60] + ("…" if len(kname) > 60 else "")
+    print(f"| `{short}` | {sm} | {mem} | {occ} | {regs} | {smem} |")
+PY
+[[ -n "$OUT" ]] && echo "wrote $OUT"

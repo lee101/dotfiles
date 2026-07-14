@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# nsys-md — Nsight Systems timeline summary as token-efficient markdown.
+# Reports kernel time, memcpy time, and top kernels by total duration.
+#
+# Usage: nsys-md [--out report.md] -- CMD [ARGS...]
+set -euo pipefail
+OUT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out) OUT="$2"; shift 2;;
+    --) shift; break;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0;;
+    *) break;;
+  esac
+done
+[[ $# -eq 0 ]] && { echo "nsys-md: missing command"; exit 2; }
+command -v nsys >/dev/null || { echo "nsys-md: nsys not installed"; exit 2; }
+
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+nsys profile --force-overwrite=true -o "$TMP/run" \
+  -t cuda,nvtx,osrt --stats=false --quiet -- "$@" \
+  >"$TMP/stdout" 2>"$TMP/stderr" || true
+
+REP="$TMP/stats.txt"
+nsys stats --report cuda_gpu_kern_sum,cuda_gpu_mem_time_sum --format csv \
+  --output "$TMP/stats" "$TMP/run.nsys-rep" >/dev/null 2>&1 || true
+
+{
+  echo "# nsys-md report"
+  echo
+  echo "_Command: \`$*\`  •  $(date -Iseconds)_"
+  echo
+  for f in "$TMP"/stats_*cuda_gpu_kern_sum.csv; do
+    [[ -f $f ]] || continue
+    echo "## Top kernels by total time"
+    echo
+    head -1 "$f" | tr ',' '|' | sed 's/^/| /; s/$/ |/'
+    head -1 "$f" | tr ',' '|' | sed 's/[^|]*/---/g; s/^/|/; s/$/|/'
+    tail -n +2 "$f" | head -20 | tr ',' '|' | sed 's/^/| /; s/$/ |/'
+    echo
+  done
+  for f in "$TMP"/stats_*cuda_gpu_mem_time_sum.csv; do
+    [[ -f $f ]] || continue
+    echo "## Memcpy summary"
+    echo
+    head -1 "$f" | tr ',' '|' | sed 's/^/| /; s/$/ |/'
+    head -1 "$f" | tr ',' '|' | sed 's/[^|]*/---/g; s/^/|/; s/$/|/'
+    tail -n +2 "$f" | tr ',' '|' | sed 's/^/| /; s/$/ |/'
+    echo
+  done
+} > "${OUT:-/dev/stdout}"
+[[ -n "$OUT" ]] && echo "wrote $OUT"
