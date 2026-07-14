@@ -1209,6 +1209,13 @@ command -v hub >/dev/null 2>&1 && eval "$(hub alias -s)" 2>/dev/null
 # NVM (lazy loaded)
 # ============================================================
 export NVM_DIR="$HOME/.nvm"
+# Clear any pre-existing aliases before defining the lazy-load functions below.
+# Git for Windows' /etc/profile.d/aliases.sh sets `alias node='winpty node.exe'`,
+# and with expand_aliases on (interactive shells) that alias shadows the `node()`
+# definition, producing "syntax error near unexpected token (" and aborting this
+# whole file. This MUST be its own statement: bash parses the entire if-block
+# below before executing it, so an unalias inside the block would be too late.
+unalias nvm node npm npx 2>/dev/null
 if [ -n "$ZSH_VERSION" ]; then
     # In zsh, load nvm directly (lazy loading breaks zsh completion)
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" --no-use 2>/dev/null
