@@ -1,0 +1,44 @@
+alias 7z='"/c/Program Files/7-Zip/7z.exe"'
+
+# Make Git Bash feel closer to a Linux shell on Windows. Plain Git for Windows
+# does not ship a package manager, so the setup script installs native Windows
+# tools where possible and these wrappers provide familiar command names.
+if ! command -v htop >/dev/null 2>&1 && command -v btop >/dev/null 2>&1; then
+    alias htop='btop'
+fi
+
+if ! command -v top >/dev/null 2>&1 && command -v btop >/dev/null 2>&1; then
+    alias top='btop'
+elif ! command -v top >/dev/null 2>&1; then
+    top() {
+        powershell.exe -NoProfile -Command \
+            "Get-Process | Sort-Object CPU -Descending | Select-Object -First 30 Id,ProcessName,CPU,WorkingSet | Format-Table -AutoSize"
+    }
+fi
+
+if ! command -v htop >/dev/null 2>&1 && ! command -v btop >/dev/null 2>&1; then
+    htop() {
+        echo "htop is not installed. Run ~/code/dotfiles/quick-setup-windows.ps1 from PowerShell, or install MSYS2 and run: pacman -S --needed htop procps-ng" >&2
+        return 127
+    }
+fi
+
+# ----------------------------------------------------------------------------
+# Fix for "too many consoles in use, max consoles is 32" error in Git Bash.
+# Cygwin/MSYS2 has a hardcoded limit of 32 pseudo-consoles. Setting
+# MSYS=disable_pcon (or CYGWIN=disable_pcon) reverts to the classic pty
+# behavior which has no such limit. Exported here so child processes of this
+# shell inherit it; also set as a Windows USER env var via
+# windows/fix-console-limit.ps1 so every new terminal picks it up.
+# ----------------------------------------------------------------------------
+export MSYS="${MSYS:+$MSYS }disable_pcon"
+export CYGWIN="${CYGWIN:+$CYGWIN }disable_pcon"
+
+# Use Windows OpenSSH instead of MINGW ssh - required for Windows SSH agent access
+if [ -f /c/Windows/System32/OpenSSH/ssh.exe ]; then
+    alias ssh='/c/Windows/System32/OpenSSH/ssh.exe'
+    alias scp='/c/Windows/System32/OpenSSH/scp.exe'
+    alias sftp='/c/Windows/System32/OpenSSH/sftp.exe'
+    alias ssh-add='/c/Windows/System32/OpenSSH/ssh-add.exe'
+    alias ssh-keygen='/c/Windows/System32/OpenSSH/ssh-keygen.exe'
+fi

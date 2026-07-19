@@ -102,6 +102,34 @@ if (Test-Path $winGitconfig) {
     }
 }
 
+# Handle WezTerm configuration. This file is dot-prefixed, so the general
+# linker skips it with the rest of the hidden metadata files.
+$weztermSource = Join-Path $currentDir ".wezterm.lua"
+if (Test-Path $weztermSource) {
+    Write-Host ""
+    Write-Host "Linking WezTerm configuration..." -ForegroundColor Cyan
+    $targetPath = Join-Path $homeDir ".wezterm.lua"
+
+    if (Test-Path $targetPath) {
+        if ($Force) {
+            Write-Host "  Removing existing: $targetPath" -ForegroundColor Yellow
+            Remove-Item $targetPath -Force
+        } else {
+            Write-Host "  Skipping (exists): $targetPath" -ForegroundColor Gray
+        }
+    }
+
+    if (!(Test-Path $targetPath)) {
+        try {
+            New-Item -ItemType SymbolicLink -Path $targetPath -Target $weztermSource -Force:$Force | Out-Null
+            Write-Host "  Created link: $targetPath -> $weztermSource" -ForegroundColor Green
+        } catch {
+            Copy-Item $weztermSource $targetPath -Force
+            Write-Host "  Copied .wezterm.lua -> ~/.wezterm.lua (symlink failed)" -ForegroundColor Yellow
+        }
+    }
+}
+
 # Handle lib directory files (like git_aliases)
 $libPath = Join-Path $currentDir "lib"
 if (Test-Path $libPath) {
