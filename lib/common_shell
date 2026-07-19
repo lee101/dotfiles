@@ -66,7 +66,6 @@ fi
 export CUDA_HOME='/usr/local/cuda-12.0'
 
 # Various tools
-[ -d "$HOME/.cargo/bin" ] && [[ ":$PATH:" != *":$HOME/.cargo/bin:"* ]] && export PATH="$HOME/.cargo/bin:$PATH"
 [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
 [ -d "$HOME/programs" ] && [[ ":$PATH:" != *":$HOME/programs:"* ]] && export PATH="$PATH:$HOME/programs"
 [ -d "$HOME/.rvm/bin" ] && export PATH="$PATH:$HOME/.rvm/bin"
@@ -117,6 +116,12 @@ fi
 
 # opencode
 [ -d "$HOME/.opencode/bin" ] && export PATH="$HOME/.opencode/bin:$PATH"
+
+# zig (Windows/Git Bash prebuilt)
+[ -d "/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d" ] && export PATH="/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d:$PATH"
+
+# grok installer
+[ -d "$HOME/.grok/bin" ] && export PATH="$HOME/.grok/bin:$PATH"
 
 # ============================================================
 # Color support
@@ -177,6 +182,9 @@ alias yi="yarn install"
 alias pn=pnpm
 alias br='bun run'
 alias pip='uv pip'
+command -v hyperfine >/dev/null 2>&1 && alias bench='hyperfine'
+command -v xh >/dev/null 2>&1 && alias http='xh'
+command -v procs >/dev/null 2>&1 && alias psx='procs'
 # 'o' and 'oo' aliases set in cross_platform_utils or shell-specific config
 
 # ============================================================
@@ -358,18 +366,6 @@ alias gmerge='git mergetool'
 # Difftastic
 alias gdft='difft'
 alias gdfts='difft --display side-by-side'
-alias gdftd='git -c diff.external=difft diff'                  # structural diff
-alias gswt='git -c diff.external=difft show --ext-diff'        # structural show
-alias glgt='git -c diff.external=difft log -p --ext-diff'      # structural log
-
-# Delta (override per-command pager; .gitconfig sets pager.diff=less so core.pager alone is ignored)
-# syntax-highlighted fg + subtle dark green/red bg (not the heavy default tint); global delta.side-by-side=true so force inline on non-s variants
-alias gdfd='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.diff=delta diff'
-alias gdfds='git -c delta.side-by-side=true -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.diff=delta diff'
-alias gdfdc='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.diff=delta diff --cached'
-alias gswd='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.show=delta show'
-alias gswds='git -c delta.side-by-side=true -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.show=delta show'
-alias glgd='git -c delta.side-by-side=false -c delta.plus-style="syntax #012800" -c delta.minus-style="syntax #340001" -c pager.log=delta log -p'
 
 # Git push workflows
 alias gpsh='SKIP_TESTS=1 git push --no-verify'
@@ -706,68 +702,6 @@ alias ntop='nvtop'
 # ============================================================
 # Claude / Codex / AI tool aliases
 # ============================================================
-__claude_external_path() {
-    local cmd_name="${1:-claude}"
-
-    if type -P "$cmd_name" >/dev/null 2>&1; then
-        type -P "$cmd_name"
-        return 0
-    fi
-
-    if command -v whence >/dev/null 2>&1; then
-        whence -p "$cmd_name" 2>/dev/null && return 0
-    fi
-
-    return 1
-}
-
-__claude_cmd_works() {
-    local cmd="$1"
-    local rc
-
-    [ -n "$cmd" ] || return 1
-    [ -x "$cmd" ] || return 1
-
-    if command -v timeout >/dev/null 2>&1; then
-        timeout 5 "$cmd" --version >/dev/null 2>&1
-        rc=$?
-        [ "$rc" -eq 0 ] || [ "$rc" -eq 124 ]
-        return
-    fi
-
-    "$cmd" --version >/dev/null 2>&1
-}
-
-get_claude_cmd() {
-    local candidate
-
-    for candidate in \
-        "$(__claude_external_path claude 2>/dev/null)" \
-        "$HOME/.local/bin/claude" \
-        "/usr/local/bin/claude" \
-        "/usr/bin/claude" \
-        "/bin/claude"
-    do
-        [ -n "$candidate" ] || continue
-        __claude_cmd_works "$candidate" || continue
-        printf '%s\n' "$candidate"
-        return 0
-    done
-
-    return 1
-}
-
-claude() {
-    local cmd
-    cmd="$(get_claude_cmd)" || {
-        echo "Error: no working Claude CLI found." >&2
-        echo "Install it with: curl -fsSL https://claude.ai/install.sh | bash" >&2
-        return 1
-    }
-
-    command "$cmd" "$@"
-}
-
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cldc='cld --continue'
 alias cldf='cld --continue --fork-session'
@@ -784,6 +718,19 @@ alias crw='claude-review'
 alias ca='cursor-agent-bun -f'
 alias cap='cursor-agent-bun -f -p'
 
+# Cursor / Devin agent shortcuts
+alias crs='cursor-agent --yolo'
+alias crsa='cursor agent --trust --yolo --print '
+alias dvn='devin --permission-mode dangerous'
+alias dvni="~/programs/Devin/bin/devin-desktop"
+
+# CLI installers/updaters
+alias clinst='bun install -g @anthropic-ai/claude-code@latest'
+alias cinst='npm install -g @openai/codex@latest'
+
+# Remote host shortcut
+alias sscp='ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
+
 # Claude Git workflow
 alias ccmt='cldcmt'
 alias cgcmep='cldgcmep'
@@ -793,262 +740,143 @@ alias cpr='cldpr'
 # Codex paths
 CODEX_LOCAL="$HOME/code/codex/codex-rs/target/release/codex"
 CODEX_BUN="$HOME/.bun/bin/codex"
+CODEX_NPM="$HOME/AppData/Roaming/npm/codex"
 
-# Upstream codex (via bun) - ccx* aliases
-alias ccx='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=xhigh'
-alias ccxl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=low'
-alias ccxm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=medium'
-alias ccxh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=high'
-alias ccxf='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=high'
+_codex_upstream() {
+    if [ -x "$CODEX_BUN" ]; then
+        "$CODEX_BUN" "$@"
+    elif [ -x "$CODEX_NPM" ]; then
+        "$CODEX_NPM" "$@"
+    elif command -v codex >/dev/null 2>&1; then
+        command codex "$@"
+    else
+        echo "Codex CLI not found. Install/update with: npm install -g @openai/codex" >&2
+        return 127
+    fi
+}
 
-# Luna is nano.
-alias ccxn='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=xhigh'
-alias ccxnl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low'
-alias ccxnm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium'
-alias ccxnh='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high'
+_codex_local_or_upstream() {
+    if [ -x "$CODEX_LOCAL" ]; then
+        "$CODEX_LOCAL" "$@"
+    else
+        local args=()
+        local arg
+        for arg in "$@"; do
+            case "$arg" in
+                --yolo3)
+                    args+=(--dangerously-bypass-approvals-and-sandbox)
+                    ;;
+                *)
+                    args+=("$arg")
+                    ;;
+            esac
+        done
+        _codex_upstream "${args[@]}"
+    fi
+}
 
-# Terra.
-alias ccxt='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=xhigh'
-alias ccxtl='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=low'
-alias ccxtm='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=medium'
-alias ccxth='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=high'
+# Upstream codex - ccx* aliases
+ccx()  { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"; }
+ccxl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=low "$@"; }
+ccxm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"; }
+ccxh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
+ccxf() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
+ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"; }
+ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low "$@"; }
+ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"; }
+ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high "$@"; }
 
-# Standard codex aliases (use bun)
-alias cdx='$CODEX_BUN'
-alias cdxd='$CODEX_BUN --dangerously-bypass-approvals-and-sandbox'
-alias cdxf='$CODEX_BUN --full-auto'
-alias cdxr='$CODEX_BUN --sandbox read-only'
-alias cdxw='$CODEX_BUN --sandbox workspace-write'
-alias cdxa='$CODEX_BUN apply'
-alias cdxe='$CODEX_BUN exec'
-alias cdxs='$CODEX_BUN --search'
-alias cdxo='$CODEX_BUN --oss'
-alias cdxed='$CODEX_BUN exec --dangerously-bypass-approvals-and-sandbox'
+# Standard codex aliases
+cdx() { _codex_upstream "$@"; }
+cdxd() { _codex_upstream --dangerously-bypass-approvals-and-sandbox "$@"; }
+cdxf() { _codex_upstream --full-auto "$@"; }
+cdxr() { _codex_upstream --sandbox read-only "$@"; }
+cdxw() { _codex_upstream --sandbox workspace-write "$@"; }
+cdxa() { _codex_upstream apply "$@"; }
+cdxe() { _codex_upstream exec "$@"; }
+cdxs() { _codex_upstream --search "$@"; }
+cdxo() { _codex_upstream --oss "$@"; }
+cdxed() { _codex_upstream exec --dangerously-bypass-approvals-and-sandbox "$@"; }
 
 # Local Codex Infinity build - cx* aliases
 cx() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol "$@"
-    else
-        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
-        return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol "$@"
 }
 
 cxxh() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh "$@"
-    else
-        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
-        return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxxhn() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol  --config model_reasoning_effort=xhigh --auto-next-idea "$@"
-    else
-        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
-        return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxxhni() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol  --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
-    else
-        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
-        return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxhni() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
-    else
-        echo "Local codex not built. Run: cd ~/code/codex && cargo build --release -p codex"
-        return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
 }
 cxi() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --auto-next-idea "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-idea "$@"
 }
 
 cxn() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --auto-next-steps "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-steps "$@"
 }
 
 cxm() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=medium "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna "$@"
 }
-
-cxll() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-cxlm() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-cxlh() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-cxnm() { cxlm "$@"; }
-
-cxt() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-cxtl() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=low "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-cxtm() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-cxth() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=high "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
-}
-
-t() { cxt "$@"; }
-tl() { cxtl "$@"; }
-tm() { cxtm "$@"; }
-th() { cxth "$@"; }
-txh() { cxt "$@"; }
 
 cxim() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=medium --auto-next-idea "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna --auto-next-idea "$@"
 }
 
 cxl() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=low "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=low "$@"
 }
 
 cxh() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high "$@"
 }
 
 cxs() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"
 }
 
 cxsl() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=low "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
 }
 
 cxsm() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=medium "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
 }
 
 cxsh() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
 }
 
 cxsi() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxsn() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-steps "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-steps "$@"
 }
 
 cxsni() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxni() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        "$CODEX_LOCAL" --yolo3 -m gpt-5.6-sol --auto-next-idea --auto-next-steps "$@"
-    else
-        echo "Local codex not built"; return 1
-    fi
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-idea --auto-next-steps "$@"
 }
 
 # Codex build helper
 cxbuild() {
-    cd ~/code/codex && cargo build --release -p codex && echo "Built: $CODEX_LOCAL"
+    ( cd ~/code/codex/codex-rs && cargo build --release --bin codex ) && echo "Built: $CODEX_LOCAL"
 }
 
 # ── Two-phase Codex pipeline: Plan (spark) → Execute (codex) → Git (spark) ──
@@ -1059,9 +887,9 @@ cxplan() {
         echo "Local codex not built. Run: cxbuild"; return 1
     fi
     local plan_file="/tmp/codex-plan-$$.md"
-    echo "═══ Phase 1: Planning with gpt-5.6-sol (high) ═══"
+    echo "═══ Phase 1: Planning with gpt-5.3-codex-spark (high) ═══"
     "$CODEX_LOCAL" exec --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex-spark \
         --config model_reasoning_effort=high \
         --include-plan-tool \
         -o "$plan_file" \
@@ -1074,9 +902,9 @@ cxdo() {
     if [ ! -x "$CODEX_LOCAL" ]; then
         echo "Local codex not built. Run: cxbuild"; return 1
     fi
-    echo "═══ Phase 2: Executing with gpt-5.6-sol (high) ═══"
+    echo "═══ Phase 2: Executing with gpt-5.3-codex (high) ═══"
     "$CODEX_LOCAL" --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex \
         --config model_reasoning_effort=high \
         --auto-next-steps \
         "$@"
@@ -1087,9 +915,9 @@ cxgit() {
     if [ ! -x "$CODEX_LOCAL" ]; then
         echo "Local codex not built. Run: cxbuild"; return 1
     fi
-    echo "═══ Phase 3: Git commit & push with gpt-5.6-sol (medium) ═══"
+    echo "═══ Phase 3: Git commit & push with gpt-5.3-codex-spark (medium) ═══"
     "$CODEX_LOCAL" exec --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex-spark \
         --config model_reasoning_effort=medium \
         "Review the git diff, write a good commit message, git add the changed files, commit, and push. Do not add unrelated files."
 }
@@ -1108,11 +936,11 @@ cxfull() {
     # Phase 1: Plan with spark
     echo ""
     echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  Phase 1/3: PLAN  (gpt-5.6-sol · high)         ║"
+    echo "║  Phase 1/3: PLAN  (gpt-5.3-codex-spark · high)         ║"
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
     "$CODEX_LOCAL" exec --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex-spark \
         --config model_reasoning_effort=high \
         --include-plan-tool \
         -o "$plan_file" \
@@ -1128,16 +956,16 @@ Output a complete implementation plan that another AI agent can execute without 
 
     # Phase 2: Execute with codex high
     echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  Phase 2/3: EXECUTE  (gpt-5.6-sol · high)            ║"
+    echo "║  Phase 2/3: EXECUTE  (gpt-5.3-codex · high)            ║"
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
     local plan_content
     plan_content=$(cat "$plan_file" 2>/dev/null)
     "$CODEX_LOCAL" exec --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex \
         --config model_reasoning_effort=high \
         --auto-next-steps \
-        "Execute the following implementation plan completely. Follow each step precisely. Test your work after implementation. You may also use gpt-5.6-sol as a lighter model for sub-tasks if helpful.
+        "Execute the following implementation plan completely. Follow each step precisely. Test your work after implementation. You may also use gpt-5.3-codex-spark as a lighter model for sub-tasks if helpful.
 
 IMPLEMENTATION PLAN:
 $plan_content" || { echo "Execution failed"; return 1; }
@@ -1146,11 +974,11 @@ $plan_content" || { echo "Execution failed"; return 1; }
 
     # Phase 3: Git commit and push with spark medium
     echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  Phase 3/3: GIT  (gpt-5.6-sol · medium)        ║"
+    echo "║  Phase 3/3: GIT  (gpt-5.3-codex-spark · medium)        ║"
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
     "$CODEX_LOCAL" exec --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex-spark \
         --config model_reasoning_effort=medium \
         "Review the git diff of all changes. Write a clear, descriptive commit message summarizing what was done. Git add the relevant changed files, commit with the message, and push. Do not add unrelated files.
 
@@ -1175,7 +1003,7 @@ cxpi() {
     # Phase 1: Plan with spark
     echo "═══ Planning with spark... ═══"
     "$CODEX_LOCAL" exec --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex-spark \
         --config model_reasoning_effort=high \
         --include-plan-tool \
         -o "$plan_file" \
@@ -1189,9 +1017,9 @@ cxpi() {
     plan_content=$(cat "$plan_file" 2>/dev/null)
     # Phase 2: Interactive execution with codex high
     "$CODEX_LOCAL" --yolo3 \
-        -m gpt-5.6-sol \
+        -m gpt-5.3-codex \
         --config model_reasoning_effort=high \
-        "Execute this plan step by step. You can use gpt-5.6-sol for lighter sub-tasks.
+        "Execute this plan step by step. You can use gpt-5.3-codex-spark for lighter sub-tasks.
 
 PLAN:
 $plan_content"
@@ -1199,9 +1027,10 @@ $plan_content"
     rm -f "$plan_file"
 }
 
-unalias cld 2>/dev/null || true
 cld() {
-    ANTHROPIC_API_KEY="" claude --dangerously-skip-permissions "$@"
+    # Call Claude directly. Running the ELF binary through "bun run"
+    # causes parse errors like "Unexpected ... ELF".
+    ANTHROPIC_API_KEY="" command claude --dangerously-skip-permissions "$@"
 }
 
 cldgdfaa() {
@@ -1399,6 +1228,13 @@ command -v hub >/dev/null 2>&1 && eval "$(hub alias -s)" 2>/dev/null
 # NVM (lazy loaded)
 # ============================================================
 export NVM_DIR="$HOME/.nvm"
+# Clear any pre-existing aliases before defining the lazy-load functions below.
+# Git for Windows' /etc/profile.d/aliases.sh sets `alias node='winpty node.exe'`,
+# and with expand_aliases on (interactive shells) that alias shadows the `node()`
+# definition, producing "syntax error near unexpected token (" and aborting this
+# whole file. This MUST be its own statement: bash parses the entire if-block
+# below before executing it, so an unalias inside the block would be too late.
+unalias nvm node npm npx 2>/dev/null
 if [ -n "$ZSH_VERSION" ]; then
     # In zsh, load nvm directly (lazy loading breaks zsh completion)
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" --no-use 2>/dev/null
