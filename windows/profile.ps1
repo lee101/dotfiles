@@ -189,6 +189,8 @@ function findn {
 function d { Set-Location @args }
 function u { cd .. }
 function c { cd ~/code }
+function z { zoxide query -i @args | ForEach-Object { Set-Location $_ } }
+function zi { zoxide query -i @args | ForEach-Object { Set-Location $_ } }
 
 # Docker
 function dps { docker ps }
@@ -495,6 +497,31 @@ function cdxe { codex exec @args }
 function cdxs { codex --search @args }
 function cdxed { codex exec --dangerously-bypass-approvals-and-sandbox @args }
 
+# Tooling parity helpers
+function btop {
+    $btopWin = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\aristocratos.btop4win_Microsoft.Winget.Source_8wekyb3d8bbwe\btop4win\btop4win.exe"
+    if (Test-Path $btopWin) {
+        & $btopWin @args
+    } else {
+        Write-Host "btop4win is not installed." -ForegroundColor Yellow
+    }
+}
+function bt { btop @args }
+function dtop { dua interactive @args }
+function bench { hyperfine @args }
+function http { xh @args }
+function topc {
+    if (Get-Command btop -ErrorAction SilentlyContinue) {
+        btop @args
+    } else {
+        Get-Process | Sort-Object CPU -Descending | Select-Object -First 30
+    }
+}
+function tx { tmux attach @args }
+function tls { tmux ls @args }
+function tn { tmux new -s @args }
+function lg { lazygit @args }
+
 # IP address functions
 function my-ip {
     (Invoke-WebRequest -Uri "https://ifconfig.me/ip" -UseBasicParsing).Content.Trim()
@@ -636,12 +663,16 @@ function Get-DirSize {
 }
 
 # Environment variables
-$env:EDITOR = "code"
+$env:EDITOR = "nvim"
+$env:GIT_EDITOR = "nvim"
+$env:VISUAL = "nvim"
 
 # PATH Configuration - Add common development tool paths
 $pathsToAdd = @(
     # uv (Python package installer)
     "$env:USERPROFILE\.local\bin",
+    # WinGet command shims
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Links",
     # Node.js global modules
     "$env:APPDATA\npm",
     # Yarn global binaries
@@ -658,7 +689,9 @@ $pathsToAdd = @(
     "${env:ProgramFiles}\Git\bin",
     # Additional common paths
     "$env:USERPROFILE\.cargo\bin",
-    "$env:USERPROFILE\go\bin"
+    "$env:USERPROFILE\go\bin",
+    # btop4win package layout does not always expose a working shim
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\aristocratos.btop4win_Microsoft.Winget.Source_8wekyb3d8bbwe\btop4win"
 )
 
 # Add paths to current session PATH if they exist and aren't already there
@@ -759,8 +792,16 @@ function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function n { nvim @args }
-function o { explorer.exe . }
-function oo { explorer.exe $args }
+
+# Open in Windows File Explorer (cross-platform parity with bash 'o'/'oo')
+function o {
+    param($Path = ".")
+    explorer.exe $Path
+}
+function oo {
+    param($Path = ".")
+    explorer.exe $Path
+}
 
 # Environment management
 function reload {
@@ -776,12 +817,23 @@ function refresh-env {
 }
 
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "gh", "claude", "codex", "code", "nvim", "python", "pip", "uv", "fzf", "bun", "rg", "fd", "bat")
+    $tools = @("node", "npm", "yarn", "git", "gh", "claude", "codex", "code", "nvim", "python", "uv", "fzf", "bun", "rg", "fd", "bat", "eza", "delta", "jq", "yq", "zoxide", "btop", "tmux", "lazygit", "sshpass", "dust", "hyperfine", "procs", "sd", "xh", "tokei")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
             Write-Host "[OK] $tool" -ForegroundColor Green
         } else {
             Write-Host "[--] $tool" -ForegroundColor Red
+        }
+    }
+}
+
+function check-optional-tools {
+    $tools = @("gitui", "difft", "dua", "btm")
+    foreach ($tool in $tools) {
+        if (Get-Command $tool -ErrorAction SilentlyContinue) {
+            Write-Host "[OK] $tool" -ForegroundColor Green
+        } else {
+            Write-Host "[optional] $tool" -ForegroundColor Yellow
         }
     }
 }
@@ -843,6 +895,10 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     }
 } else {
     Write-Host "Note: fzf not found in PATH. Install with: choco install fzf" -ForegroundColor Yellow
+}
+
+if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+    Invoke-Expression (& { (zoxide init powershell | Out-String) })
 }
 
 # Better tab completion

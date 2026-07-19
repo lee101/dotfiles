@@ -1,3 +1,14 @@
+# ~/.bash_profile - Dotfiles login shell config
+# Sources the main ~/.bashrc (which pulls in lib/common_shell + cross platform aliases)
+# Safe for Git Bash, WSL, Linux, macOS. Old machine-specific entries retained for backward compat.
+
+# Always source the interactive bashrc (our real config lives there)
+if [ -f "$HOME/.bashrc" ]; then
+    . "$HOME/.bashrc"
+fi
+
+# --- Legacy / machine-specific entries below (may be inactive on new setups) ---
+
 #source $HOME/.bashrc
 
 #[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
@@ -19,10 +30,8 @@ export PATH="$HOME/.poetry/bin:$PATH"
 
 if [ -e /home/lee/.nix-profile/etc/profile.d/nix.sh ]; then . /home/lee/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
-#if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ];then
-if [ -n "$BASH_VERSION" ] && [ -f $HOME/.bashrc ]; then
-    . $HOME/.bashrc
-fi
+# The above .bashrc source was moved to top of file for reliability on Windows Git Bash / WSL
+
 
 
 # !! Contents within this block are managed by 'conda init' !!
