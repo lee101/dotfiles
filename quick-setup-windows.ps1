@@ -12,12 +12,14 @@
 #   4. Links dotfiles (gitconfig, ctags, etc.) to home directory
 #
 # Aliases you get (both PowerShell and Git Bash):
+#   htop/top     - Familiar process monitor commands in Git Bash
 #   cld/cldd     - Claude Code (skip permissions)
 #   cldc/cldr    - Claude --continue / --resume
 #   cldp         - Claude --print
 #   cr/crc       - Claude review (all / staged)
 #   ccmt/cgcmep  - Claude commit / add+commit+push
-#   cx/cxf       - Codex / Codex full-auto
+#   cx/cxm/cxf   - Local Codex low/medium/high/full-auto helpers
+#   goats/goatb  - Goat Simulator save status/backup
 #   gst/gco/gph  - Git status/checkout/push
 #   c            - cd ~/code
 #   reload       - Reload shell profile
@@ -43,6 +45,7 @@ if (-not $SkipTools) {
 
     # winget packages: [winget ID, command name, description]
     $wingetTools = @(
+        @("Git.Git",                 "git",    "Git and Git Bash"),
         @("junegunn.fzf",           "fzf",    "fuzzy finder"),
         @("BurntSushi.ripgrep.MSVC", "rg",     "fast grep"),
         @("sharkdp.fd",             "fd",     "fast find"),
@@ -52,6 +55,7 @@ if (-not $SkipTools) {
         @("jqlang.jq",              "jq",     "JSON processor"),
         @("MikeFarah.yq",           "yq",     "YAML processor"),
         @("tldr-pages.tlrc",        "tldr",   "simplified man pages"),
+        @("aristocratos.btop4win",  "btop",   "familiar process monitor"),
         @("ajeetdsouza.zoxide",     "zoxide", "smarter cd"),
         @("DominikReichl.KeePass",  "keepass","password manager")
     )
@@ -72,6 +76,36 @@ if (-not $SkipTools) {
         Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression
     } else {
         Write-Host "  uv already installed" -ForegroundColor DarkGray
+    }
+
+    # Install real Unix process monitors when Git Bash is backed by MSYS2.
+    # Git for Windows normally has no pacman, so lib/winbashrc maps htop to
+    # btop and provides a top fallback using Get-Process.
+    Write-Host ""
+    Write-Host "  Configuring Git Bash process monitors..." -ForegroundColor Green
+    $bashCandidates = @(
+        "$env:ProgramFiles\Git\bin\bash.exe",
+        "$env:ProgramFiles\Git\usr\bin\bash.exe",
+        "C:\msys64\usr\bin\bash.exe"
+    ) | Where-Object { Test-Path $_ } | Select-Object -Unique
+
+    if ($bashCandidates.Count -eq 0) {
+        Write-Host "  Git Bash not found yet; install Git and rerun this script for bash-native htop/top." -ForegroundColor Yellow
+    }
+    else {
+        foreach ($bashExe in $bashCandidates) {
+            Write-Host "  Checking $bashExe" -ForegroundColor DarkGray
+            & $bashExe -lc "if command -v pacman >/dev/null 2>&1; then pacman -S --needed --noconfirm htop procps-ng; else exit 42; fi"
+            if ($LASTEXITCODE -eq 42) {
+                Write-Host "    No pacman here. Git Bash will use btop for htop and a PowerShell-backed top fallback." -ForegroundColor Gray
+            }
+            elseif ($LASTEXITCODE -eq 0) {
+                Write-Host "    Installed/verified htop and top via pacman." -ForegroundColor Green
+            }
+            else {
+                Write-Host "    Could not install htop/procps-ng via pacman. Git Bash fallbacks will still work." -ForegroundColor Yellow
+            }
+        }
     }
 
     # sshpass - only available via Git Bash / MSYS2, not native Windows
@@ -188,17 +222,32 @@ if (-not $SkipDotfiles) {
 }
 
 # ==========================================
+# Step 5: Fix Git Bash console limit
+# ==========================================
+# Sets MSYS=disable_pcon + CYGWIN=disable_pcon as USER env vars so Git Bash
+# doesn't hit the "too many consoles in use, max consoles is 32" error.
+# Idempotent, safe to re-run.
+$fixConsole = Join-Path $dotfilesDir "windows\fix-console-limit.ps1"
+if (Test-Path $fixConsole) {
+    Write-Host "[5/5] Applying Git Bash console-limit fix..." -ForegroundColor Green
+    & $fixConsole
+    Write-Host ""
+}
+
+# ==========================================
 # Summary
 # ==========================================
 Write-Host "Setup complete!" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Key aliases (PowerShell + Git Bash):" -ForegroundColor Yellow
+Write-Host "  htop/top     Familiar process monitor commands in Git Bash" -ForegroundColor White
 Write-Host "  cld/cldd     Claude Code (skip permissions)" -ForegroundColor White
 Write-Host "  cldc/cldr    Claude --continue / --resume" -ForegroundColor White
 Write-Host "  cldp         Claude --print" -ForegroundColor White
 Write-Host "  cr/crc       Claude review (all / staged)" -ForegroundColor White
 Write-Host "  ccmt/cgcmep  Claude commit / add+commit+push" -ForegroundColor White
-Write-Host "  cx/cxf       Codex / Codex full-auto" -ForegroundColor White
+Write-Host "  cx/cxm/cxf   Local Codex helpers (default / medium / full-auto)" -ForegroundColor White
+Write-Host "  goats/goatb  Goat Simulator save status / backup" -ForegroundColor White
 Write-Host "  gst/gco/gph  Git status/checkout/push" -ForegroundColor White
 Write-Host "  gpsh         Git push + set upstream" -ForegroundColor White
 Write-Host "  c            cd ~/code" -ForegroundColor White

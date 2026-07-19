@@ -186,6 +186,7 @@ function findn {
 }
 
 # Navigation
+function d { Set-Location @args }
 function u { cd .. }
 function c { cd ~/code }
 
@@ -511,6 +512,85 @@ function puvg { uv tool install $args }
 function uvls { uv tool list }
 function uvun { uv tool uninstall $args }
 
+# Goat Simulator saves
+function Get-GoatSaveRoots {
+    @(
+        @{ Name = "Goat2"; Path = "$env:LOCALAPPDATA\Goat2\Saved" },
+        @{ Name = "Goatsim_UE4"; Path = "$env:LOCALAPPDATA\Goatsim_UE4\Saved" },
+        @{ Name = "CoffeeStainStudios.GoatSimulator3PC_496a1srhmar9w"; Path = "$env:LOCALAPPDATA\Packages\CoffeeStainStudios.GoatSimulator3PC_496a1srhmar9w\SystemAppData" },
+        @{ Name = "CoffeeStainStudios.364399A20F4FD_496a1srhmar9w"; Path = "$env:LOCALAPPDATA\Packages\CoffeeStainStudios.364399A20F4FD_496a1srhmar9w\SystemAppData" },
+        @{ Name = "CoffeeStainStudios.56359B5191BB3_496a1srhmar9w"; Path = "$env:LOCALAPPDATA\Packages\CoffeeStainStudios.56359B5191BB3_496a1srhmar9w\SystemAppData" }
+    ) | Where-Object { Test-Path $_.Path }
+}
+
+function Get-GoatSavePaths {
+    Get-GoatSaveRoots | ForEach-Object { $_.Path }
+}
+
+function goat-save-status {
+    $paths = Get-GoatSavePaths
+    if (-not $paths) {
+        Write-Host "No Goat Simulator save roots found under AppData\\Local." -ForegroundColor Yellow
+        return
+    }
+    $rows = @()
+    foreach ($path in $paths) {
+        $files = Get-ChildItem -Path $path -Recurse -Force -File -ErrorAction SilentlyContinue
+        $latest = $files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $rows += [PSCustomObject]@{
+            Path = $path
+            Files = @($files).Count
+            LatestWrite = if ($latest) { $latest.LastWriteTime } else { $null }
+            LatestFile = if ($latest) { $latest.FullName } else { $null }
+        }
+    }
+    $rows | Format-Table -AutoSize
+}
+
+function goat-save-backup {
+    param([string]$Destination = "$HOME\Games\Backups\goat-simulator")
+    $roots = Get-GoatSaveRoots
+    if (-not $roots) {
+        Write-Host "No Goat Simulator save roots found to back up." -ForegroundColor Yellow
+        return
+    }
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $backupRoot = Join-Path $Destination $stamp
+    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+    foreach ($root in $roots) {
+        $target = Join-Path $backupRoot $root.Name
+        Copy-Item -Path $root.Path -Destination $target -Recurse -Force
+    }
+    Write-Host "Backed up Goat Simulator saves to: $backupRoot" -ForegroundColor Green
+}
+
+function goat-save-restore {
+    param([Parameter(Mandatory = $true)][string]$BackupPath)
+    if (-not (Test-Path $BackupPath)) {
+        Write-Host "Backup path not found: $BackupPath" -ForegroundColor Red
+        return
+    }
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $safetyBackup = "$HOME\Games\Backups\goat-simulator\pre-restore-$stamp"
+    goat-save-backup $safetyBackup
+
+    foreach ($root in (Get-GoatSaveRoots)) {
+        $source = Join-Path $BackupPath $root.Name
+        if (Test-Path $source) {
+            if (Test-Path $root.Path) {
+                Remove-Item -LiteralPath $root.Path -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path (Split-Path $root.Path -Parent) -Force | Out-Null
+            Copy-Item -Path $source -Destination $root.Path -Recurse -Force
+            Write-Host "Restored $($root.Name) -> $($root.Path)" -ForegroundColor Green
+        }
+    }
+}
+
+function goats { goat-save-status }
+function goatb { goat-save-backup @args }
+function goatr { goat-save-restore @args }
+
 # Alias management functions
 function ali {
     param($aliasDefinition)
@@ -616,10 +696,69 @@ function usager {
     } | Sort-Object Size | Format-Table Name, SizeStr -AutoSize
 }
 
-function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function pkill {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Name
+    )
+
+    $pattern = [regex]::Escape($Name)
+    $matches = Get-Process -ErrorAction SilentlyContinue |
+        Where-Object { $_.ProcessName -match $pattern }
+
+    if (-not $matches) {
+        Write-Host "No process matched '$Name'." -ForegroundColor Yellow
+        return
+    }
+
+    $matches | ForEach-Object {
+        Write-Host ("Killing {0} ({1})" -f $_.ProcessName, $_.Id) -ForegroundColor Cyan
+        Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function memtop {
+    param([int]$Count = 20)
+
+    Get-Process -ErrorAction SilentlyContinue |
+        Sort-Object WorkingSet64 -Descending |
+        Select-Object -First $Count Id, ProcessName,
+            @{Name = "RAM_MB"; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 1) }},
+            @{Name = "CPU_s"; Expression = { [math]::Round($_.CPU, 1) }} |
+        Format-Table -AutoSize
+}
+
+function kill-heavy-browsers {
+    $names = @("chrome", "msedge", "firefox", "claude")
+    foreach ($name in $names) {
+        Get-Process -Name $name -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+    Get-Process -Name $names -ErrorAction SilentlyContinue |
+        Select-Object Id, ProcessName,
+            @{Name = "RAM_MB"; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 1) }} |
+        Format-Table -AutoSize
+}
+
+function reswap {
+    $os = Get-CimInstance Win32_OperatingSystem
+    $page = Get-CimInstance Win32_PageFileUsage -ErrorAction SilentlyContinue
+
+    [PSCustomObject]@{
+        RAM_Total_GB       = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+        RAM_Free_GB        = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+        Virtual_Total_GB   = [math]::Round($os.TotalVirtualMemorySize / 1MB, 2)
+        Virtual_Free_GB    = [math]::Round($os.FreeVirtualMemory / 1MB, 2)
+        Pagefile_Path      = ($page | Select-Object -ExpandProperty Name) -join ", "
+        Pagefile_Used_MB   = ($page | Measure-Object CurrentUsage -Sum).Sum
+        Pagefile_Peak_MB   = ($page | Measure-Object PeakUsage -Sum).Sum
+    }
+}
+
 function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function n { nvim @args }
 function o { explorer.exe . }
 function oo { explorer.exe $args }
 
