@@ -1,23 +1,63 @@
 #!/bin/bash
 
 # Cross-platform utility functions
-# Source this file in your bashrc for unified commands across Mac, Linux, and Windows Git Bash
+# Source this file in your bashrc for unified commands across Mac, Linux, WSL, Git Bash (MINGW/MSYS), Cygwin
+# PLATFORM values: Mac | Linux | WSL | Git | Cygwin | UNKNOWN:...
 
-# Detect platform
+# Detect platform (improved for WSL, Git Bash variants, MSYS2)
 detect_platform() {
-    unameOut="$(uname -s)"
+    # WSL detection (must come before generic Linux*) - robust checks
+    if [ -n "${WSL_DISTRO_NAME:-}" ] || \
+       [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] 2>/dev/null; then
+        echo "WSL"
+        return
+    fi
+    if [ -r /proc/version ] 2>/dev/null && grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+        echo "WSL"
+        return
+    fi
+    local unameOut
+    unameOut="$(uname -s 2>/dev/null || echo UNKNOWN)"
     case "${unameOut}" in
-        Linux*)     machine=Linux;;
-        Darwin*)    machine=Mac;;
-        CYGWIN*)    machine=Cygwin;;
-        MINGW*)     machine=MinGw;;
-        MSYS_NT*)   machine=Git;;
-        *)          machine="UNKNOWN:${unameOut}"
+        Linux*)     echo "Linux";;
+        Darwin*)    echo "Mac";;
+        CYGWIN*)    echo "Cygwin";;
+        MINGW*|MSYS*) echo "Git";;
+        *)          echo "UNKNOWN:${unameOut}";;
     esac
-    echo "$machine"
 }
 
 PLATFORM=$(detect_platform)
+
+# Convert a Unix-style path (., .., /c/foo, relative, etc.) to a native Windows path
+# that explorer.exe / other Win32 tools understand. Works in Git Bash (cygpath)
+# and WSL (wslpath).
+_to_windows_path() {
+    local p="${1:-.}"
+    # Expand leading ~ safely (common when user types o ~ or explorer ~)
+    case "$p" in
+        ~|~/*) p="${p/#\~/$HOME}" ;;
+    esac
+    case "$PLATFORM" in
+        WSL)
+            if command -v wslpath >/dev/null 2>&1; then
+                wslpath -w -a "$p" 2>/dev/null || echo "$p"
+            else
+                echo "$p"
+            fi
+            ;;
+        Git|Cygwin)
+            if command -v cygpath >/dev/null 2>&1; then
+                cygpath -w -a "$p" 2>/dev/null || echo "$p"
+            else
+                echo "$p"
+            fi
+            ;;
+        *)
+            echo "$p"
+            ;;
+    esac
+}
 
 # Interactive shells may define aliases that share names with helpers below.
 # Clear the known collisions before the function definitions are parsed so
@@ -84,7 +124,7 @@ pkg_install() {
                 return 1
             fi
             ;;
-        Git|Cygwin|MinGw)
+        Git|Cygwin|WSL)
             if command -v choco >/dev/null 2>&1; then
                 choco install -y "$@"
             elif command -v scoop >/dev/null 2>&1; then
@@ -116,7 +156,7 @@ pkg_update() {
                 sudo_run pacman -Syu --noconfirm
             fi
             ;;
-        Git|Cygwin|MinGw)
+        Git|Cygwin|WSL)
             if command -v choco >/dev/null 2>&1; then
                 choco upgrade all -y
             elif command -v scoop >/dev/null 2>&1; then
@@ -140,7 +180,7 @@ service_start() {
                 sudo_run service "$service" start
             fi
             ;;
-        Git|Cygwin|MinGw)
+        Git|Cygwin|WSL)
             sc start "$service" 2>/dev/null || net start "$service"
             ;;
     esac
@@ -159,7 +199,7 @@ service_stop() {
                 sudo_run service "$service" stop
             fi
             ;;
-        Git|Cygwin|MinGw)
+        Git|Cygwin|WSL)
             sc stop "$service" 2>/dev/null || net stop "$service"
             ;;
     esac
@@ -178,7 +218,7 @@ service_status() {
                 service "$service" status
             fi
             ;;
-        Git|Cygwin|MinGw)
+        Git|Cygwin|WSL)
             sc query "$service" 2>/dev/null || net start | grep "$service"
             ;;
     esac
@@ -194,8 +234,9 @@ kill_port() {
         Linux)
             sudo_run fuser -k $port/tcp 2>/dev/null || echo "No process on port $port"
             ;;
-        Git|Cygwin|MinGw)
-            netstat -ano | grep ":$port" | awk '{print $5}' | xargs -I {} taskkill /F /PID {} 2>/dev/null || echo "No process on port $port"
+        Git|Cygwin|WSL)
+            netstat -ano | grep ":$port" | awk '{print $5}' | xargs -I {} taskkill /F /PID {} 2>/dev/null || \
+            powershell.exe -command "Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { taskkill /F /PID \$_ }" 2>/dev/null || echo "No process on port $port"
             ;;
     esac
 }
@@ -207,8 +248,8 @@ find_process() {
         Mac|Linux)
             ps aux | grep -i "$name" | grep -v grep
             ;;
-        Git|Cygwin|MinGw)
-            tasklist | grep -i "$name"
+        Git|Cygwin|WSL)
+            tasklist | grep -i "$name" 2>/dev/null || powershell.exe -command "Get-Process *$name* -ErrorAction SilentlyContinue | Select-Object Name, Id, CPU"
             ;;
     esac
 }
@@ -222,8 +263,9 @@ get_local_ip() {
         Linux)
             ip route get 8.8.8.8 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1
             ;;
-        Git|Cygwin|MinGw)
-            ipconfig | grep -A 4 "Wireless LAN adapter Wi-Fi" | grep "IPv4" | awk '{print $NF}'
+        Git|Cygwin|WSL)
+            ipconfig | grep -A 4 "Wireless LAN adapter Wi-Fi" | grep "IPv4" | awk '{print $NF}' 2>/dev/null || \
+            powershell.exe -command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '169.*' -and $_.IPAddress -notlike '127.*' } | Select-Object -First 1).IPAddress" 2>/dev/null || echo "127.0.0.1"
             ;;
     esac
 }
@@ -248,9 +290,10 @@ trash_file() {
                 mv "$@" ~/.local/share/Trash/files/
             fi
             ;;
-        Git|Cygwin|MinGw)
-            # Move to Windows Recycle Bin
-            powershell.exe -command "Move-Item -Path '$@' -Destination 'shell:RecycleBinFolder'"
+        Git|Cygwin|WSL)
+            # Move to Windows Recycle Bin (best effort)
+            powershell.exe -command "Move-Item -Path '$@' -Destination 'shell:RecycleBinFolder' -ErrorAction SilentlyContinue" 2>/dev/null || \
+            rm -rf "$@"   # fallback
             ;;
     esac
 }
@@ -278,7 +321,7 @@ sys_info() {
             echo "CPU: $(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2)"
             echo "Memory: $(free -h | grep Mem | awk '{print $2}')"
             ;;
-        Git|Cygwin|MinGw)
+        Git|Cygwin|WSL)
             echo "Windows Version: $(cmd.exe /c ver 2>/dev/null | grep -o '[0-9.]*')"
             echo "CPU: $(wmic cpu get name 2>/dev/null | tail -2 | head -1)"
             echo "Memory: $(wmic computersystem get TotalPhysicalMemory 2>/dev/null | tail -2 | awk '{print int($1/1024/1024/1024) " GB"}')"
@@ -367,6 +410,10 @@ copy_to_clipboard() {
         Mac)
             pbcopy
             ;;
+        WSL)
+            # WSL -> Windows clipboard
+            clip.exe 2>/dev/null || powershell.exe -command '$input | Set-Clipboard' 2>/dev/null || cat
+            ;;
         Linux)
             if command -v xclip >/dev/null 2>&1; then
                 xclip -selection clipboard
@@ -377,8 +424,8 @@ copy_to_clipboard() {
                 return 1
             fi
             ;;
-        Git|Cygwin|MinGw)
-            clip
+        Git|Cygwin)
+            clip 2>/dev/null || powershell.exe -command '$input | Set-Clipboard' 2>/dev/null || cat
             ;;
     esac
 }
@@ -387,6 +434,10 @@ paste_from_clipboard() {
     case "$PLATFORM" in
         Mac)
             pbpaste
+            ;;
+        WSL)
+            # Prefer Windows clipboard from WSL
+            powershell.exe -command 'Get-Clipboard' 2>/dev/null || clip.exe 2>/dev/null || cat
             ;;
         Linux)
             if command -v xclip >/dev/null 2>&1; then
@@ -398,23 +449,38 @@ paste_from_clipboard() {
                 return 1
             fi
             ;;
-        Git|Cygwin|MinGw)
-            powershell.exe -command 'Get-Clipboard'
+        Git|Cygwin)
+            powershell.exe -command 'Get-Clipboard' 2>/dev/null || clip 2>/dev/null || cat
             ;;
     esac
 }
 
 # Open file/URL with default application
 open_file() {
+    local target="${1:-.}"
+    local win_target
+    win_target=$(_to_windows_path "$target")
+
     case "$PLATFORM" in
         Mac)
-            open "$@"
+            open "$target"
             ;;
         Linux)
-            xdg-open "$@"
+            xdg-open "$target"
             ;;
-        Git|Cygwin|MinGw)
-            explorer.exe "$@"
+        WSL|Git|Cygwin)
+            # Windows Explorer via converted native path (handles ../.., relative paths, /c/..., etc.)
+            if command -v explorer.exe >/dev/null 2>&1; then
+                explorer.exe "$win_target"
+            elif [ -x "/c/Windows/explorer.exe" ]; then
+                "/c/Windows/explorer.exe" "$win_target"
+            else
+                start "$win_target" 2>/dev/null || cmd //c start "$win_target" 2>/dev/null || echo "Could not open $target"
+            fi
+            ;;
+        *)
+            # Fallback for unknown
+            explorer.exe "$win_target" 2>/dev/null || xdg-open "$target" 2>/dev/null || open "$target" 2>/dev/null || echo "open_file: unsupported on $PLATFORM"
             ;;
     esac
 }
@@ -435,8 +501,9 @@ notify() {
                 echo "[$title] $message"
             fi
             ;;
-        Git|Cygwin|MinGw)
-            powershell.exe -command "New-BurntToastNotification -Text '$title','$message'"
+        Git|Cygwin|WSL)
+            powershell.exe -command "New-BurntToastNotification -Text '$title','$message' -ErrorAction SilentlyContinue" 2>/dev/null || \
+            powershell.exe -command "Write-Host '[$title] $message'" 2>/dev/null || echo "[$title] $message"
             ;;
     esac
 }
@@ -457,8 +524,8 @@ beep() {
                 echo -e "\a"
             fi
             ;;
-        Git|Cygwin|MinGw)
-            powershell.exe -c "[console]::beep(1000,300)"
+        Git|Cygwin|WSL)
+            powershell.exe -c "[console]::beep(1000,300)" 2>/dev/null || echo -e "\a"
             ;;
     esac
 }
@@ -482,8 +549,8 @@ top_cmd() {
                 top
             fi
             ;;
-        Git|Cygwin|MinGw)
-            taskmgr
+        Git|Cygwin|WSL)
+            taskmgr || powershell.exe -command "Start-Process taskmgr"
             ;;
     esac
 }
@@ -498,8 +565,8 @@ disk_usage() {
                 du -sh "${1:-.}"/* | sort -h
             fi
             ;;
-        Git|Cygwin|MinGw)
-            powershell.exe -command "Get-ChildItem '${1:-.}' | Sort-Object Length -Descending | Select-Object Name, @{Name='Size';Expression={'{0:N2} MB' -f ($_.Length / 1MB)}}"
+        Git|Cygwin|WSL)
+            powershell.exe -command "Get-ChildItem '${1:-.}' | Sort-Object Length -Descending | Select-Object Name, @{Name='Size';Expression={'{0:N2} MB' -f ($_.Length / 1MB)}}" 2>/dev/null || du -sh "${1:-.}"/*
             ;;
     esac
 }
@@ -513,8 +580,9 @@ mem_info() {
         Linux)
             free -h
             ;;
-        Git|Cygwin|MinGw)
-            wmic OS get TotalVisibleMemorySize,FreePhysicalMemory
+        Git|Cygwin|WSL)
+            wmic OS get TotalVisibleMemorySize,FreePhysicalMemory 2>/dev/null || \
+            powershell.exe -command "Get-CimInstance Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory"
             ;;
     esac
 }
@@ -542,9 +610,9 @@ reswap() {
                 echo "swapoff not available. Try: sudo sysctl vm.drop_caches=3"
             fi
             ;;
-        Git|Cygwin|MinGw)
-            echo "Clearing standby memory..."
-            powershell.exe -command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue; [System.GC]::Collect()"
+        Git|Cygwin|WSL)
+            echo "Clearing standby memory / recycle bin..."
+            powershell.exe -command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue; [System.GC]::Collect()" 2>/dev/null || true
             echo "Note: Windows swap (pagefile) reset requires a reboot or:"
             echo "  1. Control Panel > System > Advanced > Performance > Virtual Memory"
             echo "  2. Set to 'No paging file', reboot, then re-enable"
@@ -572,7 +640,9 @@ alias docker-clean='docker_clean'
 alias git-clean='git_clean_branches'
 alias clip='copy_to_clipboard'
 alias paste='paste_from_clipboard'
+# Note: PLATFORM may be WSL/Git now; aliases still work via the funcs above
 alias o='open_file'
+alias oo='open_file'
 alias alert='notify "Alert" "Command completed"'
 alias meminfo='mem_info'
 alias duh='disk_usage'
@@ -580,6 +650,29 @@ alias topc='top_cmd'
 
 # Export platform for use in other scripts
 export PLATFORM
+
+# ------------------------------------------------------------------
+# Git Bash / MSYS convenience: make the raw "explorer" command do the
+# right thing with Unix paths (../.., relative dirs, /c/Users/..., etc.)
+# This is why `explorer ../..` now works properly from Git Bash.
+# (WSL users usually have their own explorer alias in wslbashrc.)
+# ------------------------------------------------------------------
+if [ "$PLATFORM" = "Git" ] || [ "$PLATFORM" = "Cygwin" ]; then
+    explorer() {
+        local target="${1:-.}"
+        local wp
+        wp="$(_to_windows_path "$target")"
+        if command -v explorer.exe >/dev/null 2>&1; then
+            explorer.exe "$wp"
+        elif [ -x "/c/Windows/explorer.exe" ]; then
+            "/c/Windows/explorer.exe" "$wp"
+        else
+            command explorer "$wp" 2>/dev/null || start "$wp" 2>/dev/null || echo "explorer: could not launch for $target"
+        fi
+    }
+    # Also expose the converter for advanced users/scripts
+    export -f _to_windows_path 2>/dev/null || true
+fi
 
 # Silently loaded - no output needed
 # echo "Cross-platform utilities loaded (Platform: $PLATFORM)"

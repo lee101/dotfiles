@@ -26,23 +26,37 @@ if [ ! -d "$NVIM_CONFIG" ]; then
     echo "Created nvim config directory: $NVIM_CONFIG"
 fi
 
-# Get the dotfiles path
-DOTFILES_PATH="$(pwd)/.config/nvim"
-if [ ! -d "$DOTFILES_PATH" ]; then
-    echo "Error: dotfiles nvim config not found at $DOTFILES_PATH"
-    echo "Make sure you're running this from your dotfiles directory"
+# Get the dotfiles path (robust for being called from anywhere)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_NVIM="$SCRIPT_DIR/nvim"
+ROOT_INIT="$SCRIPT_DIR/init.lua"
+ROOT_LUA="$SCRIPT_DIR/lua"
+
+if [ ! -f "$ROOT_INIT" ] && [ ! -d "$DOTFILES_NVIM" ]; then
+    echo "Error: could not find dotfiles nvim sources next to this script"
     exit 1
 fi
 
-# Create symlink (or copy if symlink fails)
-echo "Creating symlink to dotfiles..."
-if ln -sf "$DOTFILES_PATH"/* "$NVIM_CONFIG/" 2>/dev/null; then
-    echo "✅ Symlink created successfully"
-else
-    echo "⚠️  Symlink failed, copying files instead..."
-    cp -r "$DOTFILES_PATH"/* "$NVIM_CONFIG/"
-    echo "✅ Files copied successfully"
+echo "Creating links / copies for Git Bash friendly config at $NVIM_CONFIG ..."
+
+# Link (or copy) the real active config (root init.lua + lua/user)
+if [ -f "$ROOT_INIT" ]; then
+    ln -sf "$ROOT_INIT" "$NVIM_CONFIG/init.lua" 2>/dev/null || cp "$ROOT_INIT" "$NVIM_CONFIG/init.lua"
 fi
+if [ -d "$ROOT_LUA" ]; then
+    ln -sfn "$ROOT_LUA" "$NVIM_CONFIG/lua" 2>/dev/null || cp -r "$ROOT_LUA" "$NVIM_CONFIG/lua"
+fi
+
+# Also bring the nvim/ subdir extras if present
+if [ -d "$DOTFILES_NVIM" ]; then
+    for f in "$DOTFILES_NVIM"/*; do
+        base=$(basename "$f")
+        [ "$base" = "init.lua" ] || [ "$base" = "lua" ] && continue
+        ln -sf "$f" "$NVIM_CONFIG/$base" 2>/dev/null || cp -r "$f" "$NVIM_CONFIG/$base"
+    done
+fi
+
+echo "✅ Neovim config linked/copied for Git Bash"
 
 # Verify the setup
 echo ""
