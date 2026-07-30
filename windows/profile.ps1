@@ -82,6 +82,7 @@ function gw { git whatchanged }
 function gdfb { git diff master... }
 function gdfbm { git diff main... }
 function gdfbd { git diff develop... }
+function sscp { ssh -o StrictHostKeyChecking=no administrator@93.127.141.100 @args }
 
 # Modern Git tools
 function lg { lazygit }
@@ -185,8 +186,11 @@ function findn {
 }
 
 # Navigation
+function d { Set-Location @args }
 function u { cd .. }
 function c { cd ~/code }
+function z { zoxide query -i @args | ForEach-Object { Set-Location $_ } }
+function zi { zoxide query -i @args | ForEach-Object { Set-Location $_ } }
 
 # Docker
 function dps { docker ps }
@@ -236,16 +240,25 @@ function extract {
 Set-Alias -Name k -Value kubectl
 
 # Common shortcuts
-Set-Alias -Name ll -Value Get-ChildItem
 Set-Alias -Name which -Value Get-Command
 
+function ls { Get-ChildItem @args }
+function ll { Get-ChildItem -Force @args }
+function la { Get-ChildItem -Force @args }
+function l { Get-ChildItem @args }
+function lt { Get-ChildItem -Force @args | Sort-Object LastWriteTime -Descending }
+function lsize { Get-ChildItem -Force @args | Sort-Object Length -Descending }
+function lrecent { lt @args }
+
 # Python aliases
-function pin { pip install $args }
-function pinu { pip install -U $args }
-function pfr { pip freeze }
-function pfrr { pip freeze > requirements.txt }
+function pip { uv pip @args }
+function pin { uv pip install @args }
+function pinu { uv pip install -U @args }
+function pfr { uv pip freeze @args }
+function pfrr { uv pip freeze > requirements.txt }
 
 # Node.js/Yarn/NPM aliases
+if (Test-Path Alias:ni) { Remove-Item Alias:ni -Force }
 function ni { npm install $args }
 function nig { npm install -g $args }
 function nis { npm install --save $args }
@@ -411,9 +424,69 @@ function cldgdf {
 # ==========================================
 # Codex CLI aliases
 # ==========================================
-function cx { codex @args }
+$script:CodexLocalCandidates = @(
+    "$HOME\code\codex-infinity\codex-rs\target\release\codex.exe",
+    "$HOME\code\codex\codex-rs\target\release\codex.exe",
+    "$HOME\code\codex-infinity\codex-rs\target\release\codex",
+    "$HOME\code\codex\codex-rs\target\release\codex"
+)
+
+function Get-CodexLocal {
+    foreach ($candidate in $script:CodexLocalCandidates) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+    return $null
+}
+
+function Invoke-CodexLocal {
+    param([string[]]$CodexArgs)
+    $codexLocal = Get-CodexLocal
+    if ($codexLocal) {
+        & $codexLocal @CodexArgs
+        return
+    }
+    if (Get-Command codex -ErrorAction SilentlyContinue) {
+        codex @CodexArgs
+        return
+    }
+    Write-Host "Codex not found. Install codex or build local Codex under ~/code/codex-infinity or ~/code/codex." -ForegroundColor Yellow
+}
+
+function Invoke-CodexModel {
+    param(
+        [string]$Model,
+        [string]$ReasoningEffort,
+        [string[]]$CodexArgs = @()
+    )
+    Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "-m", $Model, "--config", "model_reasoning_effort=$ReasoningEffort") + $CodexArgs)
+}
+
+function cx { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox") + $args) }
+function cxi { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--auto-next-idea") + $args) }
+function cxn { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--auto-next-steps") + $args) }
+function cxl { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=low") + $args) }
+function cxm { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=medium") + $args) }
+function cxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high") + $args) }
+function cxxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=xhigh") + $args) }
+function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high", "--full-auto") + $args) }
+function cxll { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "low" -CodexArgs $args }
+function cxlm { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "medium" -CodexArgs $args }
+function cxlh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "high" -CodexArgs $args }
+function cxt { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
+function cxtl { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "low" -CodexArgs $args }
+function cxtm { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "medium" -CodexArgs $args }
+function cxth { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "high" -CodexArgs $args }
+function cxbuild {
+    $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs") { "$HOME\code\codex" } else { $null }
+    if (-not $codexDir) {
+        Write-Host "No local Codex checkout found under ~/code/codex-infinity or ~/code/codex" -ForegroundColor Yellow
+        return
+    }
+    Push-Location $codexDir
+    try { cargo build --release -p codex } finally { Pop-Location }
+}
+
 function cxa { codex --auto-edit @args }
-function cxf { codex --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high --full-auto @args }
 function cdx { codex @args }
 function cdxd { codex --dangerously-bypass-approvals-and-sandbox @args }
 function cdxf { codex --full-auto @args }
@@ -423,6 +496,31 @@ function cdxa { codex apply @args }
 function cdxe { codex exec @args }
 function cdxs { codex --search @args }
 function cdxed { codex exec --dangerously-bypass-approvals-and-sandbox @args }
+
+# Tooling parity helpers
+function btop {
+    $btopWin = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\aristocratos.btop4win_Microsoft.Winget.Source_8wekyb3d8bbwe\btop4win\btop4win.exe"
+    if (Test-Path $btopWin) {
+        & $btopWin @args
+    } else {
+        Write-Host "btop4win is not installed." -ForegroundColor Yellow
+    }
+}
+function bt { btop @args }
+function dtop { dua interactive @args }
+function bench { hyperfine @args }
+function http { xh @args }
+function topc {
+    if (Get-Command btop -ErrorAction SilentlyContinue) {
+        btop @args
+    } else {
+        Get-Process | Sort-Object CPU -Descending | Select-Object -First 30
+    }
+}
+function tx { tmux attach @args }
+function tls { tmux ls @args }
+function tn { tmux new -s @args }
+function lg { lazygit @args }
 
 # IP address functions
 function my-ip {
@@ -440,6 +538,85 @@ function piuvg { uv tool install $args }
 function puvg { uv tool install $args }
 function uvls { uv tool list }
 function uvun { uv tool uninstall $args }
+
+# Goat Simulator saves
+function Get-GoatSaveRoots {
+    @(
+        @{ Name = "Goat2"; Path = "$env:LOCALAPPDATA\Goat2\Saved" },
+        @{ Name = "Goatsim_UE4"; Path = "$env:LOCALAPPDATA\Goatsim_UE4\Saved" },
+        @{ Name = "CoffeeStainStudios.GoatSimulator3PC_496a1srhmar9w"; Path = "$env:LOCALAPPDATA\Packages\CoffeeStainStudios.GoatSimulator3PC_496a1srhmar9w\SystemAppData" },
+        @{ Name = "CoffeeStainStudios.364399A20F4FD_496a1srhmar9w"; Path = "$env:LOCALAPPDATA\Packages\CoffeeStainStudios.364399A20F4FD_496a1srhmar9w\SystemAppData" },
+        @{ Name = "CoffeeStainStudios.56359B5191BB3_496a1srhmar9w"; Path = "$env:LOCALAPPDATA\Packages\CoffeeStainStudios.56359B5191BB3_496a1srhmar9w\SystemAppData" }
+    ) | Where-Object { Test-Path $_.Path }
+}
+
+function Get-GoatSavePaths {
+    Get-GoatSaveRoots | ForEach-Object { $_.Path }
+}
+
+function goat-save-status {
+    $paths = Get-GoatSavePaths
+    if (-not $paths) {
+        Write-Host "No Goat Simulator save roots found under AppData\\Local." -ForegroundColor Yellow
+        return
+    }
+    $rows = @()
+    foreach ($path in $paths) {
+        $files = Get-ChildItem -Path $path -Recurse -Force -File -ErrorAction SilentlyContinue
+        $latest = $files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $rows += [PSCustomObject]@{
+            Path = $path
+            Files = @($files).Count
+            LatestWrite = if ($latest) { $latest.LastWriteTime } else { $null }
+            LatestFile = if ($latest) { $latest.FullName } else { $null }
+        }
+    }
+    $rows | Format-Table -AutoSize
+}
+
+function goat-save-backup {
+    param([string]$Destination = "$HOME\Games\Backups\goat-simulator")
+    $roots = Get-GoatSaveRoots
+    if (-not $roots) {
+        Write-Host "No Goat Simulator save roots found to back up." -ForegroundColor Yellow
+        return
+    }
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $backupRoot = Join-Path $Destination $stamp
+    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+    foreach ($root in $roots) {
+        $target = Join-Path $backupRoot $root.Name
+        Copy-Item -Path $root.Path -Destination $target -Recurse -Force
+    }
+    Write-Host "Backed up Goat Simulator saves to: $backupRoot" -ForegroundColor Green
+}
+
+function goat-save-restore {
+    param([Parameter(Mandatory = $true)][string]$BackupPath)
+    if (-not (Test-Path $BackupPath)) {
+        Write-Host "Backup path not found: $BackupPath" -ForegroundColor Red
+        return
+    }
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $safetyBackup = "$HOME\Games\Backups\goat-simulator\pre-restore-$stamp"
+    goat-save-backup $safetyBackup
+
+    foreach ($root in (Get-GoatSaveRoots)) {
+        $source = Join-Path $BackupPath $root.Name
+        if (Test-Path $source) {
+            if (Test-Path $root.Path) {
+                Remove-Item -LiteralPath $root.Path -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path (Split-Path $root.Path -Parent) -Force | Out-Null
+            Copy-Item -Path $source -Destination $root.Path -Recurse -Force
+            Write-Host "Restored $($root.Name) -> $($root.Path)" -ForegroundColor Green
+        }
+    }
+}
+
+function goats { goat-save-status }
+function goatb { goat-save-backup @args }
+function goatr { goat-save-restore @args }
 
 # Alias management functions
 function ali {
@@ -486,12 +663,16 @@ function Get-DirSize {
 }
 
 # Environment variables
-$env:EDITOR = "code"
+$env:EDITOR = "nvim"
+$env:GIT_EDITOR = "nvim"
+$env:VISUAL = "nvim"
 
 # PATH Configuration - Add common development tool paths
 $pathsToAdd = @(
     # uv (Python package installer)
     "$env:USERPROFILE\.local\bin",
+    # WinGet command shims
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Links",
     # Node.js global modules
     "$env:APPDATA\npm",
     # Yarn global binaries
@@ -508,7 +689,9 @@ $pathsToAdd = @(
     "${env:ProgramFiles}\Git\bin",
     # Additional common paths
     "$env:USERPROFILE\.cargo\bin",
-    "$env:USERPROFILE\go\bin"
+    "$env:USERPROFILE\go\bin",
+    # btop4win package layout does not always expose a working shim
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\aristocratos.btop4win_Microsoft.Winget.Source_8wekyb3d8bbwe\btop4win"
 )
 
 # Add paths to current session PATH if they exist and aren't already there
@@ -546,12 +729,79 @@ function usager {
     } | Sort-Object Size | Format-Table Name, SizeStr -AutoSize
 }
 
-function ni { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
+function pkill {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Name
+    )
+
+    $pattern = [regex]::Escape($Name)
+    $matches = Get-Process -ErrorAction SilentlyContinue |
+        Where-Object { $_.ProcessName -match $pattern }
+
+    if (-not $matches) {
+        Write-Host "No process matched '$Name'." -ForegroundColor Yellow
+        return
+    }
+
+    $matches | ForEach-Object {
+        Write-Host ("Killing {0} ({1})" -f $_.ProcessName, $_.Id) -ForegroundColor Cyan
+        Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function memtop {
+    param([int]$Count = 20)
+
+    Get-Process -ErrorAction SilentlyContinue |
+        Sort-Object WorkingSet64 -Descending |
+        Select-Object -First $Count Id, ProcessName,
+            @{Name = "RAM_MB"; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 1) }},
+            @{Name = "CPU_s"; Expression = { [math]::Round($_.CPU, 1) }} |
+        Format-Table -AutoSize
+}
+
+function kill-heavy-browsers {
+    $names = @("chrome", "msedge", "firefox", "claude")
+    foreach ($name in $names) {
+        Get-Process -Name $name -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+    Get-Process -Name $names -ErrorAction SilentlyContinue |
+        Select-Object Id, ProcessName,
+            @{Name = "RAM_MB"; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 1) }} |
+        Format-Table -AutoSize
+}
+
+function reswap {
+    $os = Get-CimInstance Win32_OperatingSystem
+    $page = Get-CimInstance Win32_PageFileUsage -ErrorAction SilentlyContinue
+
+    [PSCustomObject]@{
+        RAM_Total_GB       = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+        RAM_Free_GB        = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+        Virtual_Total_GB   = [math]::Round($os.TotalVirtualMemorySize / 1MB, 2)
+        Virtual_Free_GB    = [math]::Round($os.FreeVirtualMemory / 1MB, 2)
+        Pagefile_Path      = ($page | Select-Object -ExpandProperty Name) -join ", "
+        Pagefile_Used_MB   = ($page | Measure-Object CurrentUsage -Sum).Sum
+        Pagefile_Peak_MB   = ($page | Measure-Object PeakUsage -Sum).Sum
+    }
+}
+
 function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function vi { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
 function nvim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }
-function o { explorer.exe . }
-function oo { explorer.exe $args }
+function n { nvim @args }
+
+# Open in Windows File Explorer (cross-platform parity with bash 'o'/'oo')
+function o {
+    param($Path = ".")
+    explorer.exe $Path
+}
+function oo {
+    param($Path = ".")
+    explorer.exe $Path
+}
 
 # Environment management
 function reload {
@@ -567,12 +817,23 @@ function refresh-env {
 }
 
 function check-tools {
-    $tools = @("node", "npm", "yarn", "git", "gh", "claude", "codex", "code", "nvim", "python", "pip", "uv", "fzf", "bun", "rg", "fd", "bat")
+    $tools = @("node", "npm", "yarn", "git", "gh", "claude", "codex", "code", "nvim", "python", "uv", "fzf", "bun", "rg", "fd", "bat", "eza", "delta", "jq", "yq", "zoxide", "btop", "tmux", "lazygit", "sshpass", "dust", "hyperfine", "procs", "sd", "xh", "tokei")
     foreach ($tool in $tools) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
             Write-Host "[OK] $tool" -ForegroundColor Green
         } else {
             Write-Host "[--] $tool" -ForegroundColor Red
+        }
+    }
+}
+
+function check-optional-tools {
+    $tools = @("gitui", "difft", "dua", "btm")
+    foreach ($tool in $tools) {
+        if (Get-Command $tool -ErrorAction SilentlyContinue) {
+            Write-Host "[OK] $tool" -ForegroundColor Green
+        } else {
+            Write-Host "[optional] $tool" -ForegroundColor Yellow
         }
     }
 }
@@ -634,6 +895,10 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     }
 } else {
     Write-Host "Note: fzf not found in PATH. Install with: choco install fzf" -ForegroundColor Yellow
+}
+
+if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+    Invoke-Expression (& { (zoxide init powershell | Out-String) })
 }
 
 # Better tab completion

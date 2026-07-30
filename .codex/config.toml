@@ -52,6 +52,9 @@ trust_level = "trusted"
 [projects."/home/lee/code/prediction2"]
 trust_level = "trusted"
 
+[projects.'c:\users\lee_p\code\dotfiles']
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
@@ -67,3 +70,6 @@ gpt-5-codex = "gpt-5.2-codex"
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
+
+[windows]
+sandbox = "unelevated"

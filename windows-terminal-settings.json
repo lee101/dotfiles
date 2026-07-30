@@ -1,6 +1,6 @@
 {
     "$schema": "https://aka.ms/terminal-profiles-schema",
-    "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+    "defaultProfile": "{2595cd9c-8f05-55ff-a1d4-93f3041ca67d}",
     "copyOnSelect": true,
     "copyFormatting": "none",
     "launchMode": "maximized",
@@ -21,7 +21,7 @@
             "padding": "8",
             "cursorShape": "filledBox",
             "antialiasingMode": "cleartype",
-            "colorScheme": "One Half Dark",
+            "colorScheme": "Dotfiles Darkula 20-80",
             "useAcrylic": true,
             "acrylicOpacity": 0.9,
             "scrollbarState": "visible",
@@ -36,7 +36,7 @@
                 "name": "PowerShell 7",
                 "source": "Windows.Terminal.PowershellCore",
                 "hidden": false,
-                "colorScheme": "One Half Dark",
+                "colorScheme": "Dotfiles Darkula 20-80",
                 "tabTitle": "PowerShell"
             },
             {
@@ -44,21 +44,21 @@
                 "name": "Windows PowerShell",
                 "commandline": "powershell.exe",
                 "hidden": false,
-                "colorScheme": "Campbell Powershell"
+                "colorScheme": "Dotfiles Darkula 20-80"
             },
             {
                 "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
                 "name": "Command Prompt",
                 "commandline": "cmd.exe",
                 "hidden": false,
-                "colorScheme": "Vintage"
+                "colorScheme": "Dotfiles Darkula 20-80"
             },
             {
                 "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
                 "name": "Ubuntu",
                 "source": "Windows.Terminal.Wsl",
                 "hidden": false,
-                "colorScheme": "Ubuntu",
+                "colorScheme": "Dotfiles Darkula 20-80",
                 "startingDirectory": "~",
                 "font": {
                     "face": "JetBrainsMono NF",
@@ -76,13 +76,36 @@
                 "name": "Git Bash",
                 "commandline": "\"%PROGRAMFILES%\\Git\\bin\\bash.exe\" --login -i",
                 "icon": "%PROGRAMFILES%\\Git\\mingw64\\share\\git\\git-for-windows.ico",
-                "colorScheme": "GitBash",
+                "colorScheme": "Dotfiles Darkula 20-80",
                 "startingDirectory": "%USERPROFILE%"
             }
         ]
     },
     
     "schemes": [
+        {
+            "name": "Dotfiles Darkula 20-80",
+            "black": "#20242c",
+            "red": "#f07178",
+            "green": "#c3e88d",
+            "yellow": "#ffcb6b",
+            "blue": "#82aaff",
+            "purple": "#c792ea",
+            "cyan": "#89ddff",
+            "white": "#d6dbe3",
+            "brightBlack": "#596170",
+            "brightRed": "#ff8b92",
+            "brightGreen": "#dbf9a7",
+            "brightYellow": "#ffd98f",
+            "brightBlue": "#9cc4ff",
+            "brightPurple": "#d7aefb",
+            "brightCyan": "#a7eeff",
+            "brightWhite": "#ffffff",
+            "background": "#20242c",
+            "foreground": "#d6dbe3",
+            "selectionBackground": "#596170",
+            "cursorColor": "#80cbc4"
+        },
         {
             "name": "One Half Dark",
             "black": "#282c34",
