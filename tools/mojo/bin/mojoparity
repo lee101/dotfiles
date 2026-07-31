@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""Numeric parity between a Mojo kernel's output and its reference. Markdown out.
+
+  mojoparity native.npy reference.npy
+  mojoparity native.npz reference.npz          # keyed, per-array verdict
+  mojoparity --rtol 1e-9 --atol 1e-12 a.npy b.npy
+  mojoparity --worst 10 a.npy b.npy            # show the worst offenders
+  mojoparity a.csv b.csv                       # numeric columns
+  mojoparity a.json b.json                     # numeric leaves, by path
+
+A port is "done" when it is numerically the same, and `np.allclose` answers that
+with one bit of information. What you actually need when it fails is *where* and
+*how*: NaN/inf disagreements first (they are usually a masking bug, not a
+precision bug), then ULP distance (1-2 ULP is reassociation, 10^6 ULP is a
+different algorithm), then whether the error is uniform or concentrated in a few
+rows (a boundary/tail bug).
+
+Exit code is 0 when every array passes, 1 otherwise — usable in CI.
+"""
+import argparse
+import json
+import os
+import sys
+
+import numpy as np
+
+
+def load(path):
+    """-> {name: ndarray}"""
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".npy":
+        return {"": np.load(path)}
+    if ext == ".npz":
+        d = np.load(path, allow_pickle=False)
+        return {k: d[k] for k in d.files}
+    if ext == ".csv":
+        import csv
+
+        with open(path) as fh:
+            rows = list(csv.reader(fh))
+        head = rows[0]
+        try:
+            [float(x) for x in head]
+            head, body = [f"c{i}" for i in range(len(head))], rows
+        except ValueError:
+            body = rows[1:]
+        cols = {}
+        for i, name in enumerate(head):
+            try:
+                cols[name] = np.array([float(r[i]) for r in body if len(r) > i])
+            except ValueError:
+                continue
+        return cols
+    if ext == ".json":
+        def walk(obj, prefix=""):
+            out = {}
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    out.update(walk(v, f"{prefix}.{k}" if prefix else str(k)))
+            elif isinstance(obj, list):
+                if obj and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in obj):
+                    out[prefix] = np.array(obj, dtype=float)
+                else:
+                    for i, v in enumerate(obj):
+                        out.update(walk(v, f"{prefix}[{i}]"))
+            elif isinstance(obj, (int, float)) and not isinstance(obj, bool):
+                out[prefix] = np.array([float(obj)])
+            return out
+
+        return walk(json.load(open(path)))
+    sys.exit(f"unsupported file type: {path}")
+
+
+def ulp_distance(a, b):
+    """Integer distance between adjacent-representable doubles (sign-magnitude)."""
+    ai = a.astype(np.float64).view(np.int64).copy()
+    bi = b.astype(np.float64).view(np.int64).copy()
+    ai[ai < 0] = np.int64(np.iinfo(np.int64).min) - ai[ai < 0]
+    bi[bi < 0] = np.int64(np.iinfo(np.int64).min) - bi[bi < 0]
+    return np.abs(ai - bi).astype(np.float64)
+
+
+def compare(name, a, b, rtol, atol, worst):
+    lines = []
+    ok = True
+    if a.shape != b.shape:
+        return False, [f"| `{name or 'array'}` | **shape** {a.shape} vs {b.shape} | — | — | — | SHAPE |"], []
+    af = np.asarray(a, dtype=np.float64).ravel()
+    bf = np.asarray(b, dtype=np.float64).ravel()
+
+    nan_a, nan_b = np.isnan(af), np.isnan(bf)
+    nan_mismatch = int((nan_a ^ nan_b).sum())
+    inf_mismatch = int((np.isinf(af) ^ np.isinf(bf)).sum())
+    both = ~(nan_a | nan_b) & np.isfinite(af) & np.isfinite(bf)
+
+    diff = np.abs(af[both] - bf[both])
+    scale = np.maximum(np.abs(af[both]), np.abs(bf[both]))
+    rel = np.where(scale > 0, diff / np.where(scale > 0, scale, 1.0), 0.0)
+    max_abs = float(diff.max()) if diff.size else 0.0
+    max_rel = float(rel.max()) if rel.size else 0.0
+    ulps = ulp_distance(af[both], bf[both]) if both.any() else np.zeros(0)
+    max_ulp = float(ulps.max()) if ulps.size else 0.0
+
+    tol_fail = int((diff > (atol + rtol * np.abs(bf[both]))).sum())
+    ok = nan_mismatch == 0 and inf_mismatch == 0 and tol_fail == 0
+    verdict = "bit-identical" if max_abs == 0 and nan_mismatch == 0 else ("within tol" if ok else "**DIVERGENT**")
+    lines.append(
+        f"| `{name or 'array'}` | {a.shape} | {max_abs:.3g} | {max_rel:.3g} | {max_ulp:.0f} | {verdict} |"
+    )
+
+    detail = []
+    if nan_mismatch or inf_mismatch:
+        detail.append(
+            f"- `{name or 'array'}`: **{nan_mismatch} NaN and {inf_mismatch} inf disagreements** — "
+            "check the validity mask before the arithmetic; this is rarely precision."
+        )
+    if tol_fail and worst:
+        idx_both = np.flatnonzero(both)
+        fail = diff > (atol + rtol * np.abs(bf[both]))
+        order = [i for i in np.argsort(-diff) if fail[i]][:worst]
+        rows = [
+            f"    {np.unravel_index(idx_both[i], a.shape)}: native {af[idx_both[i]]:.17g} "
+            f"ref {bf[idx_both[i]]:.17g}  ulp {ulps[i]:.0f}"
+            for i in order
+        ]
+        detail.append(f"- `{name or 'array'}`: {tol_fail} element(s) outside tolerance; worst:\n" + "\n".join(rows))
+        # concentrated vs uniform: a boundary bug lights up few rows
+        if a.ndim == 2:
+            bad_rows = np.unique(np.unravel_index(idx_both[diff > (atol + rtol * np.abs(bf[both]))], a.shape)[0])
+            frac = len(bad_rows) / a.shape[0]
+            shape_hint = "concentrated in a few rows (boundary/tail bug)" if frac < 0.2 else "spread across rows (algorithmic)"
+            detail.append(f"  - failures touch {len(bad_rows)}/{a.shape[0]} rows — {shape_hint}")
+    return ok, lines, detail
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("native")
+    ap.add_argument("reference")
+    ap.add_argument("--rtol", type=float, default=1e-9)
+    ap.add_argument("--atol", type=float, default=1e-12)
+    ap.add_argument("--worst", type=int, default=5)
+    args = ap.parse_args()
+
+    A, B = load(args.native), load(args.reference)
+    keys = [k for k in A if k in B]
+    missing = sorted(set(A) ^ set(B))
+
+    print(f"# mojoparity — `{args.native}` vs `{args.reference}`\n")
+    print(f"tolerance: rtol {args.rtol:g}, atol {args.atol:g}\n")
+    print("| array | shape | max abs | max rel | max ulp | verdict |")
+    print("|---|---|---|---|---|---|")
+    all_ok = True
+    details = []
+    for k in keys:
+        ok, lines, detail = compare(k, A[k], B[k], args.rtol, args.atol, args.worst)
+        all_ok &= ok
+        print("\n".join(lines))
+        details += detail
+    if missing:
+        all_ok = False
+        print(f"\n**keys present in only one file:** {', '.join(missing)}")
+    if details:
+        print("\n## where it diverges\n")
+        print("\n".join(details))
+    print(f"\n**verdict:** {'PASS' if all_ok else 'FAIL'} — {len(keys)} array(s) compared.")
+    if not all_ok:
+        print(
+            "\nOrder to debug: NaN/inf disagreements (masking), then a handful of large ULP "
+            "gaps (different algorithm or a missing clamp), then uniform 1-2 ULP noise "
+            "(reassociation — usually acceptable, but pin the tolerance explicitly)."
+        )
+    sys.exit(0 if all_ok else 1)
+
+
+if __name__ == "__main__":
+    main()

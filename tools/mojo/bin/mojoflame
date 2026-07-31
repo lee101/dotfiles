@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""Sampling profiler for Mojo binaries -> markdown flame tree.
+
+  mojoflame ./mybin arg1              # launch, sample, report
+  mojoflame --pid 12345               # attach to a running process
+  mojoflame --samples 300 ./mybin
+  mojoflame --backend perf ./mybin    # if perf is installed and permitted
+
+Default backend is gdb (poor-man's profiler): works with perf_event_paranoid=4 and
+without linux-tools. Build with `mojo build -g` for useful symbols; a `mojo run` JIT
+gives you ~1.2s of compiler frames and no user symbols.
+"""
+import argparse
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+FRAME = re.compile(r"^#\d+\s+(?:0x[0-9a-f]+ in )?(.+?) \(")
+NOISE = re.compile(r"^(?:__libc_|_start$|clone3?$|start_thread$|\?\?$)")
+# a thread parked in the runtime's work queue tells you nothing about where time goes
+IDLE = re.compile(r"futex|__new_sem_wait|nanosleep|epoll_wait|poll_wait|"
+                  r"pthread_cond_wait|sched_yield|park")
+
+
+def perf_ok():
+    if not shutil.which("perf"):
+        return False
+    try:
+        return int(open("/proc/sys/kernel/perf_event_paranoid").read().strip()) <= 2
+    except OSError:
+        return False
+
+
+def clean(name):
+    name = name.split("(")[0].strip()
+    # mojo mangles as `foo::bar(...)` or with $-suffixes; keep it readable
+    name = re.sub(r"\[abi:[^\]]+\]", "", name)
+    return name[:80]
+
+
+MARK = "@@MOJOFLAME_END@@"
+
+
+def parse_bt(text):
+    """Split a `thread apply all bt` dump into per-thread stacks (leaf-first)."""
+    stacks, cur = [], []
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("Thread ") or s.startswith("#0 "):
+            if cur:
+                stacks.append(cur)
+                cur = []
+        m = FRAME.match(s)
+        if m:
+            cur.append(clean(m.group(1)))
+    if cur:
+        stacks.append(cur)
+    return stacks
+
+
+def sample_gdb_attach(pid, n, interval, deadline, bt_cmd):
+    """Repeated `gdb -p` attaches. Needs ptrace_scope=0 or root for non-descendants."""
+    stacks, misses = [], 0
+    cmd = ["gdb", "-p", str(pid), "-batch", "-nx",
+           "-ex", "set pagination off", "-ex", "set confirm off",
+           "-ex", bt_cmd]
+    while len(stacks) < n and time.time() < deadline:
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        except subprocess.TimeoutExpired:
+            misses += 1
+            continue
+        got = parse_bt(r.stdout)
+        if not got:
+            misses += 1
+            if misses > 3 and not stacks:
+                print("gdb attach failed:\n" + (r.stderr or r.stdout)[:400], file=sys.stderr)
+                if "ptrace" in (r.stderr + r.stdout):
+                    print("hint: kernel.yama.ptrace_scope=1 blocks attaching to non-children. "
+                          "Run mojoflame on the command directly (no --pid), or "
+                          "`sudo sysctl -w kernel.yama.ptrace_scope=0`.", file=sys.stderr)
+                break
+            continue
+        stacks += got
+        time.sleep(interval)
+    return stacks, misses
+
+
+def sample_gdb_launch(argv, n, interval, deadline, bt_cmd):
+    """One gdb session that OWNS the inferior: SIGINT -> bt -> continue.
+
+    Works under kernel.yama.ptrace_scope=1 (the target is gdb's own child) and costs
+    ~ms per sample instead of a fresh attach each time.
+    """
+    import threading
+
+    g = subprocess.Popen(
+        ["gdb", "-nx", "-q", "--args"] + argv,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, bufsize=1, start_new_session=True)
+    buf = []
+    lock = threading.Lock()
+
+    def reader():
+        for line in g.stdout:
+            with lock:
+                buf.append(line)
+    threading.Thread(target=reader, daemon=True).start()
+
+    def drain():
+        with lock:
+            t = "".join(buf)
+            buf.clear()
+        return t
+
+    def wait_mark(timeout=10):
+        end = time.time() + timeout
+        acc = ""
+        while time.time() < end:
+            acc += drain()
+            if MARK in acc:
+                return acc
+            time.sleep(0.005)
+        return acc
+
+    def send(*cmds):
+        g.stdin.write("".join(c + "\n" for c in cmds))
+        g.stdin.flush()
+
+    send("set pagination off", "set confirm off", "set print thread-events off", "run")
+    time.sleep(0.3)
+
+    stacks, misses = [], 0
+    while len(stacks) < n and time.time() < deadline:
+        if g.poll() is not None:
+            break
+        drain()
+        try:
+            os.kill(g.pid, signal.SIGINT)
+        except ProcessLookupError:
+            break
+        time.sleep(0.02)
+        send(bt_cmd, f'echo {MARK}\\n')
+        out = wait_mark()
+        if "exited" in out or "Inferior" in out and "exited" in out:
+            break
+        got = parse_bt(out)
+        if got:
+            stacks += got
+        else:
+            misses += 1
+            if misses > 10 and not stacks:
+                print("gdb produced no backtraces:\n" + out[:400], file=sys.stderr)
+                break
+        send("continue")
+        time.sleep(interval)
+
+    try:
+        g.stdin.write("kill\nquit\n")
+        g.stdin.flush()
+        g.wait(timeout=5)
+    except Exception:
+        g.kill()
+    return stacks, misses
+
+
+def sample_perf(argv, freq, outdir):
+    data = os.path.join(outdir, "perf.data")
+    subprocess.run(["perf", "record", "-F", str(freq), "-g", "-o", data, "--"] + argv,
+                   check=False)
+    r = subprocess.run(["perf", "script", "-i", data], capture_output=True, text=True)
+    stacks, cur = [], []
+    for line in r.stdout.splitlines():
+        if not line.strip():
+            if cur:
+                stacks.append(cur)
+                cur = []
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and line.startswith("\t"):
+            cur.append(clean(parts[1]))
+    if cur:
+        stacks.append(cur)
+    return stacks, 0
+
+
+class Node:
+    __slots__ = ("name", "total", "self_", "kids", "idle")
+
+    def __init__(self, name):
+        self.name, self.total, self.self_, self.kids = name, 0, 0, {}
+
+
+def build(stacks, strip_noise=True, drop_idle=True):
+    root = Node("all")
+    dropped = 0
+    for st in stacks:
+        if drop_idle and st and IDLE.search(st[0]):
+            dropped += 1
+            continue
+        frames = [f for f in reversed(st) if not (strip_noise and NOISE.match(f))]
+        if not frames:
+            continue
+        root.total += 1
+        n = root
+        for f in frames:
+            n = n.kids.setdefault(f, Node(f))
+            n.total += 1
+        n.self_ += 1
+    root.idle = dropped
+    return root
+
+
+def emit(node, total, depth, maxdepth, minpct, out, prefix=""):
+    kids = sorted(node.kids.values(), key=lambda k: -k.total)
+    for k in kids:
+        pct = 100.0 * k.total / total
+        if pct < minpct:
+            continue
+        sp = 100.0 * k.self_ / total
+        bar = "#" * max(1, int(pct / 4))
+        selfs = f" self {sp:.1f}%" if sp >= 0.5 else ""
+        out.append(f"{'  ' * depth}{pct:5.1f}% {bar:<25} {k.name}{selfs}")
+        if depth + 1 < maxdepth:
+            emit(k, total, depth + 1, maxdepth, minpct, out)
+
+
+def collect_self(node, acc):
+    if node.self_:
+        acc[node.name] = acc.get(node.name, 0) + node.self_
+    for k in node.kids.values():
+        collect_self(k, acc)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cmd", nargs="*", help="binary + args to launch")
+    ap.add_argument("--pid", type=int)
+    ap.add_argument("--samples", type=int, default=120)
+    ap.add_argument("--interval", type=float, default=0.01)
+    ap.add_argument("--timeout", type=float, default=120, help="max seconds to sample")
+    ap.add_argument("--depth", type=int, default=12)
+    ap.add_argument("--min", type=float, default=1.0, help="prune frames below this %%")
+    ap.add_argument("--top", type=int, default=20)
+    ap.add_argument("--backend", choices=["auto", "gdb", "perf"], default="auto")
+    ap.add_argument("--keep-noise", action="store_true")
+    ap.add_argument("--threads", choices=["main", "all"], default="main",
+                    help="main: thread 1 only (default; the mojo runtime parks ~ncore "
+                         "worker threads in futex wait and they swamp `all`)")
+    ap.add_argument("--keep-idle", action="store_true", help="do not drop parked threads")
+    a = ap.parse_args()
+
+    if not a.cmd and not a.pid:
+        ap.error("give a command to launch or --pid")
+
+    backend = a.backend
+    if backend == "auto":
+        backend = "perf" if (perf_ok() and a.cmd) else "gdb"
+
+    bt_cmd = "bt" if a.threads == "main" else "thread apply all bt"
+    proc = None
+    t0 = time.time()
+    if backend == "perf":
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            stacks, misses = sample_perf(a.cmd, 999, td)
+    else:
+        if not shutil.which("gdb"):
+            sys.exit("gdb not found and perf unavailable — install one of them")
+        if a.pid:
+            stacks, misses = sample_gdb_attach(a.pid, a.samples, a.interval,
+                                               time.time() + a.timeout, bt_cmd)
+        else:
+            stacks, misses = sample_gdb_launch(a.cmd, a.samples, a.interval,
+                                               time.time() + a.timeout, bt_cmd)
+    wall = time.time() - t0
+
+    if not stacks:
+        sys.exit("no samples collected — process too short-lived? "
+                 "raise --timeout, or profile a longer workload / attach with --pid")
+
+    root = build(stacks, strip_noise=not a.keep_noise, drop_idle=not a.keep_idle)
+    total = root.total or 1
+    idle = getattr(root, "idle", 0)
+    print(f"# mojoflame — {total} stacks, {backend} backend, {wall:.1f}s"
+          + (f", {idle} idle dropped" if idle else "")
+          + (f", {misses} misses" if misses else ""))
+    if not total:
+        sys.exit("all samples were parked/idle threads — rerun with --keep-idle, "
+                 "or the process is blocked rather than compute-bound")
+    if backend == "gdb":
+        print("\n_gdb sampling is biased toward syscall/blocking frames and is not "
+              "statistically exact; use it to rank, not to quote absolute times._")
+
+    acc = {}
+    collect_self(root, acc)
+    hot = sorted(acc.items(), key=lambda x: -x[1])[: a.top]
+    print("\n## hot leaves (self time)\n")
+    print("| self%% | samples | frame |".replace("%%", "%"))
+    print("|---|---|---|")
+    for name, c in hot:
+        print(f"| {100.0 * c / total:.1f} | {c} | `{name}` |")
+
+    out = []
+    emit(root, total, 0, a.depth, a.min, out)
+    print(f"\n## flame tree (>= {a.min}%)\n\n```")
+    print("\n".join(out))
+    print("```")
+
+
+if __name__ == "__main__":
+    main()
