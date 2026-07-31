@@ -147,7 +147,13 @@ if command -v eza >/dev/null 2>&1; then
     alias lrecent='eza -al --sort=modified --reverse --group-directories-first'
     alias tree='eza --tree'
 else
-    alias ls='ls --color=auto'
+    # GNU ls (Linux and Git Bash) uses --color; BSD ls (macOS) uses -G.
+    if ls --color=auto -d . >/dev/null 2>&1; then
+        alias ls='ls --color=auto'
+    else
+        export CLICOLOR=1
+        alias ls='ls -G'
+    fi
     alias ll='ls -alF'
     alias la='ls -A'
     alias l='ls -CF'
@@ -774,6 +780,15 @@ _codex_local_or_upstream() {
         _codex_upstream "${args[@]}"
     fi
 }
+
+# Clear only obsolete Codex shortcut aliases before replacing them with the
+# functions below. None of the terminal, color, or general-purpose aliases are
+# touched. Bash expands aliases while parsing `name() { ... }`, so this must
+# happen before the declarations to keep reloads safe.
+unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh \
+    cdx cdxd cdxf cdxr cdxw cdxa cdxe cdxs cdxo cdxed \
+    cx cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
+    cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxbuild 2>/dev/null || true
 
 # Upstream codex - ccx* aliases
 ccx()  { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"; }

@@ -58,7 +58,7 @@ if [ "$_sourced_common" -eq 0 ]; then
     echo "WARNING: dotfiles lib/common_shell not found. Using minimal fallback." >&2
 fi
 
-unset _sourced_common _df_bashrc_dir
+unset _sourced_common
 
 # WSL-specific extras (in addition to what common_shell + cross_platform provide)
 if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] || [ -n "${WSL_DISTRO_NAME:-}" ]; then
@@ -100,10 +100,13 @@ if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -o 2>/dev/nu
     fi
 fi
 
+unset _df_bashrc_dir
+
 # Handy one-liner reload for interactive use
 # Usage: reload
 if ! command -v reload >/dev/null 2>&1; then
-    reload() {
+    # `function name` is immune to a stale same-named alias during parsing.
+    function reload {
         echo "Reloading ~/.bashrc ..."
         # shellcheck disable=SC1090
         . "$HOME/.bashrc"
