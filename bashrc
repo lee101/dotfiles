@@ -77,6 +77,81 @@ if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] || [ -n "${WSL_DISTRO_NAME:-}" ]; 
     unset _wsl
 fi
 
+# ============================================================
+# Interactive bash options (distro defaults are gone once we own ~/.bashrc)
+# ============================================================
+shopt -s histappend checkwinsize 2>/dev/null
+shopt -s cmdhist 2>/dev/null
+shopt -s globstar 2>/dev/null   # bash 4+ only
+shopt -s autocd 2>/dev/null     # bash 4+ only
+HISTCONTROL=ignoreboth
+
+# ============================================================
+# Bash completion (Linux, macOS/Homebrew; Git Bash ships its own)
+# ============================================================
+if ! shopt -oq posix; then
+    for _bc in \
+        /usr/share/bash-completion/bash_completion \
+        /etc/bash_completion \
+        /usr/local/etc/profile.d/bash_completion.sh \
+        /opt/homebrew/etc/profile.d/bash_completion.sh ; do
+        if [ -r "$_bc" ]; then
+            # shellcheck disable=SC1090
+            . "$_bc"
+            break
+        fi
+    done
+    unset _bc
+fi
+
+# ============================================================
+# Prompt - mirrors the zsh PROMPT in zshrc: cyan cwd, magenta git branch
+# ============================================================
+_df_git_branch() {
+    command -v git >/dev/null 2>&1 || return 0
+    local _b
+    _b="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 0
+    [ -n "$_b" ] && printf ' %s' "$_b"
+    return 0
+}
+
+# Assume colour, disable only when proven unsupported. A tput-first check is
+# wrong here: TERM values like xterm-kitty/ghostty often have no local terminfo
+# entry, so tput reports failure on terminals that handle ANSI perfectly.
+_df_colors=1
+case "${TERM:-dumb}" in
+    dumb|'') _df_colors=0 ;;
+esac
+[ -n "${NO_COLOR:-}" ] && _df_colors=0
+if [ "$_df_colors" -eq 1 ] && command -v tput >/dev/null 2>&1; then
+    _df_ncolors="$(tput colors 2>/dev/null)"
+    case "$_df_ncolors" in
+        ''|*[!0-9]*) ;;  # unknown terminfo - keep colour
+        *) [ "$_df_ncolors" -lt 8 ] && _df_colors=0 ;;
+    esac
+    unset _df_ncolors
+fi
+
+# Show user@host over SSH so remote sessions are obvious.
+_df_host_prefix=''
+if [ -n "${SSH_CONNECTION:-}" ] || [ -n "${SSH_TTY:-}" ]; then
+    _df_host_prefix='\u@\h '
+fi
+
+if [ "$_df_colors" -eq 1 ]; then
+    PS1="\[\e[32m\]${_df_host_prefix}\[\e[36m\]\w\[\e[35m\]\$(_df_git_branch)\[\e[0m\] \$ "
+else
+    PS1="${_df_host_prefix}\w\$(_df_git_branch) \$ "
+fi
+unset _df_colors _df_host_prefix
+
+# Terminal title (skipped on dumb terminals)
+case "$TERM" in
+    xterm*|rxvt*|screen*|tmux*|alacritty|foot|*kitty*)
+        PS1="\[\e]0;\w\a\]$PS1"
+        ;;
+esac
+
 # Local user overrides (not tracked in dotfiles)
 [ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local" 2>/dev/null || true
 
