@@ -30,6 +30,10 @@ RULES = [
     ("mut-origin", "dialect", "err", r"\b(MutableAnyOrigin|MutableStaticOrigin|StaticMutableOrigin)\b",
      "does not exist", "`AnyOrigin[mut=True]`"),
     ("out-name", "dialect", "err", r"^\s*var\s+out\b|\bout\s*:\s*\w", "`out` is reserved", "rename the binding"),
+    ("fn-name", "dialect", "err", r"^\s*var\s+fn\b|\bfn\s*:\s*\w", "`fn` is reserved (removed keyword, still reserved)", "rename the binding"),
+    ("simd-eq", "dialect", "err", r"(?<![<>=!])==\s*SIMD\[|\bSIMD\[[^\]]*\]\([^)]*\)\s*==",
+     "`==` on SIMD returns a scalar Bool, not an elementwise mask", "use `.eq()` / `.ne()` / `.lt()` / `.ge()`"),
+    ("tuple-ret", "dialect", "err", r"->\s*\(\s*\w+\s*,", "tuple return types need `Tuple[...]`", "`-> Tuple[Int, Float64]`"),
     ("vectorize", "dialect", "warn", r"\bvectorize\s*\[",
      "vectorize rejects capturing closures in this nightly", "hand-roll a chunked SIMD loop (docs/simd.md)"),
 
