@@ -49,6 +49,21 @@ wrong on most of these.
 * An `@export ... abi("C")` function cannot be `raises` — wrap fallible work in `try:`/`except:`.
 * `out` is reserved — not usable as a parameter name *or* a local variable name.
 
+## SIMD comparisons reduce — this one silently changes results
+
+`a == b` on two SIMD vectors returns a **`Bool`**, not a mask: the operator
+compares and reduces. Nothing warns, and the surrounding code usually still
+compiles, so a vectorised branch quietly becomes an all-or-nothing branch.
+
+```mojo
+var bad  = isnan(cur) | isnan(prev) | (prev == 0.0)   # Bool — WRONG
+var good = isnan(cur) | isnan(prev) | prev.eq(0.0)    # SIMD mask — right
+```
+
+Same for `<`, `<=`, `>`, `>=`: use `.lt() .le() .gt() .ge() .eq() .ne()`. The
+mask-producing forms are also what `select()` expects, so the failure usually
+surfaces as a confusing `select` type error one line later, not at the comparison.
+
 ## Misc
 
 * `ord("=")` yields `Int`, no implicit conversion to `UInt8`.
@@ -56,6 +71,12 @@ wrong on most of these.
   `Int(...)`-style conversion in some positions — if `print` says
   `could not infer type of parameter pack 'values'`, that is the cause.
 * Mutual recursion kills `mojo build` (hangs/OOM) — restructure to a loop or a worklist.
+* `fn` is removed as a keyword but still **reserved**: `var fn = ...` fails to parse.
+* A tuple return type must be spelled `-> Tuple[Int, Float64]`; `-> (Int, Float64)` is
+  "expected a type, found a tuple value".
+* `from std.atomic import Atomic` — not `std.os.atomic`, not `std.sync`.
+* `thread_idx.x` / `global_idx.x` are `UInt`-like and do not compare against `Int`.
+  Bind `var tx = Int(thread_idx.x)` once at the top of a kernel.
 * AOT Mojo embeds CPython 3.12, not 3.13 — pin the pixi python accordingly if you use
   Python interop from a built binary.
 

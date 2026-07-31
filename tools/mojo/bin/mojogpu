@@ -192,20 +192,125 @@ def run_ptx(src):
                   "by more than one thread in a block, tile it into shared memory.")
 
 
+SHARED_RE = re.compile(r"stack_allocation\[\s*([A-Za-z0-9_]+)\s*,\s*([A-Za-z0-9_\[\]\. ]+?)\s*,\s*address_space\s*=\s*AddressSpace\.SHARED")
+LAUNCH_RE = re.compile(r"enqueue_function\[\s*(\w+)\s*\]\((.*?)\)", re.S)
+GRID_RE = re.compile(r"grid_dim\s*=\s*([^,\)]+)")
+BLOCK_RE = re.compile(r"block_dim\s*=\s*([^,\)]+)")
+DTYPE_BYTES = {"Float64": 8, "Int64": 8, "Float32": 4, "Int32": 4, "UInt8": 1, "Bool": 1}
+
+
+def kernel_bodies(src):
+    """{name: (start_line, [body lines])} for every def that reads a thread index."""
+    lines = src.splitlines()
+    out, name, body, start = {}, None, [], 0
+    for i, ln in enumerate(lines):
+        if re.match(r"^def\s+\w+", ln):
+            if name and any(("thread_idx" in b or "block_idx" in b or "global_idx" in b) for b in body):
+                out[name] = (start, body)
+            name = re.match(r"^def\s+(\w+)", ln).group(1)
+            body, start = [], i + 1
+        elif name:
+            body.append(ln)
+    if name and any(("thread_idx" in b or "block_idx" in b or "global_idx" in b) for b in body):
+        out[name] = (start, body)
+    return out
+
+
+def explain(path, comptimes):
+    src = open(path).read()
+    kernels = kernel_bodies(src)
+    launches = {}
+    for m in LAUNCH_RE.finditer(src):
+        g = GRID_RE.search(m.group(2))
+        b = BLOCK_RE.search(m.group(2))
+        launches[m.group(1)] = (g.group(1).strip() if g else "?", b.group(1).strip() if b else "?")
+
+    print(f"# mojogpu --explain {path}\n")
+    if not kernels:
+        print("no device kernels found (nothing reads thread_idx/block_idx/global_idx)")
+        return 0
+    print(f"{len(kernels)} kernel(s)\n")
+    print("| kernel | launch (grid x block) | shared | flags |")
+    print("|---|---|---|---|")
+    findings = []
+    for name, (start, body) in kernels.items():
+        text = "\n".join(body)
+        grid, block = launches.get(name, ("not launched here", ""))
+        shared_bytes, shared_desc = 0, []
+        for m in SHARED_RE.finditer(text):
+            count, dtype = m.group(1), m.group(2).strip()
+            n = comptimes.get(count, None)
+            if n is None and count.isdigit():
+                n = int(count)
+            width = DTYPE_BYTES.get(dtype, 8)
+            if n:
+                shared_bytes += n * width
+                shared_desc.append(f"{count}x{dtype}")
+        flags = []
+        if "barrier()" not in text and shared_bytes:
+            flags.append("shared but no barrier")
+        # a barrier reached by only some threads of a block hangs the block
+        for i, ln in enumerate(body):
+            if "barrier()" in ln:
+                indent = len(ln) - len(ln.lstrip())
+                for prev in reversed(body[:i]):
+                    pi = len(prev) - len(prev.lstrip())
+                    if prev.strip() and pi < indent:
+                        if re.match(r"\s*(if|while|for)\b", prev) and ("thread_idx" in prev or "tx" in prev or "< n" in prev):
+                            flags.append(f"barrier inside a thread-dependent branch (line {start + i})")
+                        break
+        if re.search(r"\[\s*\w+\s*\*\s*\w+\s*\+", text) and "block_idx" in text:
+            pass  # row-major indexing by block is fine
+        if re.search(r"\w+\[\s*\w+\s*\*\s*(n_cols|d|stride|n_features)\s*\+\s*\w+\s*\]", text):
+            flags.append("strided global read (stride = row length) — transpose for coalescing")
+        if "Atomic.fetch_add" in text:
+            n_atomic = text.count("Atomic.fetch_add")
+            shared_atomic = bool(re.search(r"Atomic\.fetch_add\(\s*s\w*\s*\+", text))
+            flags.append(f"{n_atomic} atomic add(s){' (shared-first: good)' if shared_atomic else ' — all global'}")
+        if not re.search(r"if\s+\w+\s*>=?\s*[\w\s*+-]+:\s*\n\s*return", text) and "global_idx" in text:
+            flags.append("no early bounds return — grid is rounded up, check it")
+        blocks_per_sm = ""
+        if shared_bytes:
+            fit = 49152 // shared_bytes
+            blocks_per_sm = f", {fit} block(s)/SM by shared alone" if fit < 8 else ""
+        shared_s = f"{shared_bytes // 1024} KiB ({'+'.join(shared_desc)}){blocks_per_sm}" if shared_bytes else "-"
+        print(f"| `{name}` | {grid} x {block} | {shared_s} | {'; '.join(flags) if flags else 'clean'} |")
+        findings += [(name, f) for f in flags]
+
+    print()
+    print("## what to check next\n")
+    print("- **coalescing** dominates everything else: adjacent threads must touch adjacent")
+    print("  addresses. A read indexed `x[row * row_len + col]` where `col` is the thread is")
+    print("  coalesced; where `row` is the thread it costs `row_len` transactions per warp.")
+    print("- **shared memory caps occupancy**: 48 KiB per SM by default, so a 16 KiB block")
+    print("  buffer allows 3 resident blocks. Fewer blocks means less latency hiding.")
+    print("- **atomics belong in shared memory first**, then one commit per block to global.")
+    print("- run `mojogpu --kernels ./binary` for the measured version of all of this (ncu).")
+    return 1 if findings else 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", nargs="*")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--kernels", action="store_true", help="per-kernel ncu metrics")
     ap.add_argument("--ptx", help="summarize the PTX for a .mojo file, no run")
+    ap.add_argument("--explain", help="static read of the GPU kernels in a .mojo file, no run")
     ap.add_argument("--top", type=int, default=10)
     a = ap.parse_args()
     if a.check:
         return check()
     if a.ptx:
         return run_ptx(a.ptx)
+    if a.explain:
+        comptimes = {}
+        for line in open(a.explain):
+            m = re.match(r"comptime\s+(\w+)\s*=\s*(\d+)\s*$", line.strip())
+            if m:
+                comptimes[m.group(1)] = int(m.group(2))
+        return explain(a.explain, comptimes)
     if not a.cmd:
-        ap.error("give a command, --check, or --ptx")
+        ap.error("give a command, --check, --ptx, or --explain")
     if a.kernels:
         return run_ncu(a.cmd, a.top)
     run_nsys(a.cmd, a.top)
