@@ -731,7 +731,7 @@ alias dvn='devin --permission-mode dangerous'
 alias dvni="~/programs/Devin/bin/devin-desktop"
 
 # CLI installers/updaters
-alias clinst='bun install -g @anthropic-ai/claude-code@latest'
+alias clinst='claude update'
 alias cinst='npm install -g @openai/codex@latest'
 
 # Remote host shortcut
