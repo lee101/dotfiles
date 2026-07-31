@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""GPU profiling for Mojo kernels -> markdown.
+
+  mojogpu --check                # is a GPU actually usable right now?
+  mojogpu ./mybin                # nsys: where does wall time go (kernels vs copies)?
+  mojogpu --kernels ./mybin      # ncu: per-kernel occupancy, bandwidth, stalls
+  mojogpu --ptx kernel.mojo      # emit + summarize PTX without running anything
+
+Read the output in this order:
+ 1. nsys first — if copies or launch overhead dominate, no kernel tuning will help.
+ 2. achieved memory bandwidth vs peak — above ~80% you are memory-bound and only
+    layout changes (coalescing, fusion) do anything.
+ 3. warp stall reasons.
+ 4. occupancy last: it is a symptom, not a cause.
+"""
+import argparse
+import glob
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+NCU = shutil.which("ncu") or "/usr/local/cuda/bin/ncu"
+NSYS = shutil.which("nsys") or "/usr/local/cuda/bin/nsys"
+
+
+def have(p):
+    return p and os.path.exists(p)
+
+
+def check():
+    print("# mojogpu --check\n")
+    smi = shutil.which("nvidia-smi")
+    if not smi:
+        print("- nvidia-smi: **missing** — no NVIDIA driver visible")
+        return
+    q = subprocess.run([smi, "--query-gpu=name,memory.used,memory.total,utilization.gpu",
+                        "--format=csv,noheader"], capture_output=True, text=True)
+    print("| gpu | mem used | mem total | util |")
+    print("|---|---|---|---|")
+    tight = False
+    for line in q.stdout.strip().splitlines():
+        parts = [x.strip() for x in line.split(",")]
+        print("| " + " | ".join(parts) + " |")
+        try:
+            used = float(parts[1].split()[0])
+            total = float(parts[2].split()[0])
+            if used > 0.9 * total:
+                tight = True
+        except (ValueError, IndexError):
+            pass
+    procs = subprocess.run([smi, "--query-compute-apps=pid,used_memory,process_name",
+                            "--format=csv,noheader"], capture_output=True, text=True)
+    if procs.stdout.strip():
+        print("\n**other processes hold GPU memory:**\n")
+        for line in procs.stdout.strip().splitlines():
+            print(f"- `{line.strip()}`")
+    if tight:
+        print("\n**GPU memory is nearly full.** `DeviceContext()` will raise "
+              "`CUDA_ERROR_OUT_OF_MEMORY` — that is an environment problem, not a "
+              "bug in your kernel. Free memory or profile elsewhere.")
+    print(f"\n- ncu: {'ok ' + NCU if have(NCU) else '**missing**'}")
+    print(f"- nsys: {'ok ' + NSYS if have(NSYS) else '**missing**'}")
+    print("- mojo GPU also needs the `max` conda package (libmax.so) next to `mojo`.")
+
+
+def run_nsys(argv, top):
+    if not have(NSYS):
+        sys.exit("nsys not found (part of the CUDA toolkit)")
+    with tempfile.TemporaryDirectory() as td:
+        rep = os.path.join(td, "prof")
+        r = subprocess.run([NSYS, "profile", "-o", rep, "--force-overwrite", "true",
+                            "-t", "cuda"] + argv, capture_output=True, text=True)
+        found = glob.glob(rep + "*.nsys-rep") + glob.glob(rep + "*.qdrep")
+        if not found:
+            sys.exit("nsys produced no report:\n" + (r.stderr or r.stdout)[-2000:])
+        stats = subprocess.run(
+            [NSYS, "stats", "--report", "cuda_gpu_kern_sum",
+             "--report", "cuda_gpu_mem_time_sum", "--format", "csv", found[0]],
+            capture_output=True, text=True).stdout
+
+    print("# mojogpu (nsys)\n")
+    section, rows = None, []
+    for line in stats.splitlines():
+        if line.startswith("**"):
+            section = line.strip("* ")
+            continue
+        if "," in line:
+            rows.append((section, line))
+    kern = [r for s, r in rows if s and "kern" in s.lower()]
+    mem = [r for s, r in rows if s and "mem" in s.lower()]
+
+    def table(title, lines, n):
+        if not lines:
+            return 0
+        print(f"\n## {title}\n\n```")
+        for line in lines[: n + 1]:
+            print(line[:200])
+        print("```")
+        return len(lines) - 1
+
+    table("kernels", kern, top)
+    table("memory ops", mem, top)
+
+    def total(lines):
+        tot = 0.0
+        for line in lines[1:]:
+            f = line.split(",")
+            try:
+                tot += float(f[1])
+            except (ValueError, IndexError):
+                pass
+        return tot
+    kt, mt = total(kern), total(mem)
+    if kt + mt > 0:
+        print(f"\n**kernel time {100 * kt / (kt + mt):.0f}%, "
+              f"memcpy time {100 * mt / (kt + mt):.0f}%**")
+        if mt > kt:
+            print("\nCopies cost more than compute. Fuse kernels to raise arithmetic "
+                  "intensity, keep data resident on the device between launches, or "
+                  "do not use the GPU for this at all.")
+
+
+def run_ncu(argv, top):
+    if not have(NCU):
+        sys.exit("ncu not found (part of the CUDA toolkit)")
+    metrics = ",".join([
+        "sm__throughput.avg.pct_of_peak_sustained_elapsed",
+        "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed",
+        "sm__warps_active.avg.pct_of_peak_sustained_active",
+        "launch__occupancy_limit_registers",
+        "smsp__average_warp_latency_issue_stalled_long_scoreboard.ratio",
+    ])
+    r = subprocess.run([NCU, "--csv", "--metrics", metrics, "--target-processes", "all"]
+                       + argv, capture_output=True, text=True)
+    if "==ERROR==" in r.stdout + r.stderr or not r.stdout.strip():
+        sys.exit("ncu failed:\n" + (r.stderr or r.stdout)[-2500:]
+                 + "\n\nhint: profiling counters usually need "
+                   "`sudo sysctl -w kernel.perf_event_paranoid=1` or the "
+                   "NVreg_RestrictProfilingToAdminUsers=0 driver option.")
+    lines = [l for l in r.stdout.splitlines() if "," in l]
+    print("# mojogpu (ncu)\n\n```")
+    for line in lines[: top * 6]:
+        print(line[:200])
+    print("```")
+    print("\n- `dram_throughput` near peak -> memory-bound: fix layout/coalescing, "
+          "fusing kernels is the only lever.\n"
+          "- `sm__throughput` near peak with low dram -> compute-bound: fewer/cheaper ops.\n"
+          "- both low -> latency-bound: too few warps in flight, or long dependency chains.\n"
+          "- `occupancy_limit_registers` well under 100 -> the kernel is too register-hungry; "
+          "unroll less or split it.")
+
+
+def run_ptx(src):
+    from subprocess import run as sh
+    mojo = os.environ.get("MOJO") or shutil.which("mojo")
+    cmd = [mojo] if mojo else None
+    if not cmd and shutil.which("pixi"):
+        cmd = ["pixi", "run", "mojo"]
+    if not cmd:
+        sys.exit("mojo not found")
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "out.s")
+        sh(cmd + ["build", "--emit", "asm", "-o", out, src], capture_output=True, text=True)
+        ptx = glob.glob(os.path.join(td, "*.ptx"))
+        if not ptx:
+            sys.exit("no .ptx sidecar emitted — does this file contain a GPU kernel? "
+                     "(mojo emits .ptx alongside host asm only for GPU targets)")
+        text = open(ptx[0], errors="replace").read()
+    print(f"# mojogpu --ptx {src}\n")
+    kernels = re.findall(r"\.visible \.entry (\w+)", text)
+    print(f"kernels: {', '.join(kernels) or 'none'}\n")
+    for k, body in zip(kernels, re.split(r"\.visible \.entry \w+", text)[1:]):
+        regs = len(set(re.findall(r"%r[a-z]*\d+", body)))
+        ld = len(re.findall(r"\bld\.global", body))
+        st = len(re.findall(r"\bst\.global", body))
+        shm = len(re.findall(r"\b(?:ld|st)\.shared", body))
+        fma = len(re.findall(r"\bfma\.", body))
+        sync = len(re.findall(r"\bbar\.sync", body))
+        print(f"## `{k}`\n")
+        print("| virtual regs | global ld | global st | shared ops | fma | barriers |")
+        print("|---|---|---|---|---|---|")
+        print(f"| {regs} | {ld} | {st} | {shm} | {fma} | {sync} |")
+        ai = fma * 2 / max((ld + st) * 4, 1)
+        print(f"\nrough arithmetic intensity: **{ai:.2f} flops/byte** "
+              + ("— below ~2, this kernel will be memory-bound and may lose to CPU"
+                 if ai < 2 else "— high enough for the GPU to be worth it"))
+        if shm == 0 and ld > 4:
+            print("\nNo shared-memory use with many global loads: if any value is read "
+                  "by more than one thread in a block, tile it into shared memory.")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cmd", nargs="*")
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--kernels", action="store_true", help="per-kernel ncu metrics")
+    ap.add_argument("--ptx", help="summarize the PTX for a .mojo file, no run")
+    ap.add_argument("--top", type=int, default=10)
+    a = ap.parse_args()
+    if a.check:
+        return check()
+    if a.ptx:
+        return run_ptx(a.ptx)
+    if not a.cmd:
+        ap.error("give a command, --check, or --ptx")
+    if a.kernels:
+        return run_ncu(a.cmd, a.top)
+    run_nsys(a.cmd, a.top)
+
+
+if __name__ == "__main__":
+    main()

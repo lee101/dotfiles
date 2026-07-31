@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""Did it actually vectorize? Codegen inspector for Mojo -> markdown.
+
+  mojoasm kernel.mojo                 # whole file, per-function verdict
+  mojoasm kernel.mojo dot             # only functions matching 'dot'
+  mojoasm --listing kernel.mojo dot   # + the annotated asm of the hot loop
+  mojoasm --bin ./mybin dot           # disassemble an already-built binary
+
+Verdicts come from counting instruction classes in each function body:
+scalar vs. 128/256/512-bit vector ops, FMAs, spills, and calls. This answers the
+question a benchmark cannot: *why* is it slow.
+"""
+import argparse
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+# AVX/SSE registers tell you the width that was actually selected
+VEC = {
+    "zmm": 512,
+    "ymm": 256,
+    "xmm": 128,
+}
+FMA = re.compile(r"\bvfmadd|\bvfmsub|\bvfnmadd|\bfma\b")
+SPILL = re.compile(r"(?:mov|movs[sd]|vmov\w*)\s+.*(?:-?\d+\(%rsp\)|-?\d+\(%rbp\))")
+CALL = re.compile(r"^\s*call")
+LABEL = re.compile(r"^([.\w$@][\w.$@]*):")
+DIRECTIVE = re.compile(r"^\s*\.")
+BRANCH = re.compile(r"^\s*j\w+\s")
+
+
+def find_pixi(start):
+    d = os.path.abspath(start)
+    while True:
+        if os.path.exists(os.path.join(d, "pixi.toml")):
+            return d
+        nd = os.path.dirname(d)
+        if nd == d:
+            return None
+        d = nd
+
+
+def mojo_cmd(near=None):
+    """$MOJO, then PATH, then the nearest pixi project (cwd or the source's dir)."""
+    if os.environ.get("MOJO"):
+        return [os.environ["MOJO"]]
+    if shutil.which("mojo"):
+        return ["mojo"]
+    if shutil.which("pixi"):
+        for start in (os.getcwd(), os.path.dirname(os.path.abspath(near or "."))):
+            root = find_pixi(start)
+            if root:
+                return ["pixi", "run", "--manifest-path",
+                        os.path.join(root, "pixi.toml"), "mojo"]
+    sys.exit("mojo not found: set $MOJO, activate the env, or run inside a pixi project")
+
+
+def emit_asm(src, outdir):
+    out = os.path.join(outdir, "out.s")
+    r = subprocess.run(mojo_cmd(src) + ["build", "--emit", "asm", "-o", out, src],
+                       capture_output=True, text=True)
+    if not os.path.exists(out):
+        sys.exit("mojo build --emit asm failed:\n" + (r.stderr or r.stdout)[-3000:])
+    return open(out, errors="replace").read()
+
+
+def disasm(binary):
+    if not shutil.which("objdump"):
+        sys.exit("objdump not found")
+    r = subprocess.run(["objdump", "-d", "-C", "--no-show-raw-insn", binary],
+                       capture_output=True, text=True)
+    return r.stdout
+
+
+TYPE_DIR = re.compile(r'^\s*\.type\s+(?:"(.+)"|([\w.$@]+)),@function')
+
+
+def shorten_sym(name):
+    """Mojo emits the whole mangled generic as the label. Keep the readable head."""
+    name = name.strip().strip('"')
+    name = re.split(r"[\[(,]", name, 1)[0]
+    return name or "?"
+
+
+def split_funcs(text, from_objdump):
+    """-> {name: [lines]}. Handles Mojo's quoted, 500-char mangled labels."""
+    funcs, cur, name = {}, [], None
+    pending = None
+    for line in text.splitlines():
+        if from_objdump:
+            m = re.match(r"^[0-9a-f]+ <(.+)>:", line)
+            if m:
+                if name:
+                    funcs[name] = cur
+                name, cur = shorten_sym(m.group(1)), []
+                continue
+        else:
+            t = TYPE_DIR.match(line)
+            if t:
+                pending = t.group(1) or t.group(2)
+                continue
+            if pending and (line.rstrip().endswith(":")):
+                if name:
+                    funcs[name] = cur
+                name, cur, pending = shorten_sym(pending), [], None
+                continue
+            if DIRECTIVE.match(line) and not line.rstrip().endswith(":"):
+                continue
+        if name is not None:
+            cur.append(line)
+    if name:
+        funcs[name] = cur
+    return funcs
+
+
+LOOP_LABEL = re.compile(r"^([.\w$@][\w.$@]*):")
+JMP = re.compile(r"^\s*j\w+\s+([.\w$@][\w.$@]*)")
+
+
+def find_loops(lines):
+    """Backward branches delimit loops. -> [(label, body_lines)] innermost-first."""
+    pos = {}
+    for i, line in enumerate(lines):
+        m = LOOP_LABEL.match(line)
+        if m:
+            pos.setdefault(m.group(1), i)
+    loops = []
+    for i, line in enumerate(lines):
+        m = JMP.match(line)
+        if not m:
+            continue
+        tgt = m.group(1)
+        j = pos.get(tgt)
+        if j is not None and j < i:
+            loops.append((tgt, lines[j:i + 1], i - j))
+    loops.sort(key=lambda x: x[2])            # innermost (smallest span) first
+    return loops
+
+
+def analyse(lines):
+    st = {"insns": 0, "scalar_fp": 0, "spills": 0, "calls": 0, "branches": 0,
+          "fma": 0, "loads": 0, 128: 0, 256: 0, 512: 0}
+    for line in lines:
+        s = line.strip()
+        if not s or s.startswith((".", "#", "//")) or s.endswith(":"):
+            continue
+        st["insns"] += 1
+        w = next((v for k, v in VEC.items() if k in s), None)
+        if w:
+            st[w] += 1
+        if re.search(r"\b(?:add|sub|mul|div)s[sd]\b|\bvadds[sd]\b|\bvmuls[sd]\b", s):
+            st["scalar_fp"] += 1
+        if FMA.search(s):
+            st["fma"] += 1
+        if SPILL.search(s):
+            st["spills"] += 1
+        if CALL.match(line):
+            st["calls"] += 1
+        if BRANCH.match(line):
+            st["branches"] += 1
+        if re.search(r"\bv?mov[au]?p?[sd]?\b.*\(", s):
+            st["loads"] += 1
+    return st
+
+
+def verdict(st):
+    vec = st[512] + st[256] + st[128]
+    if st["insns"] < 8:
+        return "tiny/stub", ""
+    if vec == 0 and st["scalar_fp"] == 0:
+        return "no fp", ""
+    if vec == 0:
+        return "**SCALAR**", "no vector registers used at all — the loop did not vectorize"
+    width = 512 if st[512] else (256 if st[256] else 128)
+    frac = 100.0 * vec / max(st["insns"], 1)
+    parts = [f"{n}x{w}" for w, n in ((512, st[512]), (256, st[256]), (128, st[128])) if n]
+    note = []
+    if width == 128:
+        note.append("only 128-bit ops: half the available AVX2 width")
+    elif st[128] > st[256] + st[512]:
+        note.append(f"mixed widths ({', '.join(parts)}) — a narrow inner loop or the "
+                    "scalar tail is mixed into this span")
+    if st["scalar_fp"] > vec:
+        note.append(f"{st['scalar_fp']} scalar fp vs {vec} vector — mostly the scalar tail?")
+    if st["fma"] == 0 and vec > 8:
+        note.append("no FMA: `a*b+c` written so it cannot fuse, or -O too low")
+    if st["spills"] > st["insns"] * 0.15:
+        note.append(f"{st['spills']} stack refs ({100.0*st['spills']/st['insns']:.0f}%) — register spilling, unroll less")
+    if st["calls"] > 2:
+        note.append(f"{st['calls']} calls in the body — not fully inlined")
+    return f"{width}-bit {'+'.join(parts)} ({frac:.0f}% vec)", "; ".join(note)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("src", nargs="?", help=".mojo source")
+    ap.add_argument("pattern", nargs="?", default="", help="substring of function name")
+    ap.add_argument("--bin", help="analyse a built binary instead of a source file")
+    ap.add_argument("--listing", action="store_true", help="print the asm of the hottest loop")
+    ap.add_argument("--top", type=int, default=25)
+    ap.add_argument("--min-insns", type=int, default=8)
+    a = ap.parse_args()
+
+    if a.bin:
+        text, from_objdump = disasm(a.bin), True
+        label = a.bin
+    else:
+        if not a.src:
+            ap.error("give a .mojo source or --bin")
+        with tempfile.TemporaryDirectory() as td:
+            text = emit_asm(a.src, td)
+        from_objdump, label = False, a.src
+
+    funcs = split_funcs(text, from_objdump)
+    rows, loops = [], []
+    for name, lines in funcs.items():
+        if a.pattern and a.pattern.lower() not in name.lower():
+            continue
+        st = analyse(lines)
+        if st["insns"] >= a.min_insns:
+            v, note = verdict(st)
+            rows.append((st["insns"], name, st, v, note))
+        for lbl, body, span in find_loops(lines):
+            lst = analyse(body)
+            if lst["insns"] >= a.min_insns:
+                lv, lnote = verdict(lst)
+                loops.append((lst["insns"], name, lbl, lst, lv, lnote, body))
+    rows.sort(reverse=True)
+    loops.sort(reverse=True)
+
+    print(f"# mojoasm — {label}"
+          + (f" (filter: {a.pattern})" if a.pattern else "")
+          + f" — {len(rows)} functions")
+    if not rows:
+        print("\nNo function matched. Mojo mangles names; try a shorter pattern, or "
+              "run without one to list everything.")
+        return
+    print("\n| insns | vector | fma | scalar fp | spills | calls | function |")
+    print("|---|---|---|---|---|---|---|")
+    for insns, name, st, v, note in rows[: a.top]:
+        short = name if len(name) < 60 else name[:57] + "..."
+        print(f"| {insns} | {v} | {st['fma']} | {st['scalar_fp']} | {st['spills']} | "
+              f"{st['calls']} | `{short}` |")
+
+    if loops:
+        print("\n## loops (the part that actually matters)\n")
+        print("| insns | vector | fma | scalar fp | spills | loop | in |")
+        print("|---|---|---|---|---|---|---|")
+        for insns, fname, lbl, st, v, note, _ in loops[: a.top]:
+            print(f"| {insns} | {v} | {st['fma']} | {st['scalar_fp']} | {st['spills']} | "
+                  f"`{lbl}` | `{fname[:40]}` |")
+        lnotes = [(lbl, note) for _, _, lbl, _, _, note, _ in loops[: a.top] if note]
+        if lnotes:
+            print("\n### loop findings\n")
+            for lbl, note in lnotes:
+                print(f"- `{lbl}`: {note}")
+
+    notes = [(n, note) for _, n, _, _, note in rows[: a.top] if note]
+    if notes:
+        print("\n## findings\n")
+        for name, note in notes:
+            print(f"- `{name[:60]}`: {note}")
+
+    if a.listing and (loops or rows):
+        if loops:
+            insns, name, lbl, st, v, note, body = loops[0]
+            name = f"{name} :: loop {lbl}"
+        else:
+            insns, name, st, v, note = rows[0]
+            body = funcs[name]
+        # the hot loop = the largest span between a local label and its backward branch
+        print(f"\n## listing — `{name[:70]}` ({v})\n\n```asm")
+        for line in body[:300]:
+            s = line.rstrip()
+            if not s or DIRECTIVE.match(s):
+                continue
+            tag = ""
+            if any(k in s for k in VEC):
+                tag = "  ; vector"
+            if FMA.search(s):
+                tag = "  ; fma"
+            elif SPILL.search(s):
+                tag = "  ; spill"
+            print(s + tag)
+        if len(body) > 300:
+            print(f"... {len(body) - 300} more lines")
+        print("```")
+
+
+if __name__ == "__main__":
+    main()
