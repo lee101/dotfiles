@@ -279,3 +279,32 @@ Make tools executable:
 chmod +x cld*
 chmod +x jscheck
 ```
+
+### 🐹 tools/golang - Go-specific perf tools
+
+#### gobench-md - Go benchmark report (contention-immune, optional A/B)
+
+`go test -bench` reports ns/op, which is wall clock: on a machine that is also
+running other jobs it swings 3-8x for identical code, exactly when you most want
+a before/after. This ranks on a `cpu_us/op` metric (process CPU time per op) when
+the benchmark reports one, runs the A/B baseline in a throwaway `git worktree`
+(so a busy checkout is never touched), and emits a compact markdown report:
+results table plus a flat/cumulative/by-package profile focused on the benchmark.
+
+```bash
+tools/golang/gobench-md ./internal/rl -bench BenchmarkRollout
+tools/golang/gobench-md ./internal/rl -bench BenchmarkX --baseline HEAD~1
+tools/golang/gobench-md ./pkg -bench . --benchtime 30x --count 3 --out report.md
+tools/golang/gobench-md ./pkg -bench X -- -tags integration   # args after -- go to go test
+```
+
+To get the contention-immune metric, report it from the benchmark:
+
+```go
+m := benchutil.Start(b)
+for i := 0; i < b.N; i++ { work() }
+m.Report(b)   // emits cpu_us/op alongside ns/op
+```
+
+Any metric named `cpu_us/op`, `cpu_ns/op` or `cpu_ms/op` is picked up; without
+one the tool falls back to ns/op and says so in the report.
