@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Small, dependency-free WCAG contrast checker for humans and agents.
+
+Examples:
+  contrast '#e4dfea' '#121019'
+  contrast --ratio '#e4dfea' '#121019'
+  contrast --json '#e4dfea' '#121019' '#98d8aa' '#121019'
+  contrast --min 4.5 'rgba(255,255,255,.7)' '#121019'
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import dataclass
+
+
+RGB = tuple[float, float, float]
+RGBA = tuple[float, float, float, float]
+
+NAMED: dict[str, RGBA] = {
+    "black": (0, 0, 0, 1),
+    "white": (255, 255, 255, 1),
+    "transparent": (0, 0, 0, 0),
+}
+
+
+@dataclass(frozen=True)
+class Result:
+    foreground: str
+    background: str
+    ratio: float
+
+    @property
+    def grade(self) -> str:
+        if self.ratio >= 7:
+            return "AAA"
+        if self.ratio >= 4.5:
+            return "AA"
+        if self.ratio >= 3:
+            return "AA18"
+        return "FAIL"
+
+
+def parse_color(value: str) -> RGBA:
+    """Parse #rgb[a], #rrggbb[aa], rgb[a](), black, white, or transparent."""
+    raw = value.strip().lower()
+    if raw in NAMED:
+        return NAMED[raw]
+
+    if raw.startswith("#"):
+        digits = raw[1:]
+        if len(digits) in (3, 4):
+            digits = "".join(char * 2 for char in digits)
+        if len(digits) not in (6, 8) or not re.fullmatch(r"[0-9a-f]+", digits):
+            raise ValueError(f"invalid hex color: {value}")
+        channels = [int(digits[index:index + 2], 16) for index in range(0, len(digits), 2)]
+        if len(channels) == 3:
+            channels.append(255)
+        return channels[0], channels[1], channels[2], channels[3] / 255
+
+    match = re.fullmatch(r"rgba?\((.*)\)", raw)
+    if not match:
+        raise ValueError(f"unsupported color: {value}")
+    parts = [part.strip() for part in match.group(1).split(",")]
+    if len(parts) not in (3, 4):
+        raise ValueError(f"invalid rgb color: {value}")
+
+    def channel(part: str) -> float:
+        number = float(part[:-1]) * 2.55 if part.endswith("%") else float(part)
+        if not 0 <= number <= 255:
+            raise ValueError(f"RGB channel outside 0..255: {part}")
+        return number
+
+    rgb = tuple(channel(part) for part in parts[:3])
+    alpha = float(parts[3].removesuffix("%")) / (100 if parts[3].endswith("%") else 1) if len(parts) == 4 else 1
+    if not 0 <= alpha <= 1:
+        raise ValueError(f"alpha outside 0..1: {parts[3]}")
+    return rgb[0], rgb[1], rgb[2], alpha
+
+
+def composite(color: RGBA, background: RGB) -> RGB:
+    alpha = color[3]
+    return tuple(color[index] * alpha + background[index] * (1 - alpha) for index in range(3))  # type: ignore[return-value]
+
+
+def luminance(color: RGB) -> float:
+    def linear(channel: float) -> float:
+        channel /= 255
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+    red, green, blue = (linear(channel) for channel in color)
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+
+def contrast(foreground: str, background: str, canvas: str = "#fff") -> Result:
+    canvas_rgba = parse_color(canvas)
+    if canvas_rgba[3] != 1:
+        raise ValueError("canvas must be opaque")
+    canvas_rgb: RGB = canvas_rgba[:3]  # type: ignore[assignment]
+    background_rgb = composite(parse_color(background), canvas_rgb)
+    foreground_rgb = composite(parse_color(foreground), background_rgb)
+    light, dark = sorted((luminance(foreground_rgb), luminance(background_rgb)), reverse=True)
+    return Result(foreground, background, (light + 0.05) / (dark + 0.05))
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(description="Compact WCAG 2.x color contrast checker")
+    result.add_argument("colors", nargs="*", metavar="COLOR", help="FG BG pairs; reads pairs from stdin when omitted")
+    result.add_argument("-c", "--canvas", default="#fff", help="opaque canvas under translucent colors (default: #fff)")
+    result.add_argument("-j", "--json", action="store_true", help="compact JSON output")
+    result.add_argument("-r", "--ratio", action="store_true", help="print ratio only")
+    result.add_argument("-m", "--min", type=float, default=0, dest="minimum", help="exit 1 when any ratio is below N")
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parser().parse_args(argv)
+    colors = args.colors
+    if not colors:
+        colors = [token for line in sys.stdin for token in line.split()]
+    if not colors or len(colors) % 2:
+        parser().error("provide one or more FG BG pairs")
+
+    try:
+        results = [contrast(colors[index], colors[index + 1], args.canvas) for index in range(0, len(colors), 2)]
+    except ValueError as error:
+        parser().error(str(error))
+
+    if args.json:
+        payload = [{"fg": item.foreground, "bg": item.background, "r": round(item.ratio, 2), "grade": item.grade} for item in results]
+        print(json.dumps(payload[0] if len(payload) == 1 else payload, separators=(",", ":")))
+    elif args.ratio:
+        print(" ".join(f"{item.ratio:.2f}" for item in results))
+    elif len(results) == 1:
+        print(f"{results[0].ratio:.2f} {results[0].grade}")
+    else:
+        for item in results:
+            print(f"{item.foreground} {item.background} {item.ratio:.2f} {item.grade}")
+
+    return int(any(item.ratio < args.minimum for item in results))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
