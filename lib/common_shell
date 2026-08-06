@@ -771,6 +771,8 @@ alias crw='claude-review'
 
 alias ca='cursor-agent-bun -f'
 alias cap='cursor-agent-bun -f -p'
+alias crs='cursor-agent --yolo --model cursor-grok-4.5-high'
+alias crsf='cursor-agent --yolo --model composer-2.5-fast'
 
 # Claude Git workflow
 alias ccmt='cldcmt'
