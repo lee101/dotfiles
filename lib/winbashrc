@@ -31,8 +31,21 @@ fi
 # shell inherit it; also set as a Windows USER env var via
 # windows/fix-console-limit.ps1 so every new terminal picks it up.
 # ----------------------------------------------------------------------------
-export MSYS="${MSYS:+$MSYS }disable_pcon"
-export CYGWIN="${CYGWIN:+$CYGWIN }disable_pcon"
+# Ensure disable_pcon is present exactly once. Both the Windows USER env var
+# (set by fix-console-limit.ps1) and Git for Windows' /etc/profile can add it,
+# so a naive append stacks up "disable_pcon disable_pcon ..." across shells.
+# Dedupe all tokens and guarantee disable_pcon is included.
+_df_dedup_flag() {
+    local _var=$1 _flag=$2 _out= _tok
+    for _tok in ${!_var}; do
+        case " $_out " in *" $_tok "*) ;; *) _out="${_out:+$_out }$_tok" ;; esac
+    done
+    case " $_out " in *" $_flag "*) ;; *) _out="${_out:+$_out }$_flag" ;; esac
+    export "$_var=$_out"
+}
+_df_dedup_flag MSYS disable_pcon
+_df_dedup_flag CYGWIN disable_pcon
+unset -f _df_dedup_flag
 
 # Use Windows OpenSSH instead of MINGW ssh - required for Windows SSH agent access
 if [ -f /c/Windows/System32/OpenSSH/ssh.exe ]; then
