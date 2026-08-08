@@ -56,11 +56,6 @@
         "when": "editorTextFocus"
     },
     {
-        "key": "ctrl+alt+s",
-        "command": "workbench.action.toggleUnifiedSidebarFromKeyboard",
-        "when": "!isAuxiliaryWindowFocusedContext"
-    },
-    {
         "key": "ctrl+=",
         "command": "editor.action.fontZoomIn"
     },

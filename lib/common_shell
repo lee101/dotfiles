@@ -126,6 +126,11 @@ fi
 # ============================================================
 # Color support
 # ============================================================
+# This is an interactive shell configuration and intentionally enables color.
+# Some launchers export NO_COLOR globally, which otherwise disables both the
+# prompt and tools such as eza even in a full-color terminal.
+unset NO_COLOR
+
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
 fi
@@ -1357,14 +1362,17 @@ _ensure_default_ssh_key() {
 
     [ -n "$SSH_CONNECTION" ] && return 0
     [ -f "$default_key" ] || return 0
-    [ -t 0 ] || return 0
 
     if ssh-add -l >/dev/null 2>&1; then
         ssh-add -L 2>/dev/null | grep -F -q "$(cat "${default_key}.pub" 2>/dev/null)" && return 0
     fi
 
-    # Prompt once in a local interactive shell so SSH/scp reuse the agent after reboot.
-    ssh-add "$default_key" </dev/tty
+    # Never stop shell startup for a passphrase. Add an unencrypted key
+    # silently; encrypted keys will prompt normally on their first actual use
+    # or can be loaded explicitly with `ssh-add`.
+    command -v ssh-keygen >/dev/null 2>&1 || return 0
+    ssh-keygen -y -P '' -f "$default_key" >/dev/null 2>&1 || return 0
+    ssh-add "$default_key" </dev/null >/dev/null 2>&1 || true
 }
 
 _ensure_default_ssh_key
