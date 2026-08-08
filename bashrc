@@ -115,22 +115,13 @@ _df_git_branch() {
     return 0
 }
 
-# Assume colour, disable only when proven unsupported. A tput-first check is
-# wrong here: TERM values like xterm-kitty/ghostty often have no local terminfo
-# entry, so tput reports failure on terminals that handle ANSI perfectly.
+# Modern terminals, including Kitty, Ghostty, Terminal.app, and Git Bash,
+# understand ANSI colour even when their terminfo entry is missing locally.
+# Only disable colour when the terminal explicitly identifies as dumb.
 _df_colors=1
 case "${TERM:-dumb}" in
     dumb|'') _df_colors=0 ;;
 esac
-[ -n "${NO_COLOR:-}" ] && _df_colors=0
-if [ "$_df_colors" -eq 1 ] && command -v tput >/dev/null 2>&1; then
-    _df_ncolors="$(tput colors 2>/dev/null)"
-    case "$_df_ncolors" in
-        ''|*[!0-9]*) ;;  # unknown terminfo - keep colour
-        *) [ "$_df_ncolors" -lt 8 ] && _df_colors=0 ;;
-    esac
-    unset _df_ncolors
-fi
 
 # Show user@host over SSH so remote sessions are obvious.
 _df_host_prefix=''
@@ -188,3 +179,6 @@ if ! command -v reload >/dev/null 2>&1; then
         echo "Done."
     }
 fi
+
+# user-local builds (ffmpeg n9 + NVENC)
+export PATH="$HOME/.local/bin:$PATH"
