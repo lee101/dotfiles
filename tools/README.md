@@ -2,6 +2,29 @@
 
 A collection of AI-powered developer tools for code quality, testing, and performance optimization.
 
+## How the tool system works
+
+Everything in this directory is designed to be runnable by name from any shell.
+
+- **`tools/` is on your `PATH`.** `lib/common_shell` adds `~/code/dotfiles/tools`
+  to `PATH` (see `lib/common_shell` line ~74), so any executable placed directly
+  in `tools/` becomes a command. Shell and Python tools are named without an
+  extension (e.g. `cldtest`, `jscheck`, `blc`) and marked executable
+  (`chmod +x`).
+- **Go tools** come in two shapes:
+  - Small single-purpose tools live under `tools/cmd/<name>/` and are compiled
+    into `tools/` (and therefore onto `PATH`) by `tools/cmd/build.sh`. Their
+    binaries are gitignored — only the source is committed.
+  - Larger or standalone Go work lives under [`tools/golang/`](golang/), which
+    has its own module(s) and guides. Binaries there are built in place and
+    gitignored.
+- **Subdirectories** group related code: `golang/` (Go tools + perf guides),
+  `semantic_search/`, `js_error_checker/`, `tests/`.
+- **Build the Go tools:** `bash tools/cmd/build.sh` builds everything under
+  `tools/cmd/*` that has a `go.mod`.
+- **Docs:** this README covers the AI/Claude tools; `tool-use.md` covers the UI
+  review + JS checker; each subdirectory has its own README.
+
 ## Tools Overview
 
 ### 🧪 cldtest - AI-Powered Test Runner
@@ -257,6 +280,13 @@ blc https://example.com --json     # Output raw JSON
 ### Additional Tools
 - `dustg` - Git-aware disk usage analyzer (respects .gitignore)
 - `curls` - Simple curl wrapper
+
+### 🐹 Go tools & guides ([golang/](golang/))
+- `go-line-profiler` - Multi-view analyzer for Go CPU (`pprof`) profiles, filtered
+  to your own hot paths (top / tree / bottleneck / callers / per-line / diff / HTML)
+- Go game performance guides (profiling, entity scaling, particle scaling)
+
+See [golang/README.md](golang/README.md) for build and usage.
 
 ## JavaScript Error Checker Setup
 

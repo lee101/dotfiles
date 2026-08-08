@@ -736,7 +736,12 @@ alias dvn='devin --permission-mode dangerous'
 alias dvni="~/programs/Devin/bin/devin-desktop"
 
 # CLI installers/updaters
-alias clinst='bun install -g @anthropic-ai/claude-code@latest'
+clinst() {
+    # Claude's native updater requires this path, which may be absent when a
+    # Windows cache junction/symlink target is temporarily unavailable.
+    mkdir -p "$HOME/.cache/claude/staging" 2>/dev/null || true
+    claude update "$@"
+}
 alias cinst='npm install -g @openai/codex@latest'
 
 # Remote host shortcut
@@ -1231,6 +1236,15 @@ algrp() {
 
 # Source cross-platform utilities
 [ -f ~/code/dotfiles/lib/cross_platform_utils ] && . ~/code/dotfiles/lib/cross_platform_utils
+
+# Source Windows Git Bash extras (htop->btop, Windows OpenSSH, console-limit fix)
+# Only on MSYS/MINGW/Cygwin; a no-op on Linux/macOS/WSL. linkdotfiles.ps1 does not
+# symlink winbashrc to $HOME, so we source it from the repo directly here.
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+        [ -f ~/code/dotfiles/lib/winbashrc ] && . ~/code/dotfiles/lib/winbashrc
+        ;;
+esac
 
 # Source trace toolkit
 [ -f ~/code/dotfiles/tools/trace-toolkit.sh ] && . ~/code/dotfiles/tools/trace-toolkit.sh
