@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""Static perf + dialect scanner for Mojo sources. Markdown out, token-efficient.
+
+  mojolint src/                 # scan a tree
+  mojolint a.mojo b.mojo
+  mojolint --only perf src/     # perf | dialect | all
+  mojolint --top 30 src/
+"""
+import argparse
+import os
+import re
+import sys
+
+# (id, category, severity, compiled regex, message, fix)
+RULES = [
+    # --- dialect: compile-blocking, LLMs write these from Mojo 0.x priors ---
+    ("fn-removed", "dialect", "err", r"^\s*fn\s+\w+", "`fn` was removed in Mojo 1.0", "use `def`"),
+    ("alias", "dialect", "err", r"^\s*alias\s+\w+\s*=", "`alias` was removed", "use `comptime X = ...`"),
+    ("bare-import", "dialect", "err",
+     r"^\s*(?:from|import)\s+(sys|math|memory|algorithm|collections|time|gpu|os|builtin)\b",
+     "stdlib is namespaced under `std.`", "`from std.sys.info import ...`"),
+    ("old-names", "dialect", "err", r"\b(simdwidthof|sizeof|alignof|bitwidthof)\b",
+     "renamed in 1.0", "simd_width_of / size_of / align_of / bit_width_of"),
+    ("ptr-alloc", "dialect", "err", r"UnsafePointer\[[^\]]+\]\s*\.\s*alloc\s*\(",
+     "`UnsafePointer[T].alloc` no longer exists", "`from std.memory import alloc` -> `alloc[T](n)`"),
+    ("memset", "dialect", "warn", r"\bmemset_zero\s*\(", "deprecated", "`unsafe_memset_zero`"),
+    ("span-ptr", "dialect", "err", r"Span\[[^\]]*\]\s*\(\s*ptr\s*=", "wrong keyword", "`unsafe_ptr=`"),
+    ("capacity-attr", "dialect", "err", r"\.capacity\s*(?![\s]*\()", "`capacity` is a method", "`.capacity()`"),
+    ("simd-minmax", "dialect", "err", r"\)\s*\.\s*(?:min|max)\s*\(", "SIMD has no .min()/.max()", "free `min(a,b)` / `max(a,b)`"),
+    ("mut-origin", "dialect", "err", r"\b(MutableAnyOrigin|MutableStaticOrigin|StaticMutableOrigin)\b",
+     "does not exist", "`AnyOrigin[mut=True]`"),
+    ("out-name", "dialect", "err", r"^\s*var\s+out\b|\bout\s*:\s*\w", "`out` is reserved", "rename the binding"),
+    ("fn-name", "dialect", "err", r"^\s*var\s+fn\b|\bfn\s*:\s*\w", "`fn` is reserved (removed keyword, still reserved)", "rename the binding"),
+    ("simd-eq", "dialect", "err", r"(?<![<>=!])==\s*SIMD\[|\bSIMD\[[^\]]*\]\([^)]*\)\s*==",
+     "`==` on SIMD returns a scalar Bool, not an elementwise mask", "use `.eq()` / `.ne()` / `.lt()` / `.ge()`"),
+    ("tuple-ret", "dialect", "err", r"->\s*\(\s*\w+\s*,", "tuple return types need `Tuple[...]`", "`-> Tuple[Int, Float64]`"),
+    ("vectorize", "dialect", "warn", r"\bvectorize\s*\[",
+     "vectorize rejects capturing closures in this nightly", "hand-roll a chunked SIMD loop (docs/simd.md)"),
+
+    # --- perf ---
+    ("str-concat", "perf", "err", r"\+=\s*(?:\"|String\(|str\()|\+=\s*\w+\s*\+\s*\"", "string += in a loop is quadratic", "build into List[UInt8], construct once"),
+    ("alloc-in-loop", "perf", "err", r"\balloc\s*\[", "heap alloc — hoist out of any loop", "allocate once, reuse the buffer"),
+    ("print-hot", "perf", "warn", r"^\s*print\s*\(", "print in a hot loop dominates everything", "hoist or gate behind a comptime flag"),
+    ("reduce-in-loop", "perf", "err", r"\.reduce_(?:add|max|min|mul|and|or)\s*\(\s*\)",
+     "horizontal reduce serialises the vector chain", "accumulate in a SIMD reg, reduce once after the loop"),
+    ("len-in-range", "perf", "warn", r"\bfor\s+\w+\s+in\s+range\s*\(\s*(?:0\s*,\s*)?len\s*\(", "len() recomputed per iteration", "hoist `var n = len(x)`"),
+    ("sync-per-launch", "perf", "err", r"\.synchronize\s*\(\s*\)", "synchronize() per launch serialises host+device", "batch enqueues, synchronize once"),
+    ("hardcoded-width", "perf", "warn", r"SIMD\[\s*DType\.\w+\s*,\s*(?:4|8|16|32|64)\s*\]", "hardcoded SIMD width", "`simd_width_of[DType.x]()`"),
+    ("copy-noxfer", "perf", "info", r"^\s*var\s+\w+\s*=\s*\w+\s*$", "plain copy of an owned value", "`y^` to transfer if `y` is dead after"),
+    ("py-interop", "perf", "warn", r"\bPython(?:Object|\.import_module)\b", "Python interop in a hot path costs us per call", "batch across the boundary"),
+]
+
+LOOP_RE = re.compile(r"^\s*(?:for|while)\b")
+# rules that only matter inside a loop body
+LOOP_ONLY = {"alloc-in-loop", "print-hot", "str-concat",
+             "reduce-in-loop", "sync-per-launch", "copy-noxfer"}
+SEV_ORDER = {"err": 0, "warn": 1, "info": 2}
+
+
+def indent(line):
+    return len(line) - len(line.lstrip())
+
+
+def loop_depth_map(lines):
+    """depth[i] = enclosing loop nesting at line i, by indentation."""
+    depth, stack, out = 0, [], []
+    for line in lines:
+        s = line.strip()
+        if not s or s.startswith("#"):
+            out.append(depth)
+            continue
+        ind = indent(line)
+        while stack and ind <= stack[-1]:
+            stack.pop()
+            depth -= 1
+        out.append(depth)
+        if LOOP_RE.match(line):
+            stack.append(ind)
+            depth += 1
+    return out
+
+
+SCALAR_IDX = re.compile(r"\w+\[\s*\w+\s*\]")
+WIDE_LOAD = re.compile(r"load\[\s*width\s*=|store\s*\(")
+DECL = re.compile(r"^\s*(?:def|struct)\s")
+
+
+def contextual(path, lines, depths):
+    """Checks a per-line regex cannot express."""
+    hits = []
+
+    def add(i, rid, sev, d, msg, fix):
+        hits.append((SEV_ORDER[sev], -d, path, i + 1, rid, "perf" if rid != "export-abi" else "dialect",
+                     sev, d, lines[i].strip()[:100], msg, fix))
+
+    # @export without abi("C") on the signature line(s) that follow
+    for i, line in enumerate(lines):
+        if not line.lstrip().startswith("@export("):
+            continue
+        sig, j = [], i + 1
+        while j < len(lines) and j < i + 30:          # signatures wrap over many lines
+            sig.append(lines[j])
+            if lines[j].rstrip().endswith(":"):
+                break
+            j += 1
+        sig = " ".join(sig)
+        if 'abi("C")' not in sig:
+            add(i, "export-abi", "err", 0, "@export without `abi(\"C\")`",
+                "`def f(..) abi(\"C\") -> T:` — effect goes BEFORE the arrow")
+
+    # append() in a loop where the file never reserves
+    file_src = "\n".join(lines)
+    reserves = ".reserve(" in file_src or "capacity=" in file_src
+    if not reserves:
+        for i, line in enumerate(lines):
+            if depths[i] and ".append(" in line and not line.lstrip().startswith("#"):
+                add(i, "append-noreserve", "warn" if depths[i] < 2 else "err", depths[i],
+                    "append loop, no reserve anywhere in file", "`l.reserve(n)` before the loop")
+
+    # loop bodies doing >=3 scalar indexed ops with no wide load/store anywhere in the body
+    i = 0
+    while i < len(lines):
+        if LOOP_RE.match(lines[i]) and depths[i] == 0:
+            base = indent(lines[i])
+            j = i + 1
+            body = []
+            while j < len(lines) and (not lines[j].strip() or indent(lines[j]) > base):
+                body.append(lines[j])
+                j += 1
+            src = "\n".join(body)
+            n_idx = len(SCALAR_IDX.findall(src))
+            if n_idx >= 3 and not WIDE_LOAD.search(src) and not DECL.search(src):
+                add(i, "scalar-loop", "warn", 1,
+                    f"loop body has {n_idx} scalar indexed ops, no wide load/store",
+                    "`p.load[width=W](i)` + scalar tail (docs/simd.md)")
+            i = j
+        else:
+            i += 1
+    return hits
+
+
+def inner_body(lines, depths, i):
+    """Statements at line i's own nesting level, inside the loop that encloses it.
+
+    Deeper lines are excluded on purpose: a wide load one level down is a chunk loop
+    that this line's reduce runs *after*, which is the shape we want people to write.
+    """
+    d = depths[i]
+    lo = i
+    while lo > 0 and depths[lo - 1] >= d:
+        lo -= 1
+    hi = i
+    while hi + 1 < len(lines) and depths[hi + 1] >= d:
+        hi += 1
+    return "\n".join(lines[j] for j in range(lo, hi + 1) if depths[j] == d)
+
+
+def scan(path, only):
+    try:
+        lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+    except OSError as e:
+        print(f"skip {path}: {e}", file=sys.stderr)
+        return []
+    depths = loop_depth_map(lines)
+    hits = []
+    for rid, cat, sev, pat, msg, fix in RULES:
+        if only != "all" and cat != only:
+            continue
+        rx = re.compile(pat)
+        for i, line in enumerate(lines):
+            if line.lstrip().startswith("#"):
+                continue
+            if not rx.search(line):
+                continue
+            d = depths[i]
+            if rid in LOOP_ONLY and d == 0:
+                continue
+            # `reduce_add()` once per outer rep, after the chunk loop, is the correct
+            # shape — only the reduce that sits beside the wide load is serialising
+            if rid == "reduce-in-loop" and not WIDE_LOAD.search(inner_body(lines, depths, i)):
+                continue
+            s = sev
+            if rid in LOOP_ONLY and d >= 2 and s == "warn":
+                s = "err"  # nested loop escalates
+            hits.append((SEV_ORDER[s], -d, path, i + 1, rid, cat, s, d, line.strip()[:100], msg, fix))
+    for h in contextual(path, lines, depths):
+        if only == "all" or h[5] == only:
+            hits.append(h)
+    return hits
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("paths", nargs="+")
+    ap.add_argument("--only", default="all", choices=["all", "perf", "dialect"])
+    ap.add_argument("--top", type=int, default=40)
+    a = ap.parse_args()
+
+    # exit 2 = could not run; exit 1 is reserved for "found errors" so CI can tell
+    # a lint failure from a bad invocation
+    def bail(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    files = []
+    for p in a.paths:
+        if not os.path.exists(p):
+            bail(f"no such path: {p}")
+        if os.path.isdir(p):
+            for root, dirs, fns in os.walk(p):
+                dirs[:] = [d for d in dirs if d not in (".pixi", ".git", "build", "__pycache__")]
+                files += [os.path.join(root, f) for f in fns if f.endswith(".mojo")]
+        elif p.endswith(".mojo"):
+            files.append(p)
+        else:
+            bail(f"not a .mojo file: {p}")
+    if not files:
+        bail("no .mojo files found under: " + ", ".join(a.paths))
+    hits = []
+    for f in sorted(files):
+        hits += scan(f, a.only)
+    hits.sort()
+
+    n_err = sum(1 for h in hits if h[6] == "err")
+    print(f"# mojolint — {len(files)} files, {len(hits)} findings ({n_err} err)\n")
+    if not hits:
+        print("clean")
+        return
+    shown = hits[: a.top]
+    print("| sev | loc | rule | what | fix |")
+    print("|---|---|---|---|---|")
+    for _, _, path, ln, rid, cat, sev, d, src, msg, fix in shown:
+        loop = f" L{d}" if d else ""
+        print(f"| {sev}{loop} | `{path}:{ln}` | {rid} | {msg} | {fix} |")
+    if len(hits) > a.top:
+        print(f"\n_{len(hits) - a.top} more (--top {len(hits)})_")
+    counts = {}
+    for h in hits:
+        counts[h[4]] = counts.get(h[4], 0) + 1
+    print("\n**by rule:** " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items(), key=lambda x: -x[1])))
+    sys.exit(1 if n_err else 0)
+
+
+if __name__ == "__main__":
+    main()
