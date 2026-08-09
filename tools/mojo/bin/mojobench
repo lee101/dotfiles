@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""A/B benchmark harness for Mojo -> markdown table with a real verdict.
+
+  mojobench ./old ./new                  # compare two built binaries
+  mojobench --reps 30 ./old ./new
+  mojobench a.mojo b.mojo                # builds each first (excluded from timing)
+  mojobench --label baseline=./old --label simd=./new
+
+Reports median, MAD, min and a Mann-Whitney-ish verdict. Uses min and median
+rather than mean: on a loaded box the mean measures your neighbours, not your code.
+
+The single most common Mojo benchmarking mistake is timing `mojo run`, which
+includes ~1.2s of JIT. This tool builds first and times the binary.
+"""
+import argparse
+import os
+import shutil
+import statistics
+import subprocess
+import sys
+import tempfile
+import time
+
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
+
+def find_pixi(start):
+    d = os.path.abspath(start)
+    while True:
+        if os.path.exists(os.path.join(d, "pixi.toml")):
+            return d
+        nd = os.path.dirname(d)
+        if nd == d:
+            return None
+        d = nd
+
+
+def mojo_cmd(near=None):
+    if os.environ.get("MOJO"):
+        return [os.environ["MOJO"]]
+    if shutil.which("mojo"):
+        return ["mojo"]
+    if shutil.which("pixi"):
+        for start in (os.getcwd(), os.path.dirname(os.path.abspath(near or "."))):
+            root = find_pixi(start)
+            if root:
+                return ["pixi", "run", "--manifest-path",
+                        os.path.join(root, "pixi.toml"), "mojo"]
+    bail("mojo not found: set $MOJO, activate the env, or run inside a pixi project")
+
+
+def build(src, outdir, opt):
+    out = os.path.join(outdir, os.path.basename(src).replace(".mojo", "") + ".bin")
+    cmd = mojo_cmd(src) + ["build", "-o", out]
+    if opt is not None:
+        cmd += [f"-O{opt}"]
+    cmd.append(src)
+    t0 = time.time()
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if not os.path.exists(out):
+        bail(f"build failed for {src}:\n" + (r.stderr or r.stdout)[-3000:])
+    return out, time.time() - t0
+
+
+def timeit(argv, reps, warmup):
+    for _ in range(warmup):
+        subprocess.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ts = []
+    for _ in range(reps):
+        t0 = time.perf_counter()
+        r = subprocess.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        ts.append(time.perf_counter() - t0)
+        if r.returncode != 0:
+            bail(f"{argv[0]} exited {r.returncode}")
+    return sorted(ts)
+
+
+def fmt(t):
+    if t < 1e-3:
+        return f"{t * 1e6:.0f}us"
+    if t < 1:
+        return f"{t * 1e3:.1f}ms"
+    return f"{t:.3f}s"
+
+
+def mad(xs):
+    m = statistics.median(xs)
+    return statistics.median([abs(x - m) for x in xs])
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("targets", nargs="*", help="binaries or .mojo files")
+    ap.add_argument("--label", action="append", default=[],
+                    help="name=path (repeatable)")
+    ap.add_argument("--reps", type=int, default=15)
+    ap.add_argument("--warmup", type=int, default=2)
+    ap.add_argument("-O", dest="opt", default=None, help="optimization level for builds")
+    ap.add_argument("--args", default="", help="args passed to every target")
+    a = ap.parse_args()
+
+    items = []
+    for lab in a.label:
+        name, sep, path = lab.partition("=")
+        if not sep or not name or not path:
+            ap.error(f"bad --label {lab!r}: expected name=path")
+        items.append((name, path))
+    for t in a.targets:
+        items.append((os.path.basename(t), t))
+    if len(items) < 1:
+        ap.error("give at least one target")
+
+    extra = a.args.split() if a.args else []
+    results = []
+    with tempfile.TemporaryDirectory() as td:
+        for name, path in items:
+            build_s = None
+            if path.endswith(".mojo"):
+                path, build_s = build(path, td, a.opt)
+            if not os.path.exists(path):
+                bail(f"no such target: {path}")
+            if not os.access(path, os.X_OK):
+                bail(f"{path} is not executable")
+            ts = timeit([path] + extra, a.reps, a.warmup)
+            results.append({"name": name, "ts": ts, "build": build_s})
+
+    print(f"# mojobench — {a.reps} reps, {a.warmup} warmup\n")
+    print("| target | median | min | MAD | max | build |")
+    print("|---|---|---|---|---|---|")
+    for r in results:
+        ts = r["ts"]
+        print(f"| {r['name']} | {fmt(statistics.median(ts))} | {fmt(ts[0])} | "
+              f"{fmt(mad(ts))} | {fmt(ts[-1])} | "
+              f"{fmt(r['build']) if r['build'] else '-'} |")
+
+    if len(results) >= 2:
+        base = results[0]
+        bm, bmad = statistics.median(base["ts"]), mad(base["ts"])
+        print(f"\n## vs `{base['name']}`\n")
+        print("| target | median | speedup | verdict |")
+        print("|---|---|---|---|")
+        for r in results[1:]:
+            m = statistics.median(r["ts"])
+            spd = bm / m if m else float("inf")
+            noise = max(bmad, mad(r["ts"]))
+            if abs(bm - m) < 2 * noise:
+                v = "**no measurable difference** (within noise)"
+            elif spd > 1:
+                v = f"{spd:.2f}x faster"
+            else:
+                v = f"**{1 / spd:.2f}x SLOWER**"
+            print(f"| {r['name']} | {fmt(m)} | {spd:.2f}x | {v} |")
+        print("\n_Noise gate is 2x the larger MAD. A difference inside it is not a "
+              "result — raise --reps or make the workload longer._")
+
+
+if __name__ == "__main__":
+    main()
