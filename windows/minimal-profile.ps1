@@ -13,7 +13,7 @@ function u { Set-Location .. }
 function c { Set-Location ~/code }
 
 # Essential file operations  
-function o { explorer.exe . }
+function o { param($p="."); explorer.exe $p }
 function usager {
     Get-ChildItem | ForEach-Object {
         if ($_.PSIsContainer) {

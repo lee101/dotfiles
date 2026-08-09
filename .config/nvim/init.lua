@@ -168,6 +168,13 @@ require("lazy").setup({
       "ibhagwan/fzf-lua", -- Fuzzy finding - excellent telescope replacement
       dependencies = { "nvim-tree/nvim-web-devicons" },
       config = function()
+        if vim.fn.executable("fzf") ~= 1 then
+          vim.notify(
+            "fzf executable not found. Install fzf, then restart Neovim. See docs/nvim-navigation.md.",
+            vim.log.levels.ERROR
+          )
+        end
+
         local fzf = require("fzf-lua")
         
         -- Setup fzf-lua with good defaults

@@ -2,6 +2,29 @@
 
 A collection of AI-powered developer tools for code quality, testing, and performance optimization.
 
+## How the tool system works
+
+Everything in this directory is designed to be runnable by name from any shell.
+
+- **`tools/` is on your `PATH`.** `lib/common_shell` adds `~/code/dotfiles/tools`
+  to `PATH` (see `lib/common_shell` line ~74), so any executable placed directly
+  in `tools/` becomes a command. Shell and Python tools are named without an
+  extension (e.g. `cldtest`, `jscheck`, `blc`) and marked executable
+  (`chmod +x`).
+- **Go tools** come in two shapes:
+  - Small single-purpose tools live under `tools/cmd/<name>/` and are compiled
+    into `tools/` (and therefore onto `PATH`) by `tools/cmd/build.sh`. Their
+    binaries are gitignored — only the source is committed.
+  - Larger or standalone Go work lives under [`tools/golang/`](golang/), which
+    has its own module(s) and guides. Binaries there are built in place and
+    gitignored.
+- **Subdirectories** group related code: `golang/` (Go tools + perf guides),
+  `semantic_search/`, `js_error_checker/`, `tests/`.
+- **Build the Go tools:** `bash tools/cmd/build.sh` builds everything under
+  `tools/cmd/*` that has a `go.mod`.
+- **Docs:** this README covers the AI/Claude tools; `tool-use.md` covers the UI
+  review + JS checker; each subdirectory has its own README.
+
 ## Tools Overview
 
 ### 🧪 cldtest - AI-Powered Test Runner
@@ -258,6 +281,13 @@ blc https://example.com --json     # Output raw JSON
 - `dustg` - Git-aware disk usage analyzer (respects .gitignore)
 - `curls` - Simple curl wrapper
 
+### 🐹 Go tools & guides ([golang/](golang/))
+- `go-line-profiler` - Multi-view analyzer for Go CPU (`pprof`) profiles, filtered
+  to your own hot paths (top / tree / bottleneck / callers / per-line / diff / HTML)
+- Go game performance guides (profiling, entity scaling, particle scaling)
+
+See [golang/README.md](golang/README.md) for build and usage.
+
 ## JavaScript Error Checker Setup
 
 For the JavaScript error checker specifically:
@@ -279,3 +309,32 @@ Make tools executable:
 chmod +x cld*
 chmod +x jscheck
 ```
+
+### 🐹 tools/golang - Go-specific perf tools
+
+#### gobench-md - Go benchmark report (contention-immune, optional A/B)
+
+`go test -bench` reports ns/op, which is wall clock: on a machine that is also
+running other jobs it swings 3-8x for identical code, exactly when you most want
+a before/after. This ranks on a `cpu_us/op` metric (process CPU time per op) when
+the benchmark reports one, runs the A/B baseline in a throwaway `git worktree`
+(so a busy checkout is never touched), and emits a compact markdown report:
+results table plus a flat/cumulative/by-package profile focused on the benchmark.
+
+```bash
+tools/golang/gobench-md ./internal/rl -bench BenchmarkRollout
+tools/golang/gobench-md ./internal/rl -bench BenchmarkX --baseline HEAD~1
+tools/golang/gobench-md ./pkg -bench . --benchtime 30x --count 3 --out report.md
+tools/golang/gobench-md ./pkg -bench X -- -tags integration   # args after -- go to go test
+```
+
+To get the contention-immune metric, report it from the benchmark:
+
+```go
+m := benchutil.Start(b)
+for i := 0; i < b.N; i++ { work() }
+m.Report(b)   // emits cpu_us/op alongside ns/op
+```
+
+Any metric named `cpu_us/op`, `cpu_ns/op` or `cpu_ms/op` is picked up; without
+one the tool falls back to ns/op and says so in the report.

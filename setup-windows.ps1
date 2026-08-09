@@ -52,10 +52,39 @@ Write-Host "===============================" -ForegroundColor Green
 # Terminal
 Install-WingetPackage "Microsoft.WindowsTerminal" "Windows Terminal"
 Install-WingetPackage "Microsoft.PowerShell" "PowerShell 7"
+Install-WingetPackage "aristocratos.btop4win" "btop4win"
 
 # SSH/FTP Tools
 Install-WingetPackage "WinSCP.WinSCP" "WinSCP"
 Install-WingetPackage "PuTTY.PuTTY" "PuTTY"
+
+Write-Host ""
+Write-Host "Step 3b: Git Bash Process Monitors" -ForegroundColor Green
+Write-Host "===================================" -ForegroundColor Green
+$bashCandidates = @(
+    "$env:ProgramFiles\Git\bin\bash.exe",
+    "$env:ProgramFiles\Git\usr\bin\bash.exe",
+    "C:\msys64\usr\bin\bash.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -Unique
+
+if ($bashCandidates.Count -eq 0) {
+    Write-Host "Git Bash not found yet; btop4win is installed and lib/winbashrc provides fallbacks after dotfiles are linked." -ForegroundColor Yellow
+}
+else {
+    foreach ($bashExe in $bashCandidates) {
+        Write-Host "Checking $bashExe" -ForegroundColor DarkGray
+        & $bashExe -lc "if command -v pacman >/dev/null 2>&1; then pacman -S --needed --noconfirm htop procps-ng; else exit 42; fi"
+        if ($LASTEXITCODE -eq 42) {
+            Write-Host "  No pacman here. Git Bash will use btop for htop/top when available." -ForegroundColor Gray
+        }
+        elseif ($LASTEXITCODE -eq 0) {
+            Write-Host "  Installed/verified htop and top via pacman." -ForegroundColor Green
+        }
+        else {
+            Write-Host "  Could not install htop/procps-ng via pacman. Git Bash fallbacks will still work." -ForegroundColor Yellow
+        }
+    }
+}
 
 Write-Host ""
 Write-Host "Step 4: Containerization" -ForegroundColor Green
@@ -104,6 +133,19 @@ Write-Host "=======================" -ForegroundColor Green
 
 Write-Host "Installing WSL with default Ubuntu distribution..." -ForegroundColor Yellow
 wsl --install
+
+# Fix Git Bash / MSYS2 console allocation limit (max 32 consoles error).
+# Sets MSYS=disable_pcon and CYGWIN=disable_pcon as USER env vars so Git Bash
+# can open unlimited terminals. Safe to re-run; idempotent.
+Write-Host ""
+Write-Host "Step 11: Git Bash Console Limit Fix" -ForegroundColor Green
+Write-Host "====================================" -ForegroundColor Green
+$fixConsole = Join-Path $PSScriptRoot 'windows\fix-console-limit.ps1'
+if (Test-Path $fixConsole) {
+    & $fixConsole
+} else {
+    Write-Host "Skipping: $fixConsole not found" -ForegroundColor DarkGray
+}
 
 Write-Host ""
 Write-Host "===============================================" -ForegroundColor Cyan

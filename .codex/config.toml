@@ -1,4 +1,4 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
 
 [default]
@@ -13,6 +13,48 @@ trust_level = "trusted"
 [projects."/home/lee/code/codex-local-20260525"]
 trust_level = "trusted"
 
+[projects."/home/lee/code/dotfiles"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/prediction2"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/binancego"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/dictator"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/stock"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/animacule"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/biohub"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/codex-local-20260525"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/food-optimization"]
+trust_level = "trusted"
+
+[projects."/vfast/data/code/app-site"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/binancego"]
+trust_level = "trusted"
+
+[projects."/home/lee/code/prediction2"]
+trust_level = "trusted"
+
+[projects.'c:\users\lee_p\code\dotfiles']
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
@@ -24,4 +66,10 @@ gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.3-codex"
 
 [tui.model_availability_nux]
-"gpt-5.5" = 3
+"gpt-5.5" = 4
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+
+[windows]
+sandbox = "unelevated"

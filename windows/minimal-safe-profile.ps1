@@ -26,7 +26,7 @@ function lg { lazygit }
 # Navigation
 function u { Set-Location .. }
 function c { Set-Location ~/code }
-function o { explorer.exe . }
+function o { param($p="."); explorer.exe $p }
 
 # Editor aliases
 function vim { & "C:\Program Files\Neovim\bin\nvim.exe" $args }

@@ -1,8 +1,8 @@
 // Zed settings synchronized via dotfiles
 //
 // Configuration is derived from existing PyCharm and Cursor preferences:
-// - Fonts/theme from PyCharm's LeesMonokai scheme (DejaVu Sans Mono @ 15pt)
-// - Monokai dark theme to match Cursor and JetBrains usage
+// - Fonts from PyCharm's LeesMonokai scheme (DejaVu Sans Mono @ 15pt)
+// - Custom Darcula 80/20 dark theme tuned for JetBrains-style contrast
 // - Whitespace handling aligned with PyCharm editor defaults
 {
   "cli_default_open_behavior": "existing_window",
@@ -23,7 +23,7 @@
     "tool_permissions": {
       "default": "allow"
     },
-    "play_sound_when_agent_done": true,
+    "play_sound_when_agent_done": "always",
     "model_parameters": []
   },
   "base_keymap": "JetBrains",
@@ -37,18 +37,22 @@
   "icon_theme": "Zed (Default)",
   "theme": {
     "mode": "dark",
-    "dark": "One Dark",
+    "dark": "Darcula 80/20",
     "light": "One Light"
   },
   "remove_trailing_whitespace_on_save": true,
   "ensure_final_newline_on_save": true,
   "autosave": "on_focus_change",
+  "tab_size": 4,
+  "hard_tabs": false,
+  "preferred_line_length": 80,
+  "show_wrap_guides": true,
   "file_types": {
     "C++": ["cu", "cuh"]
   },
   "languages": {
     "Python": {
-      "language_servers": ["pyright", "ruff"],
+      "language_servers": ["basedpyright", "ruff"],
       "format_on_save": "on",
       "formatter": [
         { "code_action": "source.organizeImports.ruff" },
@@ -64,6 +68,17 @@
         { "language_server": { "name": "gopls" } }
       ]
     },
+    "JavaScript": {
+      "tab_size": 2,
+      "hard_tabs": false
+    },
+    "TypeScript": {
+      "tab_size": 2,
+      "hard_tabs": false
+    },
+    "Markdown": {
+      "preferred_line_length": 72
+    },
     "C": {
       "language_servers": ["clangd"],
       "format_on_save": "on",
@@ -76,6 +91,16 @@
       "format_on_save": "on",
       "formatter": {
         "language_server": { "name": "clangd" }
+      }
+    }
+  },
+  "lsp": {
+    "basedpyright": {
+      "settings": {
+        "basedpyright.analysis": {
+          "autoImportCompletions": true,
+          "autoSearchPaths": true
+        }
       }
     }
   }
