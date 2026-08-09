@@ -798,7 +798,7 @@ _codex_local_or_upstream() {
 unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh ccxt ccxtl ccxtm ccxth \
     cdx cdxd cdxf cdxr cdxw cdxa cdxe cdxs cdxo cdxed \
     cx cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
-    cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxbuild 2>/dev/null || true
+    cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxll cxlm cxlh cxlxh cxt cxtl cxtm cxth cxbuild 2>/dev/null || true
 
 # Upstream codex - ccx* aliases
 ccx()  { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"; }
@@ -867,8 +867,40 @@ cxl() {
     _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=low "$@"
 }
 
+cxll() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
+}
+
+cxlm() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
+}
+
+cxlh() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
+}
+
+cxlxh() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"
+}
+
 cxh() {
     _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high "$@"
+}
+
+cxt() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"
+}
+
+cxtl() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=low "$@"
+}
+
+cxtm() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"
+}
+
+cxth() {
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=high "$@"
 }
 
 cxs() {
