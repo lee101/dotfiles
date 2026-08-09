@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir="$(git rev-parse --show-toplevel)"
+"$repo_dir/tools/test-shell-config.sh"

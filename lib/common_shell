@@ -738,6 +738,7 @@ alias dvn='devin --permission-mode dangerous'
 alias dvni="~/programs/Devin/bin/devin-desktop"
 
 # CLI installers/updaters
+unalias clinst 2>/dev/null || true
 clinst() {
     # Claude's native updater requires this path, which may be absent when a
     # Windows cache junction/symlink target is temporarily unavailable.

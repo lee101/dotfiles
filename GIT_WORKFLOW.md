@@ -98,6 +98,12 @@ files still parse:
 # bash configs
 for f in lib/common_shell lib/winbashrc bashrc bash_profile; do bash -n "$f" && echo "OK $f"; done
 
+# Full shell-config and reload-safety check
+tools/test-shell-config.sh
+
+# Enable the repository hook once per clone
+git config core.hooksPath .githooks
+
 # PowerShell files (run in PowerShell)
 [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path .\windows\profile.ps1).Path, [ref]$null, [ref]$null)
 ```
