@@ -19,6 +19,12 @@ import subprocess
 import sys
 import time
 
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
 FRAME = re.compile(r"^#\d+\s+(?:0x[0-9a-f]+ in )?(.+?) \(")
 NOISE = re.compile(r"^(?:__libc_|_start$|clone3?$|start_thread$|\?\?$)")
 # a thread parked in the runtime's work queue tells you nothing about where time goes
@@ -256,10 +262,31 @@ def main():
 
     if not a.cmd and not a.pid:
         ap.error("give a command to launch or --pid")
+    if a.cmd:
+        exe = a.cmd[0] if os.sep in a.cmd[0] else (shutil.which(a.cmd[0]) or a.cmd[0])
+        if not os.path.exists(exe):
+            bail(f"no such command: {a.cmd[0]}")
+        if not os.access(exe, os.X_OK):
+            bail(f"{a.cmd[0]} is not executable")
+    if a.pid:
+        try:
+            os.kill(a.pid, 0)
+        except ProcessLookupError:
+            bail(f"no process with pid {a.pid}")
+        except PermissionError:
+            pass
 
     backend = a.backend
     if backend == "auto":
         backend = "perf" if (perf_ok() and a.cmd) else "gdb"
+    if backend == "perf":
+        if not shutil.which("perf"):
+            bail("perf not found — install linux-tools, or use --backend gdb")
+        if not perf_ok():
+            bail("perf is present but perf_event_paranoid > 2 blocks sampling — "
+                     "`sudo sysctl -w kernel.perf_event_paranoid=1`, or use --backend gdb")
+        if not a.cmd:
+            bail("the perf backend launches a command; --pid needs --backend gdb")
 
     bt_cmd = "bt" if a.threads == "main" else "thread apply all bt"
     proc = None
@@ -270,7 +297,7 @@ def main():
             stacks, misses = sample_perf(a.cmd, 999, td)
     else:
         if not shutil.which("gdb"):
-            sys.exit("gdb not found and perf unavailable — install one of them")
+            bail("gdb not found and perf unavailable — install one of them")
         if a.pid:
             stacks, misses = sample_gdb_attach(a.pid, a.samples, a.interval,
                                                time.time() + a.timeout, bt_cmd)
@@ -280,18 +307,18 @@ def main():
     wall = time.time() - t0
 
     if not stacks:
-        sys.exit("no samples collected — process too short-lived? "
+        bail("no samples collected — process too short-lived? "
                  "raise --timeout, or profile a longer workload / attach with --pid")
 
     root = build(stacks, strip_noise=not a.keep_noise, drop_idle=not a.keep_idle)
-    total = root.total or 1
     idle = getattr(root, "idle", 0)
+    if not root.total:
+        bail(f"all {idle} samples were parked/idle threads — rerun with --keep-idle, "
+                 "or the process is blocked rather than compute-bound")
+    total = root.total
     print(f"# mojoflame — {total} stacks, {backend} backend, {wall:.1f}s"
           + (f", {idle} idle dropped" if idle else "")
           + (f", {misses} misses" if misses else ""))
-    if not total:
-        sys.exit("all samples were parked/idle threads — rerun with --keep-idle, "
-                 "or the process is blocked rather than compute-bound")
     if backend == "gdb":
         print("\n_gdb sampling is biased toward syscall/blocking frames and is not "
               "statistically exact; use it to rank, not to quote absolute times._")

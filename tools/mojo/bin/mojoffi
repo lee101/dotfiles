@@ -26,6 +26,13 @@ import re
 import subprocess
 import sys
 
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
+
 EXPORT_RE = re.compile(r'^\s*@export\s*\(\s*"([^"]+)"\s*\)', re.M)
 DEF_RE = re.compile(r"^\s*def\s+(\w+)\s*\(", re.M)
 
@@ -38,6 +45,24 @@ TYPE_MAP = {
     "Float32": "ctypes.c_float",
     "Bool": "ctypes.c_bool",
 }
+
+
+def split_params(inner):
+    """Split on top-level commas only: `UnsafePointer[T, AnyOrigin[mut=True]]` is
+    one parameter, and a regex with a bracket lookahead splits it into two."""
+    parts, depth, cur = [], 0, []
+    for ch in inner:
+        if ch in "[(":
+            depth += 1
+        elif ch in "])":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur))
+    return parts
 
 
 def parse_exports(path):
@@ -78,7 +103,7 @@ def parse_exports(path):
                     break
         inner = sig[sig.find("(") + 1 : close]
         params = []
-        for part in re.split(r",(?![^\[]*\])", inner):
+        for part in split_params(inner):
             part = part.strip()
             if not part:
                 continue
@@ -153,17 +178,25 @@ def lint(exports, lines):
 
 
 def check_symbols(sopath, exports):
+    if not os.path.exists(sopath):
+        bail(f"no such library: {sopath} — build it first "
+                 "(`mojo build --emit shared-lib ... -o {sopath}`)".replace("{sopath}", sopath))
     try:
         nm = subprocess.run(["nm", "-D", "--defined-only", sopath], capture_output=True, text=True)
-        have = {ln.split()[-1] for ln in nm.stdout.splitlines() if ln.strip()}
     except FileNotFoundError:
-        sys.exit("nm not found (binutils)")
+        bail("nm not found (binutils)")
+    if nm.returncode:
+        bail(f"nm could not read {sopath}:\n" + (nm.stderr or nm.stdout)[-1000:])
+    have = {ln.split()[-1] for ln in nm.stdout.splitlines() if ln.strip()}
     return [(e["symbol"], e["symbol"] in have) for e in exports]
 
 
 def emit_bridge(exports, module, libname):
     args_of = lambda e: ", ".join(TYPE_MAP.get(t, "ctypes.c_int64") for _, t in e["params"])  # noqa: E731
-    sigs = "\n".join(f'    "{e["symbol"]}": [{args_of(e)}],' for e in exports)
+    # a wrong restype is the classic silent bridge bug: the kernel's status code
+    # comes back as None (void) or truncated to 32 bits, and nothing complains
+    ret_of = lambda e: TYPE_MAP.get(e["ret"], "None") if e["ret"] != "None" else "None"  # noqa: E731
+    sigs = "\n".join(f'    "{e["symbol"]}": ([{args_of(e)}], {ret_of(e)}),' for e in exports)
     calls = []
     for e in exports:
         params = ", ".join(p for p, _ in e["params"])
@@ -213,10 +246,10 @@ def lib() -> ctypes.CDLL:
     global _handle
     if _handle is None:
         _handle = ctypes.CDLL(build())
-        for name, argtypes in _SIGNATURES.items():
+        for name, (argtypes, restype) in _SIGNATURES.items():
             fn = getattr(_handle, name)
             fn.argtypes = argtypes
-            fn.restype = None
+            fn.restype = restype
     return _handle
 
 
@@ -288,10 +321,10 @@ def main():
     args = ap.parse_args()
 
     if not os.path.exists(args.source):
-        sys.exit(f"no such file: {args.source}")
+        bail(f"no such file: {args.source}")
     exports, lines = parse_exports(args.source)
     if not exports:
-        sys.exit(f"no @export defs found in {args.source}")
+        bail(f"no @export defs found in {args.source}")
 
     if args.emit == "bridge":
         libname = args.lib or "lib" + os.path.basename(args.source).replace(".mojo", "") + ".so"
@@ -322,6 +355,7 @@ def main():
     else:
         print("## findings\n\nnone — every export is scalar-typed, `abi(\"C\")`, and non-raising.")
 
+    missing = []
     if args.check:
         print("\n## link check\n")
         rows = check_symbols(args.check, exports)
@@ -335,8 +369,8 @@ def main():
         else:
             print(f"all {len(rows)} symbols present in `{args.check}`.")
 
-    errs = sum(1 for f in findings if f[0] == "err")
-    print(f"\n**verdict:** {errs} blocking, {len(findings) - errs} advisory.")
+    errs = sum(1 for f in findings if f[0] == "err") + len(missing)
+    print(f"\n**verdict:** {errs} blocking, {len(findings) - errs + len(missing)} advisory.")
     sys.exit(1 if errs else 0)
 
 

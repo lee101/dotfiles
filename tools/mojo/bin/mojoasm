@@ -18,6 +18,12 @@ import subprocess
 import sys
 import tempfile
 
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
 # AVX/SSE registers tell you the width that was actually selected
 VEC = {
     "zmm": 512,
@@ -55,7 +61,7 @@ def mojo_cmd(near=None):
             if root:
                 return ["pixi", "run", "--manifest-path",
                         os.path.join(root, "pixi.toml"), "mojo"]
-    sys.exit("mojo not found: set $MOJO, activate the env, or run inside a pixi project")
+    bail("mojo not found: set $MOJO, activate the env, or run inside a pixi project")
 
 
 def emit_asm(src, outdir):
@@ -63,15 +69,19 @@ def emit_asm(src, outdir):
     r = subprocess.run(mojo_cmd(src) + ["build", "--emit", "asm", "-o", out, src],
                        capture_output=True, text=True)
     if not os.path.exists(out):
-        sys.exit("mojo build --emit asm failed:\n" + (r.stderr or r.stdout)[-3000:])
+        bail("mojo build --emit asm failed:\n" + (r.stderr or r.stdout)[-3000:])
     return open(out, errors="replace").read()
 
 
 def disasm(binary):
     if not shutil.which("objdump"):
-        sys.exit("objdump not found")
+        bail("objdump not found")
+    if not os.path.exists(binary):
+        bail(f"no such binary: {binary}")
     r = subprocess.run(["objdump", "-d", "-C", "--no-show-raw-insn", binary],
                        capture_output=True, text=True)
+    if r.returncode or not r.stdout.strip():
+        bail(f"objdump could not disassemble {binary}:\n" + (r.stderr or r.stdout)[-1000:])
     return r.stdout
 
 
@@ -81,7 +91,7 @@ TYPE_DIR = re.compile(r'^\s*\.type\s+(?:"(.+)"|([\w.$@]+)),@function')
 def shorten_sym(name):
     """Mojo emits the whole mangled generic as the label. Keep the readable head."""
     name = name.strip().strip('"')
-    name = re.split(r"[\[(,]", name, 1)[0]
+    name = re.split(r"[\[(,]", name, maxsplit=1)[0]
     return name or "?"
 
 
@@ -205,6 +215,9 @@ def main():
     a = ap.parse_args()
 
     if a.bin:
+        # `mojoasm --bin ./mybin dot`: argparse binds "dot" to src, not pattern
+        if a.src and not a.pattern:
+            a.src, a.pattern = None, a.src
         text, from_objdump = disasm(a.bin), True
         label = a.bin
     else:
