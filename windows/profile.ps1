@@ -481,6 +481,7 @@ function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox"
 function cxll { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "low" -CodexArgs $args }
 function cxlm { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "medium" -CodexArgs $args }
 function cxlh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "high" -CodexArgs $args }
+function cxlxh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxsl { Invoke-CodexModel -Model "gpt-5.6-sol" -ReasoningEffort "low" -CodexArgs $args }
 function cxt { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxtl { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "low" -CodexArgs $args }
