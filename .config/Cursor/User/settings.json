@@ -1,0 +1,79 @@
+{
+    "window.commandCenter": 1,
+    "workbench.colorTheme": "Monokai",
+    "workbench.iconTheme": "vs-seti",
+
+    "window.restoreWindows": "all",
+    "window.openFilesInNewWindow": "off",
+    "workbench.startupEditor": "none",
+    "workbench.editor.highlightModifiedTabs": true,
+    "workbench.list.smoothScrolling": true,
+
+    "editor.fontFamily": "'DejaVu Sans Mono', 'Droid Sans Mono', 'monospace', monospace",
+    "editor.fontLigatures": false,
+    "editor.fontSize": 15,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.smoothScrolling": true,
+    "editor.cursorBlinking": "phase",
+
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.trimAutoWhitespace": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.autoSave": "onFocusChange",
+    "files.associations": {
+        "*.cu": "cpp",
+        "*.cuh": "cpp"
+    },
+
+    "editor.renderLineHighlight": "all",
+    "editor.minimap.enabled": false,
+    "editor.stickyScroll.enabled": true,
+    "breadcrumbs.enabled": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.bracketPairColorization.enabled": true,
+    "editor.matchBrackets": "always",
+    "editor.linkedEditing": true,
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnEnter": "smart",
+    "editor.tabCompletion": "on",
+    "explorer.autoReveal": true,
+    "explorer.confirmDragAndDrop": false,
+    "diffEditor.ignoreTrimWhitespace": false,
+    "git.autofetch": true,
+
+    "python.analysis.typeCheckingMode": "basic",
+    "python.languageServer": "None",
+    "python.formatting.provider": "none",
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll.ruff": "explicit"
+        }
+    },
+
+    "go.useLanguageServer": true,
+    "go.formatTool": "gofmt",
+    "[go]": {
+        "editor.defaultFormatter": "golang.go",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "window.autoDetectColorScheme": false
+}

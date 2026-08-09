@@ -6,7 +6,7 @@
 
 | Key | Action | Description |
 |-----|--------|-------------|
-| `Ctrl+p` | Find files | Quick file finder (fzf-style) |
+| `Ctrl+p` | Find files | Quick file finder (`fzf-lua`) |
 | `Space ff` | Find files | Alternative file finder |
 | `Space fg` | Live grep | Search text across all files |
 | `Space fw` | Find word | Search word under cursor |
@@ -20,10 +20,33 @@
 | `gr` | Go to references | Find all references (LSP) |
 | `gi` | Go to implementation | Jump to implementation (LSP) |
 
+## Required Tools
+
+The active config uses [`fzf-lua`](https://github.com/ibhagwan/fzf-lua) for `Ctrl+p`, `Space ff`, and `Space fg`. `fzf-lua` needs the `fzf` executable. It also uses `ripgrep` (`rg`) for live grep, while `fd` and `bat` improve file listing and previews.
+
+Install the core tools:
+
+```bash
+# Ubuntu/Debian/WSL
+sudo apt update
+sudo apt install fzf ripgrep fd-find bat
+
+# macOS
+brew install fzf ripgrep fd bat
+```
+
+On Ubuntu/Debian, the `fd` binary may be named `fdfind` and `bat` may be named `batcat`; `fzf-lua` can still fall back for some operations, but `fzf` and `rg` should be present for `Space fg`.
+
+Re-run the local check after installing:
+
+```bash
+./test_nvim_config.sh
+```
+
 ## File Navigation
 
 ### Finding Files
-- **`Ctrl+p`** or **`Space ff`** - Opens fuzzy file finder
+- **`Ctrl+p`** or **`Space ff`** - Opens `fzf-lua` fuzzy file finder
   - Type partial filename to filter
   - Supports fuzzy matching: `usrkemap` finds `user/keymaps.lua`
   - Hidden files included (except .git)
@@ -53,7 +76,7 @@ The @ symbol is used for jumping to code symbols (functions, classes, variables)
 
 ### Text Search
 
-- **`Space fg`** - Live grep (ripgrep)
+- **`Space fg`** - Live grep (`fzf-lua` + ripgrep)
   - Real-time search as you type
   - Respects .gitignore
   - Searches hidden files with --hidden flag
@@ -82,11 +105,11 @@ The @ symbol is used for jumping to code symbols (functions, classes, variables)
 
 ### Telescope Shortcuts in Picker
 
-While in any Telescope picker:
+While in any `fzf-lua` picker:
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+j/k` | Move selection up/down |
+| `Ctrl+j/k` or arrows | Move selection up/down |
 | `Ctrl+v` | Open in vertical split |
 | `Ctrl+x` | Open in horizontal split |
 | `Ctrl+t` | Open in new tab |
@@ -147,22 +170,27 @@ In live grep (`Space fg`):
 ## Customization
 
 All keybindings are defined in:
-- `init.lua` - Telescope mappings (lines 898-932)
+- `nvim/init.lua` - active plugin setup and `fzf-lua` mappings
 - `lua/user/keymaps.lua` - General navigation keys
 
 To add custom search:
 ```lua
-vim.api.nvim_set_keymap('n', '<leader>fx', 
-  '<cmd>Telescope command_name<CR>', 
-  { noremap = true, silent = true, desc = "Description" })
+vim.keymap.set("n", "<leader>fx", function()
+  require("fzf-lua").files({ cwd = vim.fn.expand("%:p:h") })
+end, { desc = "Find files in current file directory" })
 ```
 
 ## Troubleshooting
 
-**Telescope not finding files?**
+**`Space fg` says `fzf` not found?**
+- Install `fzf`: `sudo apt install fzf` or `brew install fzf`
+- Restart Neovim after installing
+- Run `./test_nvim_config.sh` from this repo
+
+**Search not finding files?**
 - Check if ripgrep is installed: `which rg`
 - Verify file isn't in .gitignore
-- Try with hidden files: add `--hidden` flag
+- For faster file finding, install `fd`
 
 **Symbols not working?**
 - Ensure LSP is running: `:LspInfo`
@@ -170,6 +198,6 @@ vim.api.nvim_set_keymap('n', '<leader>fx',
 - Check if file type is supported
 
 **Slow search?**
-- Exclude large directories in Telescope config
+- Exclude large directories in `fzf-lua` config
 - Use more specific search patterns
-- Consider using `:Telescope resume` to continue last search
+- Use `Space fr` to resume the last grep

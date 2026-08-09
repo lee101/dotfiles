@@ -1,0 +1,11 @@
+# Devin extensions. Installed via setup-devin.sh (devin-desktop --install-extension).
+# IntelliJ/PyCharm keymap - the core of the "PyCharm feel".
+k--kato.intellij-idea-keybindings
+# Language + tooling parity with the VS Code / Cursor setup.
+charliermarsh.ruff
+golang.go
+ms-python.python
+ms-python.debugpy
+llvm-vs-code-extensions.vscode-clangd
+ms-vscode.cmake-tools
+ms-azuretools.vscode-docker

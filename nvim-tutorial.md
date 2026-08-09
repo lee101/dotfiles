@@ -53,14 +53,26 @@ Most custom commands start with pressing the spacebar (your leader key).
 - `H` - Toggle hidden files
 - `g?` - Show help
 
-### Telescope Fuzzy Finder (FZF-style)
+### fzf-lua Fuzzy Finder
+This config uses `fzf-lua`, which wraps the `fzf` command-line tool inside Neovim.
+
+Install the required search tools:
+
+```bash
+# Ubuntu/Debian/WSL
+sudo apt install fzf ripgrep fd-find bat
+
+# macOS
+brew install fzf ripgrep fd bat
+```
+
 **Key Bindings:**
 - `<leader>ff` - Find files (fuzzy search)
 - `<leader>fg` - Live grep (search text in files)
 - `<leader>fb` - Browse open buffers
 - `<leader>fh` - Help tags search
 
-**In Telescope:**
+**In fzf-lua:**
 - Type to fuzzy search
 - `Ctrl-j/k` - Navigate results
 - `Enter` - Open file
@@ -153,12 +165,30 @@ LSP is configured via Mason in this config. Servers auto-install for:
 ## Plugin Features
 
 ### GitHub Copilot
-**In Insert Mode:**
-- `Ctrl-l` - Accept suggestion
-- `Ctrl-j` - Next suggestion
-- `Ctrl-k` - Previous suggestion
-- `Ctrl-d` - Dismiss suggestion
-- `:CopilotStatus` - Check status
+GitHub Copilot is currently commented out in `nvim/init.lua`.
+
+### text-generator-nvim
+The active config includes a local `text-generator-nvim` plugin:
+
+```lua
+{
+  dir = "/nvme0n1-disk/code/text-generator-nvim",
+  name = "text-generator-nvim",
+  event = "InsertEnter",
+  config = function()
+    require("text-generator").setup({
+      min_probability = 0.4,
+      max_tokens = 48,
+    })
+  end,
+}
+```
+
+Setup checklist:
+- Clone or keep the plugin at `/nvme0n1-disk/code/text-generator-nvim`.
+- Open Neovim and run `:Lazy sync`.
+- Enter insert mode once so the lazy-loaded plugin initializes.
+- Run `:checkhealth` and `:messages` if completions do not appear.
 
 ### Git Integration (Gitsigns)
 **Hunks:**
@@ -269,7 +299,8 @@ Visual cursor animation - automatically active with rainbow trail effect.
 
 ### Config Location
 - `~/.config/nvim/init.lua` - Main config
-- `~/.config/nvim/lua/plugins/` - Plugin configs
+- This repo's active source is `nvim/init.lua`, symlinked by `setup-nvim.sh`
+- Shared user modules live in `lua/user/`
 
 ### Custom Keymaps
 Add to `init.lua`:
@@ -278,7 +309,7 @@ vim.keymap.set('n', '<leader>key', ':command<CR>', {desc = 'Description'})
 ```
 
 ### Install New Plugin
-Edit `~/.config/nvim/lua/plugins/init.lua` and add plugin spec, then restart Neovim.
+Edit the `spec = { ... }` list in `nvim/init.lua`, then restart Neovim and run `:Lazy sync`.
 
 ## Tips & Tricks
 
@@ -305,9 +336,11 @@ Edit `~/.config/nvim/lua/plugins/init.lua` and add plugin spec, then restart Neo
 2. Ensure language server installed: `:Mason`
 3. Check logs: `:LspLog`
 
-### Telescope Not Finding Files
-1. Ensure in git repo or use `find_files` with `hidden=true`
-2. Check if `ripgrep` installed: `which rg`
+### Space fg says fzf not found
+1. Install `fzf`: `sudo apt install fzf` or `brew install fzf`
+2. Install `ripgrep`: `sudo apt install ripgrep` or `brew install ripgrep`
+3. Restart Neovim
+4. From this repo, run `./test_nvim_config.sh`
 
 ### Slow Performance
 1. Disable plugins temporarily
