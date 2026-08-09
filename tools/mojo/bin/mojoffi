@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+"""Mojo <-> Python FFI: audit the exports, generate the bridge, prove the link.
+
+  mojoffi kernels/capi.mojo                  # export table + FFI lint + verdict
+  mojoffi --emit bridge kernels/capi.mojo    # ctypes bridge module on stdout
+  mojoffi --emit test   kernels/capi.mojo    # pytest parity + link skeleton
+  mojoffi --check dist/lib.so kernels/capi.mojo   # every @export really in the .so
+
+Why this exists: the Mojo 1.0 C ABI has a small set of rules that are not
+discoverable from an error message until you have hit each one, and a bridge that
+compiles can still be silently unused (the Python fallback runs, the numbers look
+fine, the speedup is imaginary). This audits the rules and proves the link.
+
+Rules enforced (verified against mojo 1.0.0b3.dev2026072406):
+  * `@export` rejects parametric functions — including an inferred pointer origin,
+    so buffers must cross as `Int` addresses and be rebuilt inside the wrapper.
+  * `abi("C")` is an effect BEFORE the arrow: `def f(a: Int) abi("C") -> None:`.
+  * an `@export ... abi("C")` def cannot be `raises`, which rules out anything
+    fallible in the body — `Float64("nan")` raises; use `nan[DType.float64]()`.
+  * `out` is a reserved name, as a parameter and as a local.
+  * pointers are non-nullable: build them inside the branch that uses them.
+"""
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
+
+EXPORT_RE = re.compile(r'^\s*@export\s*\(\s*"([^"]+)"\s*\)', re.M)
+DEF_RE = re.compile(r"^\s*def\s+(\w+)\s*\(", re.M)
+
+TYPE_MAP = {
+    "Int": "ctypes.c_int64",
+    "Int64": "ctypes.c_int64",
+    "Int32": "ctypes.c_int32",
+    "UInt64": "ctypes.c_uint64",
+    "Float64": "ctypes.c_double",
+    "Float32": "ctypes.c_float",
+    "Bool": "ctypes.c_bool",
+}
+
+
+def split_params(inner):
+    """Split on top-level commas only: `UnsafePointer[T, AnyOrigin[mut=True]]` is
+    one parameter, and a regex with a bracket lookahead splits it into two."""
+    parts, depth, cur = [], 0, []
+    for ch in inner:
+        if ch in "[(":
+            depth += 1
+        elif ch in "])":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur))
+    return parts
+
+
+def parse_exports(path):
+    """[(symbol, def_name, [(param, type)], ret, abi, raises, lineno)]"""
+    src = open(path).read()
+    lines = src.splitlines()
+    out = []
+    for m in EXPORT_RE.finditer(src):
+        symbol = m.group(1)
+        start = src.count("\n", 0, m.end())
+        # the def follows, possibly after decorators; signature may span lines
+        i = start + 1
+        while i < len(lines) and not lines[i].lstrip().startswith("def "):
+            if lines[i].lstrip().startswith("@"):
+                i += 1
+                continue
+            break
+        if i >= len(lines):
+            continue
+        sig, depth, j = "", 0, i
+        while j < len(lines):
+            sig += lines[j]
+            depth += lines[j].count("(") - lines[j].count(")")
+            if depth <= 0 and ":" in lines[j]:
+                break
+            j += 1
+        name = re.search(r"def\s+(\w+)", sig)
+        # The signature's closing paren is the one that balances the first, not
+        # the last ")" in the line — `abi("C")` sits after it and would win.
+        depth2, close = 0, len(sig)
+        for pos, ch in enumerate(sig):
+            if ch == "(":
+                depth2 += 1
+            elif ch == ")":
+                depth2 -= 1
+                if depth2 == 0:
+                    close = pos
+                    break
+        inner = sig[sig.find("(") + 1 : close]
+        params = []
+        for part in split_params(inner):
+            part = part.strip()
+            if not part:
+                continue
+            if ":" in part:
+                pname, ptype = part.split(":", 1)
+                params.append((pname.strip(), ptype.strip().rstrip(",")))
+            else:
+                params.append((part, "?"))
+        tail = sig[close + 1 :]
+        ret = tail.split("->")[1].strip().rstrip(":").strip() if "->" in tail else "None"
+        out.append(
+            {
+                "symbol": symbol,
+                "name": name.group(1) if name else "?",
+                "params": params,
+                "ret": ret,
+                "abi": 'abi("C")' in tail,
+                "raises": "raises" in tail,
+                "line": i + 1,
+                "body_start": j + 1,
+            }
+        )
+    return out, lines
+
+
+RAISING_CALLS = [
+    (re.compile(r"\bFloat(?:64|32)\s*\(\s*\"") , "Float64(\"nan\") raises", "`from std.math import nan` -> `nan[DType.float64]()`"),
+    (re.compile(r"\bInt\s*\(\s*\""), "Int(\"...\") raises", "parse outside the export, or avoid strings"),
+    (re.compile(r"(?<![\w.])open\s*\("), "file IO raises", "do IO on the Python side"),
+    (re.compile(r"\braise\b"), "explicit raise", "an abi(\"C\") export cannot raise"),
+]
+
+
+def body_of(lines, exp, exports):
+    """Lines of this export's body, up to the next top-level def/decorator."""
+    start = exp["body_start"]
+    end = len(lines)
+    for other in exports:
+        if other["line"] > exp["line"]:
+            end = min(end, other["line"] - 2)
+    return lines[start:end]
+
+
+def lint(exports, lines):
+    findings = []
+    for e in exports:
+        where = f"{e['line']}"
+        if not e["abi"]:
+            findings.append(("warn", where, e["symbol"], "no abi(\"C\")", "add `abi(\"C\")` before the arrow"))
+        if e["raises"]:
+            findings.append(("err", where, e["symbol"], "export marked raises", "wrap fallible work in try/except"))
+        for pname, ptype in e["params"]:
+            if pname == "out":
+                findings.append(("err", where, e["symbol"], "`out` is reserved", "rename the parameter"))
+            if "UnsafePointer" in ptype or "[" in ptype and ptype.split("[")[0] not in TYPE_MAP:
+                findings.append(
+                    ("err", where, e["symbol"], f"non-scalar parameter `{pname}: {ptype}`",
+                     "pass the address as `Int`, rebuild inside the body")
+                )
+            elif ptype not in TYPE_MAP and ptype != "?":
+                findings.append(
+                    ("warn", where, e["symbol"], f"unmapped parameter type `{ptype}`",
+                     "prefer Int/Float64/Bool across the boundary")
+                )
+        for raw in body_of(lines, e, exports):
+            line = raw.split("#", 1)[0]  # comments are not code
+            for rx, msg, fix in RAISING_CALLS:
+                if rx.search(line):
+                    findings.append(("err", where, e["symbol"], msg, fix))
+                    break
+    return findings
+
+
+def check_symbols(sopath, exports):
+    if not os.path.exists(sopath):
+        bail(f"no such library: {sopath} — build it first "
+                 "(`mojo build --emit shared-lib ... -o {sopath}`)".replace("{sopath}", sopath))
+    try:
+        nm = subprocess.run(["nm", "-D", "--defined-only", sopath], capture_output=True, text=True)
+    except FileNotFoundError:
+        bail("nm not found (binutils)")
+    if nm.returncode:
+        bail(f"nm could not read {sopath}:\n" + (nm.stderr or nm.stdout)[-1000:])
+    have = {ln.split()[-1] for ln in nm.stdout.splitlines() if ln.strip()}
+    return [(e["symbol"], e["symbol"] in have) for e in exports]
+
+
+def emit_bridge(exports, module, libname):
+    args_of = lambda e: ", ".join(TYPE_MAP.get(t, "ctypes.c_int64") for _, t in e["params"])  # noqa: E731
+    # a wrong restype is the classic silent bridge bug: the kernel's status code
+    # comes back as None (void) or truncated to 32 bits, and nothing complains
+    ret_of = lambda e: TYPE_MAP.get(e["ret"], "None") if e["ret"] != "None" else "None"  # noqa: E731
+    sigs = "\n".join(f'    "{e["symbol"]}": ([{args_of(e)}], {ret_of(e)}),' for e in exports)
+    calls = []
+    for e in exports:
+        params = ", ".join(p for p, _ in e["params"])
+        calls.append(
+            f'def {e["symbol"]}({params}):\n'
+            f'    """{e["name"]} — buffers are Int addresses; see addr()."""\n'
+            f'    return lib().{e["symbol"]}({params})\n'
+        )
+    return f'''"""ctypes bridge for {module} (generated by mojoffi).
+
+Every buffer crosses as an `Int` address, so the caller owns lifetime and
+contiguity. `addr()` refuses a non-contiguous array rather than reading the wrong
+memory and returning plausible numbers.
+"""
+from __future__ import annotations
+
+import ctypes
+import os
+import subprocess
+
+import numpy as np
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LIB = os.path.join(ROOT, "dist", "{libname}")
+SRC = os.path.join(ROOT, "{module}")
+
+_SIGNATURES = {{
+{sigs}
+}}
+
+_handle: ctypes.CDLL | None = None
+
+
+def build() -> str:
+    stale = not os.path.exists(LIB) or os.path.getmtime(LIB) < os.path.getmtime(SRC)
+    if stale:
+        proc = subprocess.run(
+            ["mojo", "build", "--emit", "shared-lib", SRC, "-o", LIB],
+            capture_output=True, text=True, timeout=1800,
+        )
+        if proc.returncode or not os.path.exists(LIB):
+            raise RuntimeError((proc.stderr or proc.stdout)[-2000:])
+    return LIB
+
+
+def lib() -> ctypes.CDLL:
+    global _handle
+    if _handle is None:
+        _handle = ctypes.CDLL(build())
+        for name, (argtypes, restype) in _SIGNATURES.items():
+            fn = getattr(_handle, name)
+            fn.argtypes = argtypes
+            fn.restype = restype
+    return _handle
+
+
+def available() -> bool:
+    try:
+        lib()
+        return True
+    except Exception:  # noqa: BLE001 — any failure means "use the fallback"
+        return False
+
+
+def addr(a: np.ndarray) -> int:
+    if not a.flags.c_contiguous:
+        raise ValueError("kernel buffers must be C-contiguous")
+    return a.ctypes.data
+
+
+{"".join(calls)}'''
+
+
+def emit_test(exports, module):
+    names = ", ".join(e["symbol"] for e in exports[:6])
+    return f'''"""Native kernels vs their Python reference (skeleton by mojoffi).
+
+Two properties are worth a test and are usually both missing:
+  1. the native path and the fallback produce the SAME numbers, so a machine
+     without the toolchain is slower and not different;
+  2. the native path is actually being taken — a silent fallback makes a
+     "speedup" that is only the reference running twice.
+"""
+import numpy as np
+import pytest
+
+from bridge import available, lib  # adjust to your package layout
+
+pytestmark = pytest.mark.skipif(not available(), reason="Mojo toolchain unavailable")
+
+EXPORTS = [{", ".join(repr(e["symbol"]) for e in exports)}]
+
+
+def test_all_symbols_resolve():
+    handle = lib()
+    for name in EXPORTS:
+        assert hasattr(handle, name), name
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_matches_reference(seed):
+    rng = np.random.default_rng(seed)
+    x = np.ascontiguousarray(rng.normal(size=(256, 16)))
+    # native = call_kernel(x); reference = python_reference(x)
+    # assert np.allclose(native, reference, rtol=1e-10, atol=1e-12)
+    pytest.skip("fill in the call for {names}")
+
+
+def test_native_actually_runs():
+    """Guard against a silent fallback: the native path must beat the reference
+    by more than measurement noise on a workload big enough to matter."""
+    pytest.skip("time native vs reference on a large input and assert the ratio")
+'''
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("source", help="a .mojo file containing @export defs")
+    ap.add_argument("--emit", choices=("report", "bridge", "test"), default="report")
+    ap.add_argument("--check", default="", help="a built .so to verify the symbols against")
+    ap.add_argument("--lib", default="", help="library filename used in the generated bridge")
+    args = ap.parse_args()
+
+    if not os.path.exists(args.source):
+        bail(f"no such file: {args.source}")
+    exports, lines = parse_exports(args.source)
+    if not exports:
+        bail(f"no @export defs found in {args.source}")
+
+    if args.emit == "bridge":
+        libname = args.lib or "lib" + os.path.basename(args.source).replace(".mojo", "") + ".so"
+        print(emit_bridge(exports, os.path.basename(args.source), libname))
+        return
+    if args.emit == "test":
+        print(emit_test(exports, os.path.basename(args.source)))
+        return
+
+    print(f"# mojoffi — {args.source}\n")
+    print(f"{len(exports)} exported symbol(s)\n")
+    print("| symbol | params | ret | abi(\"C\") | line |")
+    print("|---|---|---|---|---|")
+    for e in exports:
+        p = ", ".join(f"{n}: {t}" for n, t in e["params"]) or "—"
+        if len(p) > 60:
+            p = p[:57] + "..."
+        print(f'| `{e["symbol"]}` | {p} | {e["ret"]} | {"yes" if e["abi"] else "**no**"} | {e["line"]} |')
+
+    findings = lint(exports, lines)
+    print()
+    if findings:
+        print("## findings\n")
+        print("| sev | line | symbol | issue | fix |")
+        print("|---|---|---|---|---|")
+        for sev, line, sym, msg, fix in sorted(findings, key=lambda f: (f[0] != "err", int(f[1]))):
+            print(f"| {sev} | {line} | `{sym}` | {msg} | {fix} |")
+    else:
+        print("## findings\n\nnone — every export is scalar-typed, `abi(\"C\")`, and non-raising.")
+
+    missing = []
+    if args.check:
+        print("\n## link check\n")
+        rows = check_symbols(args.check, exports)
+        missing = [s for s, ok in rows if not ok]
+        for s, ok in rows:
+            print(f"- {'ok  ' if ok else 'MISS'} `{s}`")
+        print()
+        if missing:
+            print(f"**{len(missing)} symbol(s) missing from {args.check}** — the build is stale or the")
+            print("export name differs from the def name. Rebuild before blaming the caller.")
+        else:
+            print(f"all {len(rows)} symbols present in `{args.check}`.")
+
+    errs = sum(1 for f in findings if f[0] == "err") + len(missing)
+    print(f"\n**verdict:** {errs} blocking, {len(findings) - errs + len(missing)} advisory.")
+    sys.exit(1 if errs else 0)
+
+
+if __name__ == "__main__":
+    main()
