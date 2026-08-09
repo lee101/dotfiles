@@ -1,0 +1,398 @@
+#!/usr/bin/env python3
+"""Allocation profiler for Mojo binaries -> markdown.
+
+  mojomem ./mybin                 # Mojo-level allocations (default, recommended)
+  mojomem --top 20 ./mybin
+  mojomem --tool dhat ./mybin     # process-wide C heap (FFI / C++ deps / runtime)
+  mojomem --tool massif ./mybin   # peak heap over time
+
+WHY THE DEFAULT IS NOT VALGRIND: Mojo does not allocate through libc malloc.
+List, String and `alloc[T](n)` all route through KGEN_CompilerRT_AlignedAlloc in
+libKGENCompilerRTShared.so, so dhat/massif see only runtime-startup heap and
+attribute *nothing* to user code — the report is byte-identical whether your loop
+runs 200 or 1000 times. The default `mojo` backend LD_PRELOADs a shim over that
+symbol pair, which is the only way to see real Mojo allocation behaviour.
+
+Build the target with `mojo build -g` so addresses symbolize.
+"""
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SHIM_C = os.path.join(HERE, "mojomem_shim.c")
+
+# `0x4a1b: ns::fn(int, char*) (in /path/lib.so)` — the location is the LAST
+# parenthesised group; a lazy first group would cut the C++ signature in half
+FRAME_RE = re.compile(r"^0x[0-9A-Fa-f]+:\s*(.*)\s+\((.*)\)\s*$")
+PLUMBING = re.compile(r"^(?:malloc|calloc|realloc|free|operator new|operator delete|"
+                      r"_?_libc_|_dl_|\?\?$|KGEN_CompilerRT_Aligned)")
+
+
+def human(n):
+    n = float(n)
+    for u in ("B", "K", "M", "G"):
+        if abs(n) < 1024 or u == "G":
+            return f"{n:.0f}{u}" if u == "B" else f"{n:.1f}{u}"
+        n /= 1024.0
+
+
+# ---------------------------------------------------------------- mojo backend
+
+def build_shim(cachedir):
+    so = os.path.join(cachedir, "mojomem_shim.so")
+    if os.path.exists(so) and os.path.getmtime(so) > os.path.getmtime(SHIM_C):
+        return so
+    os.makedirs(cachedir, exist_ok=True)
+    cc = shutil.which("gcc") or shutil.which("clang")
+    if not cc:
+        bail("need gcc or clang to build the allocation shim")
+    r = subprocess.run([cc, "-shared", "-fPIC", "-O2", "-g", "-o", so, SHIM_C, "-ldl"],
+                       capture_output=True, text=True)
+    if r.returncode:
+        bail("shim build failed:\n" + r.stderr[-2000:])
+    return so
+
+
+STDLIB = re.compile(r"(?:^|/)(?:oss/modular|stdlib/std/|_startup[.]mojo)")
+
+
+def shorten(fn):
+    """Mojo mangles generics into 500-char monsters. Keep the callable path."""
+    fn = fn.split("(")[0].split("[")[0].strip()
+    parts = [x for x in fn.split("::") if x]
+    return "::".join(parts[-2:]) if len(parts) > 1 else (fn or "??")
+
+
+class Sym:
+    """addr2line with inline expansion.
+
+    Mojo inlines user code into stdlib frames, so the raw symbol at a return address
+    is almost always something like `List::unsafe_ptr`. The inline chain from
+    `addr2line -i` is what contains the caller's own file:line.
+    """
+
+    def __init__(self, prog):
+        self.prog = prog
+        self.base = os.path.basename(prog)
+        self.chains = {}
+
+    def load(self, raws):
+        """raws: iterable of backtrace_symbols strings -> populate chain cache."""
+        offs = []
+        for raw in raws:
+            o = self._offset(raw)
+            if o and o not in self.chains:
+                offs.append(o)
+        offs = sorted(set(offs))
+        if not offs or not shutil.which("addr2line"):
+            return
+        # "0" is a separator: addr2line answers it with a single ??/??:0 entry,
+        # which makes the variable-length -i output splittable in one batch call.
+        args = []
+        for o in offs:
+            args += [o, "0"]
+        try:
+            r = subprocess.run(["addr2line", "-f", "-C", "-i", "-e", self.prog] + args,
+                               capture_output=True, text=True, timeout=60)
+        except Exception:
+            return
+        lines = r.stdout.splitlines()
+        chains, cur = [], []
+        i = 0
+        while i + 1 < len(lines):
+            fn, loc = lines[i], lines[i + 1]
+            i += 2
+            if fn == "??" and loc.startswith("??"):
+                chains.append(cur)
+                cur = []
+            else:
+                cur.append((fn, loc))
+        if cur:
+            chains.append(cur)
+        for o, ch in zip(offs, chains):
+            self.chains[o] = ch
+
+    def _offset(self, raw):
+        m = re.match(r"^(.*?)\((?:.*?)?\+(0x[0-9a-f]+)\)", raw)
+        if m and os.path.basename(m.group(1)) == self.base:
+            return m.group(2)
+        return None
+
+    def user_frame(self, raw):
+        """-> (label, is_user_code). Prefers a frame in the user's own source."""
+        o = self._offset(raw)
+        ch = self.chains.get(o) if o else None
+        if not ch:
+            m = re.search(r"\(([^)+]*)", raw)
+            obj = os.path.basename(raw.split("(")[0]) if "(" in raw else raw.strip()
+            return (f"{shorten(m.group(1))} [{obj}]" if m and m.group(1)
+                    else f"?? [{obj}]"), False
+        for fn, loc in ch:
+            if loc and not STDLIB.search(loc) and not loc.startswith("??"):
+                return f"{shorten(fn)} [{os.path.basename(loc)}]", True
+        fn, loc = ch[0]
+        return f"{shorten(fn)} [{os.path.basename(loc)}]", False
+
+    def full(self, raw):
+        o = self._offset(raw)
+        ch = self.chains.get(o) if o else None
+        if not ch:
+            return [raw.strip()[:110]]
+        return [f"{shorten(fn)} [{os.path.basename(loc)}]" for fn, loc in ch]
+
+
+def parse_shim(path, prog, top, want_stacks):
+    calls = bytes_ = frees = peak = 0
+    hist, sites = {}, []
+    for line in open(path):
+        f = line.rstrip("\n").split("\t")
+        if f[0] == "summary":
+            calls, bytes_, frees, peak = (int(x) for x in f[1:5])
+        elif f[0] == "hist":
+            hist[int(f[1])] = int(f[2])
+        elif f[0] == "site":
+            frames = []
+            for fr in f[4:]:
+                addr, _, raw = fr.partition("|")
+                frames.append((addr, raw))
+            sites.append({"calls": int(f[1]), "bytes": int(f[2]),
+                          "peak": int(f[3]), "frames": frames})
+
+    sym = Sym(prog)
+    sym.load(raw for st in sites for _, raw in st["frames"])
+
+    def site_name(s):
+        fallback = None
+        for _, raw in s["frames"]:
+            label, is_user = sym.user_frame(raw)
+            if is_user:
+                return label
+            if fallback is None and not PLUMBING.match(label) and not label.startswith("??"):
+                fallback = label
+        return fallback or "?"
+
+    print(f"# mojomem — {calls} Mojo allocations, {human(bytes_)} total, "
+          f"{frees} frees, peak live {human(peak)}")
+    if calls == 0:
+        print("\nNo Mojo allocations recorded. Either the program is allocation-free "
+              "(good) or it never linked KGEN_CompilerRT_AlignedAlloc — check with "
+              f"`nm -D -u {prog} | grep Aligned`.")
+        return
+    leaked = calls - frees
+    if leaked > 0:
+        print(f"\n**{leaked} blocks never freed** ({human(peak)} peak live).")
+
+    print("\n## size distribution\n\n```")
+    mx = max(hist.values()) if hist else 1
+    for b in sorted(hist):
+        lo = 1 << b
+        print(f"{human(lo):>7}  {'#' * max(1, int(40 * hist[b] / mx)):<40} {hist[b]}")
+    print("```")
+    small = sum(v for k, v in hist.items() if k <= 8)
+    if small > 0.5 * calls and calls > 1000:
+        print(f"\n{100.0 * small / calls:.0f}% of allocations are <= 256B — that is "
+              "churn, not capacity. Reserve up front or use InlineArray/stack_allocation.")
+
+    print("\n## by call count (churn)\n")
+    print("| calls | bytes | avg | peak live | site |")
+    print("|---|---|---|---|---|")
+    for s in sorted(sites, key=lambda s: -s["calls"])[:top]:
+        print(f"| {s['calls']} | {human(s['bytes'])} | {human(s['bytes'] / s['calls'])} | "
+              f"{human(s['peak'])} | `{site_name(s)}` |")
+
+    print("\n## by bytes\n")
+    print("| bytes | calls | avg | peak live | site |")
+    print("|---|---|---|---|---|")
+    for s in sorted(sites, key=lambda s: -s["bytes"])[:top]:
+        print(f"| {human(s['bytes'])} | {s['calls']} | {human(s['bytes'] / s['calls'])} | "
+              f"{human(s['peak'])} | `{site_name(s)}` |")
+
+    if want_stacks:
+        print("\n## stacks\n")
+        for s in sorted(sites, key=lambda s: -s["calls"])[:3]:
+            print(f"**{s['calls']} calls / {human(s['bytes'])}**\n")
+            for _, raw in s["frames"]:
+                for line in sym.full(raw):
+                    print(f"  - `{line[:110]}`")
+            print()
+
+    print("\n_Mojo inlines aggressively; with `-g` several logical call sites can "
+          "collapse into one frame. Build with `-O0 -g` if you need them separated._")
+
+
+def resolve(argv):
+    prog = shutil.which(argv[0]) or argv[0]
+    if not os.path.exists(prog):
+        bail(f"no such command: {argv[0]}")
+    if not os.access(prog, os.X_OK):
+        bail(f"{argv[0]} is not executable")
+    return prog
+
+
+def run_mojo(argv, top, depth, stacks):
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME",
+                                        os.path.expanduser("~/.cache")), "mojotools")
+    prog = resolve(argv)
+    so = build_shim(cache)
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "mm.tsv")
+        env = dict(os.environ, LD_PRELOAD=so, MOJOMEM_OUT=out, MOJOMEM_DEPTH=str(depth))
+        r = subprocess.run(argv, env=env, stdout=subprocess.DEVNULL)
+        if not os.path.exists(out):
+            bail(f"shim wrote no output (exit {r.returncode}) — "
+                     "is the target a Mojo binary?")
+        parse_shim(out, prog, top, stacks)
+
+
+# ------------------------------------------------------------ valgrind backends
+
+def split_frame(f):
+    m = FRAME_RE.match(f.strip())
+    if not m:
+        return f.strip(), ""
+    func, where = m.group(1), m.group(2)
+    if where.startswith("in "):
+        where = os.path.basename(where[3:])
+    return func, where
+
+
+def label(func, where):
+    """Truncate the (often 200-char C++) function, never the object it lives in."""
+    func = func if len(func) <= 88 else func[:85] + "..."
+    return f"{func} [{where}]" if where else func
+
+
+def best_frame(frames, prog=""):
+    named = None
+    for f in frames:
+        func, where = split_frame(f)
+        if PLUMBING.match(func) or "vgpreload" in where or "valgrind" in where:
+            continue
+        if prog and where == prog:
+            return label(func, where)
+        if named is None and func and func != "???":
+            named = label(func, where)
+    return named or label(split_frame(frames[0])[0] if frames else "?", "")
+
+
+def run_dhat(argv, top, depth, stacks):
+    prog = os.path.basename(resolve(argv))
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "dhat.out")
+        r = subprocess.run(["valgrind", "--tool=dhat", f"--num-callers={depth}",
+                            f"--dhat-out-file={out}"] + argv,
+                           capture_output=True, text=True)
+        if not os.path.exists(out):
+            bail("dhat produced no output:\n" + r.stderr[-2000:])
+        d = json.load(open(out))
+
+    ftbl, rows = d.get("ftbl", []), []
+    for p in d.get("pps", []):
+        frames = [ftbl[i] for i in p.get("fs", []) if i < len(ftbl)]
+        rows.append({"site": best_frame(frames, prog), "bytes": p.get("tb", 0),
+                     "blocks": p.get("tbk", 0), "max_live": p.get("mb", 0),
+                     "stack": [label(*split_frame(f)) for f in frames[:8]]})
+    tot_b = sum(r["bytes"] for r in rows) or 1
+    tot_k = sum(r["blocks"] for r in rows) or 1
+
+    print(f"# mojomem (dhat, C heap only) — {human(tot_b)} in {tot_k} blocks, "
+          f"{len(rows)} sites\n")
+    print("_This is the libc heap: the Mojo runtime's own pools, C++ deps and anything "
+          "reached through FFI. Mojo `List`/`String`/`alloc[T]` allocations are NOT "
+          "here — use the default backend for those._\n")
+    print("## by total bytes\n")
+    print("| bytes | % | blocks | avg | max live | site |")
+    print("|---|---|---|---|---|---|")
+    for r in sorted(rows, key=lambda r: -r["bytes"])[:top]:
+        avg = r["bytes"] / r["blocks"] if r["blocks"] else 0
+        print(f"| {human(r['bytes'])} | {100.0 * r['bytes'] / tot_b:.0f} | {r['blocks']} | "
+              f"{human(avg)} | {human(r['max_live'])} | `{r['site']}` |")
+    print("\n## by block count\n")
+    print("| blocks | % | bytes | avg | site |")
+    print("|---|---|---|---|---|")
+    churn = sorted(rows, key=lambda r: -r["blocks"])[:top]
+    for r in churn:
+        avg = r["bytes"] / r["blocks"] if r["blocks"] else 0
+        print(f"| {r['blocks']} | {100.0 * r['blocks'] / tot_k:.0f} | {human(r['bytes'])} | "
+              f"{human(avg)} | `{r['site']}` |")
+    if stacks:
+        print("\n## stacks\n")
+        for r in churn[:3]:
+            print(f"**{r['blocks']} blocks / {human(r['bytes'])}**\n")
+            for f in r["stack"]:
+                print(f"  - `{f}`")
+            print()
+
+
+def run_massif(argv, top):
+    resolve(argv)
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "massif.out")
+        subprocess.run(["valgrind", "--tool=massif", f"--massif-out-file={out}",
+                        "--time-unit=B"] + argv, capture_output=True, text=True)
+        if not os.path.exists(out):
+            bail("massif produced no output")
+        txt = open(out).read()
+    snaps = []
+    for blk in txt.split("#-----------\nsnapshot=")[1:]:
+        def g(k):
+            m = re.search(rf"^{k}=(\d+)", blk, re.M)
+            return float(m.group(1)) if m else 0
+        snaps.append((g("time"), g("mem_heap_B"), g("mem_heap_extra_B"), blk))
+    if not snaps:
+        bail("no massif snapshots parsed")
+    peak = max(snaps, key=lambda s: s[1])
+    print(f"# mojomem (massif, C heap only) — {len(snaps)} snapshots, "
+          f"peak {human(peak[1])} (+{human(peak[2])} overhead)\n")
+    print("## heap over time\n\n```")
+    mx = peak[1] or 1
+    for _, h, _, _ in snaps:
+        print(f"{human(h):>8} {'#' * int(40 * h / mx)}")
+    print("```")
+    # only some snapshots carry an allocation tree, and massif's own "peak" is
+    # rarely the numerically largest one — take the biggest that has a tree
+    detailed = [s for s in snaps if "heap_tree=empty" not in s[3]]
+    print("\n## peak snapshot tree\n")
+    if not detailed:
+        print("_massif recorded no detailed snapshot (run without --time-unit=B, "
+              "or the program was too short)._")
+        return
+    tree = max(detailed, key=lambda s: s[1])
+    lines = [l for l in tree[3].splitlines() if l.strip().startswith("n")]
+    print(f"_snapshot at {human(tree[1])} live_\n\n```")
+    print("\n".join(lines[:top]))
+    print("```")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cmd", nargs="+")
+    ap.add_argument("--tool", choices=["mojo", "dhat", "massif"], default="mojo")
+    ap.add_argument("--top", type=int, default=15)
+    ap.add_argument("--depth", type=int, default=8, help="stack depth per alloc site")
+    ap.add_argument("--stacks", action="store_true")
+    a = ap.parse_args()
+    if a.tool == "mojo":
+        run_mojo(a.cmd, a.top, a.depth, a.stacks)
+    elif not shutil.which("valgrind"):
+        bail("valgrind not found (apt install valgrind)")
+    elif a.tool == "dhat":
+        run_dhat(a.cmd, a.top, min(a.depth * 2, 30), a.stacks)
+    else:
+        run_massif(a.cmd, a.top)
+
+
+if __name__ == "__main__":
+    main()
