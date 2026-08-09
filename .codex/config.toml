@@ -1,5 +1,5 @@
-model = "gpt-5.4"
-model_reasoning_effort = "xhigh"
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
 
 [default]
 model_reasoning_effort = "high"
@@ -13,6 +13,15 @@ trust_level = "trusted"
 [projects."/home/lee/code/codex-local-20260525"]
 trust_level = "trusted"
 
+[projects."/home/lee/code"]
+trust_level = "trusted"
+
+[projects."/home/lee"]
+trust_level = "trusted"
+
+[projects."/mnt/crucial/code"]
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
@@ -22,6 +31,8 @@ web_search = true
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.3-codex"
+"gpt-5.4-mini" = "gpt-5.6-luna"
 
 [tui.model_availability_nux]
 "gpt-5.5" = 3
+"gpt-5.6-sol" = 1
