@@ -756,6 +756,7 @@ alias cfix='cldfix'
 alias cpr='cldpr'
 
 # Codex paths
+CODEX_LOCAL_SOURCE_ROOT="$HOME/code/codex"
 CODEX_LOCAL="$HOME/code/codex/codex-rs/target/release/codex"
 CODEX_BUN="$HOME/.bun/bin/codex"
 CODEX_NPM="$HOME/AppData/Roaming/npm/codex"
@@ -773,8 +774,36 @@ _codex_upstream() {
     fi
 }
 
+_codex_local_runtime_ready() {
+    if [ ! -x "$CODEX_LOCAL" ]; then
+        return 1
+    fi
+
+    local resolved_codex
+    resolved_codex="$(readlink -f -- "$CODEX_LOCAL" 2>/dev/null || printf '%s\n' "$CODEX_LOCAL")"
+    local code_mode_host="${resolved_codex%/*}/codex-code-mode-host"
+    if [ -x "$code_mode_host" ]; then
+        return 0
+    fi
+
+    echo "Local codex-code-mode-host is missing; rebuilding it..." >&2
+    if ! (
+        cd "$CODEX_LOCAL_SOURCE_ROOT/codex-rs" &&
+            cargo build --release -p codex-code-mode-host
+    ); then
+        echo "Failed to rebuild local codex-code-mode-host. Run: cxbuild" >&2
+        return 1
+    fi
+
+    if [ ! -x "$code_mode_host" ]; then
+        echo "Build completed but codex-code-mode-host is still missing beside $resolved_codex" >&2
+        return 1
+    fi
+}
+
 _codex_local_or_upstream() {
     if [ -x "$CODEX_LOCAL" ]; then
+        _codex_local_runtime_ready || return
         "$CODEX_LOCAL" "$@"
     else
         local args=()
@@ -886,6 +915,15 @@ cxlxh() {
 }
 
 cxh() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            -m|--model|--model=*)
+                _codex_local_or_upstream --yolo3 --config model_reasoning_effort=high "$@"
+                return
+                ;;
+        esac
+    done
     _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high "$@"
 }
 
@@ -939,7 +977,10 @@ cxni() {
 
 # Codex build helper
 cxbuild() {
-    ( cd ~/code/codex/codex-rs && cargo build --release --bin codex ) && echo "Built: $CODEX_LOCAL"
+    (
+        cd "$CODEX_LOCAL_SOURCE_ROOT/codex-rs" &&
+            cargo build --release -p codex-cli -p codex-code-mode-host
+    ) && echo "Built: $CODEX_LOCAL and codex-code-mode-host"
 }
 
 # ── Two-phase Codex pipeline: Plan (spark) → Execute (codex) → Git (spark) ──
