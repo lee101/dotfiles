@@ -94,6 +94,44 @@ findn        # find files by name
 webserver    # start simple HTTP server
 ```
 
+### blc — broken link checker
+
+Crawls a site and reports broken links (404s, timeouts, SSL/connection errors)
+as markdown. Pure Python, stdlib-only fallback, so it runs anywhere.
+
+**Install**: nothing to do — `tools/` is on `PATH`. For faster crawls (uses
+`requests` + `beautifulsoup4` instead of the stdlib fallback):
+
+```bash
+uv pip install requests beautifulsoup4     # picked up from tools/.venv or netwrck/.venv
+```
+
+**Use**:
+
+```bash
+blc https://homesyai.com                          # crawl from the homepage, depth 2
+blc app.nz --sitemap                              # seed from /sitemap.xml (see below)
+blc https://app.nz --sitemap=https://app.nz/sitemap-app.xml
+blc https://example.com --external                # also check outbound links
+blc https://example.com --depth=3 --max-pages=500 --workers=20
+blc https://example.com -o blclogs/report.md      # write markdown to a file
+blc https://example.com --json                    # raw JSON instead
+```
+
+**`--sitemap` is what you want for our SPAs.** app.nz and homesyai.com render
+links client-side, so the served HTML contains almost nothing to follow — a
+plain crawl sees ~3–8 pages. `--sitemap` seeds the queue from `sitemap.xml`
+(following a `<sitemapindex>` one level) and checks every real route plus the
+assets each page references. Bare `--sitemap` uses `<site>/sitemap.xml`; pass a
+URL to point at a specific one.
+
+Reports go in each repo's `blclogs/` (gitignored). Useful side effect: if
+`--sitemap` reports `sitemap parse failed`, the site is serving HTML for
+`/sitemap.xml` — which means search engines can't read it either.
+
+Options: `--depth` (2), `--max-pages` (200), `--workers` (10), `--timeout` (10),
+`--external`, `--json`, `--output/-o`.
+
 ### Navigation & Utilities
 ```bash
 u            # cd ..

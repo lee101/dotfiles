@@ -108,6 +108,27 @@ cldperf gpu -- ./build/app
 cldperf cuda -- ./build/app
 ```
 
+### 🔥 pprof-flamegraph - dependency-free Go flamegraphs
+
+Renders a standalone interactive SVG from a Go CPU pprof profile without requiring Graphviz:
+
+```bash
+pprof-flamegraph ./server.test cpu.pprof --out cpu-flame.svg --title "Embedding CPU"
+```
+
+### ⚙️ profile-md - token-bounded profiler reports with a Mojo core
+
+Converts saved TensorRT, Nsight Systems, and Nsight Compute artifacts into
+agent-readable Markdown. TensorRT log scanning and hotspot ranking run in the
+compiled Mojo core on Linux; Windows and compiler-less hosts transparently use
+the compatible Python backend.
+
+```bash
+profile-md trtexec.log --compact
+profile-md run.nsys-rep --top 8 --max-chars 5000 --out profile.md
+tools/cmd/build.sh  # prebuild the Mojo core and other native tools
+```
+
 If you pass `--out` and omit `--prefix`, the profiler artifacts default to the same path stem as the markdown file.
 If you pass `--latest-link`, the tool also updates sibling `.nsys-rep` and `.sqlite` latest pointers.
 Use `--report api|kernels|transfers` to limit which sections are collected and rendered; policy flags automatically pull in the sections they need.
