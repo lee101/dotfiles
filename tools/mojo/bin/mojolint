@@ -139,6 +139,22 @@ def contextual(path, lines, depths):
     return hits
 
 
+def inner_body(lines, depths, i):
+    """Statements at line i's own nesting level, inside the loop that encloses it.
+
+    Deeper lines are excluded on purpose: a wide load one level down is a chunk loop
+    that this line's reduce runs *after*, which is the shape we want people to write.
+    """
+    d = depths[i]
+    lo = i
+    while lo > 0 and depths[lo - 1] >= d:
+        lo -= 1
+    hi = i
+    while hi + 1 < len(lines) and depths[hi + 1] >= d:
+        hi += 1
+    return "\n".join(lines[j] for j in range(lo, hi + 1) if depths[j] == d)
+
+
 def scan(path, only):
     try:
         lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
@@ -159,6 +175,10 @@ def scan(path, only):
             d = depths[i]
             if rid in LOOP_ONLY and d == 0:
                 continue
+            # `reduce_add()` once per outer rep, after the chunk loop, is the correct
+            # shape — only the reduce that sits beside the wide load is serialising
+            if rid == "reduce-in-loop" and not WIDE_LOAD.search(inner_body(lines, depths, i)):
+                continue
             s = sev
             if rid in LOOP_ONLY and d >= 2 and s == "warn":
                 s = "err"  # nested loop escalates
@@ -176,14 +196,26 @@ def main():
     ap.add_argument("--top", type=int, default=40)
     a = ap.parse_args()
 
+    # exit 2 = could not run; exit 1 is reserved for "found errors" so CI can tell
+    # a lint failure from a bad invocation
+    def bail(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
     files = []
     for p in a.paths:
+        if not os.path.exists(p):
+            bail(f"no such path: {p}")
         if os.path.isdir(p):
             for root, dirs, fns in os.walk(p):
                 dirs[:] = [d for d in dirs if d not in (".pixi", ".git", "build", "__pycache__")]
                 files += [os.path.join(root, f) for f in fns if f.endswith(".mojo")]
         elif p.endswith(".mojo"):
             files.append(p)
+        else:
+            bail(f"not a .mojo file: {p}")
+    if not files:
+        bail("no .mojo files found under: " + ", ".join(a.paths))
     hits = []
     for f in sorted(files):
         hits += scan(f, a.only)

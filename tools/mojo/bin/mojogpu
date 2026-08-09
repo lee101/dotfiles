@@ -22,6 +22,12 @@ import subprocess
 import sys
 import tempfile
 
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
 NCU = shutil.which("ncu") or "/usr/local/cuda/bin/ncu"
 NSYS = shutil.which("nsys") or "/usr/local/cuda/bin/nsys"
 
@@ -66,31 +72,53 @@ def check():
     print("- mojo GPU also needs the `max` conda package (libmax.so) next to `mojo`.")
 
 
+BANNER = re.compile(r"^Processing \[.*\] with \[.*/(\w+)\.py\]")
+
+
+def nsys_stats(rep, names):
+    """{report: [csv lines]}. Both reports come from ONE `nsys stats` run: a second
+    run refuses to reuse the .sqlite export it just made ("File is older than input
+    file") and returns a usage error instead of a table. Sections are delimited by
+    the `Processing [...] with [.../<report>.py]` banner, not by any CSV marker."""
+    r = subprocess.run([NSYS, "stats", "--format", "csv", rep]
+                       + [a for n in names for a in ("--report", n)],
+                       capture_output=True, text=True)
+    out, cur = {n: [] for n in names}, None
+    for line in r.stdout.splitlines():
+        s = line.strip()
+        m = BANNER.match(s)
+        if m:
+            cur = m.group(1)
+            continue
+        if not s or cur not in out or s.startswith(("Generating", "SKIPPED", "**")):
+            continue
+        if "," in s:
+            out[cur].append(s)
+    return out
+
+
 def run_nsys(argv, top):
     if not have(NSYS):
-        sys.exit("nsys not found (part of the CUDA toolkit)")
+        bail("nsys not found (part of the CUDA toolkit)")
+    if not os.path.exists(argv[0]) and not shutil.which(argv[0]):
+        bail(f"no such command: {argv[0]}")
     with tempfile.TemporaryDirectory() as td:
         rep = os.path.join(td, "prof")
         r = subprocess.run([NSYS, "profile", "-o", rep, "--force-overwrite", "true",
                             "-t", "cuda"] + argv, capture_output=True, text=True)
         found = glob.glob(rep + "*.nsys-rep") + glob.glob(rep + "*.qdrep")
         if not found:
-            sys.exit("nsys produced no report:\n" + (r.stderr or r.stdout)[-2000:])
-        stats = subprocess.run(
-            [NSYS, "stats", "--report", "cuda_gpu_kern_sum",
-             "--report", "cuda_gpu_mem_time_sum", "--format", "csv", found[0]],
-            capture_output=True, text=True).stdout
+            bail("nsys produced no report:\n" + (r.stderr or r.stdout)[-2000:])
+        stats = nsys_stats(found[0], ["cuda_gpu_kern_sum", "cuda_gpu_mem_time_sum"])
+        kern, mem = stats["cuda_gpu_kern_sum"], stats["cuda_gpu_mem_time_sum"]
 
-    print("# mojogpu (nsys)\n")
-    section, rows = None, []
-    for line in stats.splitlines():
-        if line.startswith("**"):
-            section = line.strip("* ")
-            continue
-        if "," in line:
-            rows.append((section, line))
-    kern = [r for s, r in rows if s and "kern" in s.lower()]
-    mem = [r for s, r in rows if s and "mem" in s.lower()]
+    print("# mojogpu (nsys)")
+    if not kern and not mem:
+        print()
+        print("No CUDA activity recorded — the program launched no kernels and copied "
+              "nothing. Check it actually reached the GPU path (a `try/except` around "
+              "`DeviceContext()` hides an unavailable device).")
+        return
 
     def table(title, lines, n):
         if not lines:
@@ -114,6 +142,8 @@ def run_nsys(argv, top):
                 pass
         return tot
     kt, mt = total(kern), total(mem)
+    if not mem:
+        print("\n_no host<->device copies recorded._")
     if kt + mt > 0:
         print(f"\n**kernel time {100 * kt / (kt + mt):.0f}%, "
               f"memcpy time {100 * mt / (kt + mt):.0f}%**")
@@ -125,7 +155,7 @@ def run_nsys(argv, top):
 
 def run_ncu(argv, top):
     if not have(NCU):
-        sys.exit("ncu not found (part of the CUDA toolkit)")
+        bail("ncu not found (part of the CUDA toolkit)")
     metrics = ",".join([
         "sm__throughput.avg.pct_of_peak_sustained_elapsed",
         "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed",
@@ -136,7 +166,7 @@ def run_ncu(argv, top):
     r = subprocess.run([NCU, "--csv", "--metrics", metrics, "--target-processes", "all"]
                        + argv, capture_output=True, text=True)
     if "==ERROR==" in r.stdout + r.stderr or not r.stdout.strip():
-        sys.exit("ncu failed:\n" + (r.stderr or r.stdout)[-2500:]
+        bail("ncu failed:\n" + (r.stderr or r.stdout)[-2500:]
                  + "\n\nhint: profiling counters usually need "
                    "`sudo sysctl -w kernel.perf_event_paranoid=1` or the "
                    "NVreg_RestrictProfilingToAdminUsers=0 driver option.")
@@ -154,19 +184,30 @@ def run_ncu(argv, top):
 
 
 def run_ptx(src):
-    from subprocess import run as sh
+    if not os.path.exists(src):
+        bail(f"no such file: {src}")
     mojo = os.environ.get("MOJO") or shutil.which("mojo")
     cmd = [mojo] if mojo else None
     if not cmd and shutil.which("pixi"):
         cmd = ["pixi", "run", "mojo"]
     if not cmd:
-        sys.exit("mojo not found")
+        bail("mojo not found: set $MOJO, activate the env, or run inside a pixi project")
     with tempfile.TemporaryDirectory() as td:
         out = os.path.join(td, "out.s")
-        sh(cmd + ["build", "--emit", "asm", "-o", out, src], capture_output=True, text=True)
+        # A cache hit skips the .ptx sidecar entirely: the host asm is rewritten
+        # but the kernel is not recompiled, so a second run on unchanged source
+        # emits nothing. A private cache dir forces the sidecar every time.
+        cache = os.path.join(td, "cache")
+        os.makedirs(cache, exist_ok=True)
+        r = subprocess.run(cmd + ["build", "--emit", "asm", "-o", out, src],
+                           capture_output=True, text=True,
+                           env=dict(os.environ, MODULAR_CACHE_DIR=cache))
+        if r.returncode:
+            bail(f"mojo build --emit asm failed for {src}:\n"
+                     + (r.stderr or r.stdout)[-3000:])
         ptx = glob.glob(os.path.join(td, "*.ptx"))
         if not ptx:
-            sys.exit("no .ptx sidecar emitted — does this file contain a GPU kernel? "
+            bail("no .ptx sidecar emitted — does this file contain a GPU kernel? "
                      "(mojo emits .ptx alongside host asm only for GPU targets)")
         text = open(ptx[0], errors="replace").read()
     print(f"# mojogpu --ptx {src}\n")
@@ -193,9 +234,23 @@ def run_ptx(src):
 
 
 SHARED_RE = re.compile(r"stack_allocation\[\s*([A-Za-z0-9_]+)\s*,\s*([A-Za-z0-9_\[\]\. ]+?)\s*,\s*address_space\s*=\s*AddressSpace\.SHARED")
-LAUNCH_RE = re.compile(r"enqueue_function\[\s*(\w+)\s*\]\((.*?)\)", re.S)
-GRID_RE = re.compile(r"grid_dim\s*=\s*([^,\)]+)")
-BLOCK_RE = re.compile(r"block_dim\s*=\s*([^,\)]+)")
+LAUNCH_RE = re.compile(r"enqueue_function\[\s*(\w+)\s*\]\(")
+def kwarg(args, key):
+    """`grid_dim=(n + B - 1) // B` — read to the next TOP-LEVEL comma, so a
+    parenthesised expression is not cut at its own closing paren."""
+    m = re.search(rf"\b{key}\s*=\s*", args)
+    if not m:
+        return "?"
+    depth, out = 0, []
+    for ch in args[m.end():]:
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        if ch == "," and depth == 0:
+            break
+        out.append(ch)
+    return "".join(out).strip() or "?"
 DTYPE_BYTES = {"Float64": 8, "Int64": 8, "Float32": 4, "Int32": 4, "UInt8": 1, "Bool": 1}
 
 
@@ -221,14 +276,22 @@ def explain(path, comptimes):
     kernels = kernel_bodies(src)
     launches = {}
     for m in LAUNCH_RE.finditer(src):
-        g = GRID_RE.search(m.group(2))
-        b = BLOCK_RE.search(m.group(2))
-        launches[m.group(1)] = (g.group(1).strip() if g else "?", b.group(1).strip() if b else "?")
+        args, depth, i = [], 1, m.end()
+        while i < len(src) and depth:
+            if src[i] in "([":
+                depth += 1
+            elif src[i] in ")]":
+                depth -= 1
+            if depth:
+                args.append(src[i])
+            i += 1
+        args = "".join(args)          # buffer args contain calls: `dx.unsafe_ptr()`
+        launches[m.group(1)] = (kwarg(args, "grid_dim"), kwarg(args, "block_dim"))
 
     print(f"# mojogpu --explain {path}\n")
     if not kernels:
         print("no device kernels found (nothing reads thread_idx/block_idx/global_idx)")
-        return 0
+        return
     print(f"{len(kernels)} kernel(s)\n")
     print("| kernel | launch (grid x block) | shared | flags |")
     print("|---|---|---|---|")
@@ -272,9 +335,14 @@ def explain(path, comptimes):
         blocks_per_sm = ""
         if shared_bytes:
             fit = 49152 // shared_bytes
-            blocks_per_sm = f", {fit} block(s)/SM by shared alone" if fit < 8 else ""
+            if not fit:
+                flags.insert(0, f"{shared_bytes // 1024} KiB shared exceeds the 48 KiB "
+                                "default — the launch fails unless the limit is raised")
+            elif fit < 8:
+                blocks_per_sm = f", {fit} block(s)/SM by shared alone"
         shared_s = f"{shared_bytes // 1024} KiB ({'+'.join(shared_desc)}){blocks_per_sm}" if shared_bytes else "-"
-        print(f"| `{name}` | {grid} x {block} | {shared_s} | {'; '.join(flags) if flags else 'clean'} |")
+        launch = f"{grid} x {block}" if block else grid
+        print(f"| `{name}` | {launch} | {shared_s} | {'; '.join(flags) if flags else 'clean'} |")
         findings += [(name, f) for f in flags]
 
     print()
@@ -286,7 +354,6 @@ def explain(path, comptimes):
     print("  buffer allows 3 resident blocks. Fewer blocks means less latency hiding.")
     print("- **atomics belong in shared memory first**, then one commit per block to global.")
     print("- run `mojogpu --kernels ./binary` for the measured version of all of this (ncu).")
-    return 1 if findings else 0
 
 
 def main():
@@ -303,6 +370,8 @@ def main():
     if a.ptx:
         return run_ptx(a.ptx)
     if a.explain:
+        if not os.path.exists(a.explain):
+            bail(f"no such file: {a.explain}")
         comptimes = {}
         for line in open(a.explain):
             m = re.match(r"comptime\s+(\w+)\s*=\s*(\d+)\s*$", line.strip())

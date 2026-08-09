@@ -24,10 +24,18 @@ import subprocess
 import sys
 import tempfile
 
+
+def bail(msg):
+    """Usage/environment errors exit 2; exit 1 is reserved for findings."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SHIM_C = os.path.join(HERE, "mojomem_shim.c")
 
-FRAME_RE = re.compile(r"^0x[0-9A-Fa-f]+:\s*(.*?)\s*\((.*)\)\s*$")
+# `0x4a1b: ns::fn(int, char*) (in /path/lib.so)` — the location is the LAST
+# parenthesised group; a lazy first group would cut the C++ signature in half
+FRAME_RE = re.compile(r"^0x[0-9A-Fa-f]+:\s*(.*)\s+\((.*)\)\s*$")
 PLUMBING = re.compile(r"^(?:malloc|calloc|realloc|free|operator new|operator delete|"
                       r"_?_libc_|_dl_|\?\?$|KGEN_CompilerRT_Aligned)")
 
@@ -49,11 +57,11 @@ def build_shim(cachedir):
     os.makedirs(cachedir, exist_ok=True)
     cc = shutil.which("gcc") or shutil.which("clang")
     if not cc:
-        sys.exit("need gcc or clang to build the allocation shim")
+        bail("need gcc or clang to build the allocation shim")
     r = subprocess.run([cc, "-shared", "-fPIC", "-O2", "-g", "-o", so, SHIM_C, "-ldl"],
                        capture_output=True, text=True)
     if r.returncode:
-        sys.exit("shim build failed:\n" + r.stderr[-2000:])
+        bail("shim build failed:\n" + r.stderr[-2000:])
     return so
 
 
@@ -224,17 +232,26 @@ def parse_shim(path, prog, top, want_stacks):
           "collapse into one frame. Build with `-O0 -g` if you need them separated._")
 
 
+def resolve(argv):
+    prog = shutil.which(argv[0]) or argv[0]
+    if not os.path.exists(prog):
+        bail(f"no such command: {argv[0]}")
+    if not os.access(prog, os.X_OK):
+        bail(f"{argv[0]} is not executable")
+    return prog
+
+
 def run_mojo(argv, top, depth, stacks):
     cache = os.path.join(os.environ.get("XDG_CACHE_HOME",
                                         os.path.expanduser("~/.cache")), "mojotools")
+    prog = resolve(argv)
     so = build_shim(cache)
-    prog = shutil.which(argv[0]) or argv[0]
     with tempfile.TemporaryDirectory() as td:
         out = os.path.join(td, "mm.tsv")
         env = dict(os.environ, LD_PRELOAD=so, MOJOMEM_OUT=out, MOJOMEM_DEPTH=str(depth))
         r = subprocess.run(argv, env=env, stdout=subprocess.DEVNULL)
         if not os.path.exists(out):
-            sys.exit(f"shim wrote no output (exit {r.returncode}) — "
+            bail(f"shim wrote no output (exit {r.returncode}) — "
                      "is the target a Mojo binary?")
         parse_shim(out, prog, top, stacks)
 
@@ -251,6 +268,12 @@ def split_frame(f):
     return func, where
 
 
+def label(func, where):
+    """Truncate the (often 200-char C++) function, never the object it lives in."""
+    func = func if len(func) <= 88 else func[:85] + "..."
+    return f"{func} [{where}]" if where else func
+
+
 def best_frame(frames, prog=""):
     named = None
     for f in frames:
@@ -258,21 +281,21 @@ def best_frame(frames, prog=""):
         if PLUMBING.match(func) or "vgpreload" in where or "valgrind" in where:
             continue
         if prog and where == prog:
-            return f"{func} [{where}]"[:110]
+            return label(func, where)
         if named is None and func and func != "???":
-            named = f"{func} [{where}]"[:110] if where else func[:110]
-    return named or (split_frame(frames[0])[0] if frames else "?")[:110]
+            named = label(func, where)
+    return named or label(split_frame(frames[0])[0] if frames else "?", "")
 
 
 def run_dhat(argv, top, depth, stacks):
-    prog = os.path.basename(argv[0])
+    prog = os.path.basename(resolve(argv))
     with tempfile.TemporaryDirectory() as td:
         out = os.path.join(td, "dhat.out")
         r = subprocess.run(["valgrind", "--tool=dhat", f"--num-callers={depth}",
                             f"--dhat-out-file={out}"] + argv,
                            capture_output=True, text=True)
         if not os.path.exists(out):
-            sys.exit("dhat produced no output:\n" + r.stderr[-2000:])
+            bail("dhat produced no output:\n" + r.stderr[-2000:])
         d = json.load(open(out))
 
     ftbl, rows = d.get("ftbl", []), []
@@ -280,8 +303,7 @@ def run_dhat(argv, top, depth, stacks):
         frames = [ftbl[i] for i in p.get("fs", []) if i < len(ftbl)]
         rows.append({"site": best_frame(frames, prog), "bytes": p.get("tb", 0),
                      "blocks": p.get("tbk", 0), "max_live": p.get("mb", 0),
-                     "stack": [f"{split_frame(f)[0]} [{split_frame(f)[1]}]"
-                               for f in frames[:8]]})
+                     "stack": [label(*split_frame(f)) for f in frames[:8]]})
     tot_b = sum(r["bytes"] for r in rows) or 1
     tot_k = sum(r["blocks"] for r in rows) or 1
 
@@ -310,17 +332,18 @@ def run_dhat(argv, top, depth, stacks):
         for r in churn[:3]:
             print(f"**{r['blocks']} blocks / {human(r['bytes'])}**\n")
             for f in r["stack"]:
-                print(f"  - `{f[:110]}`")
+                print(f"  - `{f}`")
             print()
 
 
 def run_massif(argv, top):
+    resolve(argv)
     with tempfile.TemporaryDirectory() as td:
         out = os.path.join(td, "massif.out")
         subprocess.run(["valgrind", "--tool=massif", f"--massif-out-file={out}",
                         "--time-unit=B"] + argv, capture_output=True, text=True)
         if not os.path.exists(out):
-            sys.exit("massif produced no output")
+            bail("massif produced no output")
         txt = open(out).read()
     snaps = []
     for blk in txt.split("#-----------\nsnapshot=")[1:]:
@@ -329,7 +352,7 @@ def run_massif(argv, top):
             return float(m.group(1)) if m else 0
         snaps.append((g("time"), g("mem_heap_B"), g("mem_heap_extra_B"), blk))
     if not snaps:
-        sys.exit("no massif snapshots parsed")
+        bail("no massif snapshots parsed")
     peak = max(snaps, key=lambda s: s[1])
     print(f"# mojomem (massif, C heap only) — {len(snaps)} snapshots, "
           f"peak {human(peak[1])} (+{human(peak[2])} overhead)\n")
@@ -338,8 +361,17 @@ def run_massif(argv, top):
     for _, h, _, _ in snaps:
         print(f"{human(h):>8} {'#' * int(40 * h / mx)}")
     print("```")
-    lines = [l for l in peak[3].splitlines() if l.strip().startswith("n")]
-    print("\n## peak snapshot tree\n\n```")
+    # only some snapshots carry an allocation tree, and massif's own "peak" is
+    # rarely the numerically largest one — take the biggest that has a tree
+    detailed = [s for s in snaps if "heap_tree=empty" not in s[3]]
+    print("\n## peak snapshot tree\n")
+    if not detailed:
+        print("_massif recorded no detailed snapshot (run without --time-unit=B, "
+              "or the program was too short)._")
+        return
+    tree = max(detailed, key=lambda s: s[1])
+    lines = [l for l in tree[3].splitlines() if l.strip().startswith("n")]
+    print(f"_snapshot at {human(tree[1])} live_\n\n```")
     print("\n".join(lines[:top]))
     print("```")
 
@@ -355,7 +387,7 @@ def main():
     if a.tool == "mojo":
         run_mojo(a.cmd, a.top, a.depth, a.stacks)
     elif not shutil.which("valgrind"):
-        sys.exit("valgrind not found (apt install valgrind)")
+        bail("valgrind not found (apt install valgrind)")
     elif a.tool == "dhat":
         run_dhat(a.cmd, a.top, min(a.depth * 2, 30), a.stacks)
     else:

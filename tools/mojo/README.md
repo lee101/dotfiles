@@ -39,6 +39,18 @@ mojoparity native.npz reference.npz      # exits 1 on divergence — usable in C
 Or just call them by path. Requires `python3`, `gcc` (mojomem shim), `gdb` (mojoflame),
 `objdump`/`addr2line` (binutils). `valgrind` only for `mojomem --tool dhat|massif`.
 
+Every tool needs a working `mojo` on PATH. Using one out of a pixi env *without* `pixi run`
+also needs `MODULAR_HOME`, or the compiler fails with `'builtin' does not refer to a nested
+package`:
+
+```bash
+export PATH=/path/to/proj/.pixi/envs/default/bin:$PATH
+export MODULAR_HOME=/path/to/proj/.pixi/envs/default/share/max
+```
+
+Exit codes: `0` clean, `1` findings/divergence (mojolint, mojoparity, mojoffi --check),
+`2` usage error — so CI can tell "the tool broke" from "the code is wrong".
+
 ## Docs
 
 | file | contents |

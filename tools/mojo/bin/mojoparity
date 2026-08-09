@@ -25,8 +25,23 @@ import sys
 import numpy as np
 
 
+def bail(msg):
+    """Usage errors exit 2; exit 1 is reserved for divergence, so CI can tell them apart."""
+    print(msg, file=sys.stderr)
+    sys.exit(2)
+
+
 def load(path):
     """-> {name: ndarray}"""
+    if not os.path.exists(path):
+        bail(f"no such file: {path}")
+    try:
+        return _load(path)
+    except Exception as e:
+        bail(f"cannot read {path}: {e}")
+
+
+def _load(path):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".npy":
         return {"": np.load(path)}
@@ -68,7 +83,7 @@ def load(path):
             return out
 
         return walk(json.load(open(path)))
-    sys.exit(f"unsupported file type: {path}")
+    bail(f"unsupported file type: {path}")
 
 
 def ulp_distance(a, b):
@@ -119,8 +134,8 @@ def compare(name, a, b, rtol, atol, worst):
         fail = diff > (atol + rtol * np.abs(bf[both]))
         order = [i for i in np.argsort(-diff) if fail[i]][:worst]
         rows = [
-            f"    {np.unravel_index(idx_both[i], a.shape)}: native {af[idx_both[i]]:.17g} "
-            f"ref {bf[idx_both[i]]:.17g}  ulp {ulps[i]:.0f}"
+            f"    {tuple(int(v) for v in np.unravel_index(idx_both[i], a.shape))}: "
+            f"native {af[idx_both[i]]:.17g} ref {bf[idx_both[i]]:.17g}  ulp {ulps[i]:.0f}"
             for i in order
         ]
         detail.append(f"- `{name or 'array'}`: {tol_fail} element(s) outside tolerance; worst:\n" + "\n".join(rows))
