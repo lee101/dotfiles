@@ -45,7 +45,7 @@ function usager {
 }
 
 # Utility functions
-function o { explorer.exe . }
+function o { param($p="."); explorer.exe $p }
 
 # Check if tools are available
 function check-tools {

@@ -10,6 +10,28 @@ NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
 echo "🚀 Setting up Neovim configuration..."
 
+install_hint() {
+    echo "⚠️  Missing $1. Install it with one of:"
+    echo "   Ubuntu/Debian: sudo apt install $2"
+    echo "   macOS: brew install $3"
+}
+
+if ! command -v fzf >/dev/null 2>&1; then
+    install_hint "fzf" "fzf" "fzf"
+fi
+
+if ! command -v rg >/dev/null 2>&1; then
+    install_hint "ripgrep (rg)" "ripgrep" "ripgrep"
+fi
+
+if ! command -v fd >/dev/null 2>&1; then
+    install_hint "fd" "fd-find" "fd"
+fi
+
+if ! command -v bat >/dev/null 2>&1; then
+    install_hint "bat" "bat" "bat"
+fi
+
 # Remove existing nvim config if it exists
 if [ -L "$NVIM_CONFIG_DIR" ] || [ -d "$NVIM_CONFIG_DIR" ]; then
     echo "📁 Removing existing Neovim configuration..."
@@ -39,6 +61,7 @@ echo "🎯 Next steps:"
 echo "  1. Run 'nvim' to automatically install Lazy.nvim and plugins"
 echo "  2. Use ':Lazy' to manage plugins"
 echo "  3. Use ':Mason' to manage LSP servers"
+echo "  4. Run './test_nvim_config.sh' to verify key mappings and dependencies"
 echo ""
 echo "🔍 Finding lua files in dotfiles:"
 find "$DOTFILES_DIR" -name "*.lua" -type f | sort

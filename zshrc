@@ -237,12 +237,14 @@ fi
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # ============================================================
-# WSL-specific overrides
+# WSL-specific overrides (open_file from common_shell now handles WSL -> explorer.exe)
+# We keep a convenience ox for "open current dir explicitly"
 # ============================================================
-if [[ -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
-    alias o='explore'
-    alias oo='explore'
+if [[ -f /proc/sys/fs/binfmt_misc/WSLInterop ]] || [ -n "${WSL_DISTRO_NAME:-}" ]; then
+    # o and oo come from cross_platform_utils (open_file) which now detects WSL
     alias ox='explorer.exe .'
+    # If you prefer raw explorer even for files with path conversion issues:
+    # alias o='explorer.exe .'
 fi
 
 # ============================================================
