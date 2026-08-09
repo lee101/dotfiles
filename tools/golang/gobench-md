@@ -1,0 +1,303 @@
+#!/usr/bin/env python3
+"""gobench-md - run Go benchmarks and emit a COMPACT markdown report, with optional A/B.
+
+Why this exists:
+  * `go test -bench` reports ns/op, which is WALL CLOCK. On a box that is also
+    running other jobs it swings 3-8x for identical code, so before/after
+    comparisons are worthless exactly when you most want them. If a benchmark
+    reports a custom `cpu_us/op` metric (process CPU time per op) this tool
+    ranks on that instead and says so.
+  * Raw `-bench` + `pprof -top` output is noisy and mixes benchmark setup into
+    the hot path. This focuses the profile on the benchmark function and rolls
+    hotspots up by package, which is usually the decision you need.
+  * A/B against a git ref is done in a throwaway `git worktree`, so a busy
+    working tree (or another agent editing the same checkout) is never touched.
+
+Usage:
+  gobench-md ./internal/rl -bench BenchmarkRollout
+  gobench-md ./internal/rl -bench . --count 3 --benchtime 30x
+  gobench-md ./internal/rl -bench BenchmarkX --baseline HEAD~1     # A/B vs a ref
+  gobench-md ./internal/rl -bench BenchmarkX --no-profile --out report.md
+
+To get the contention-immune metric, have the benchmark report it:
+
+    m := benchutil.Start(b); for i := 0; i < b.N; i++ { ... }; m.Report(b)
+
+any metric named `cpu_us/op` (or `cpu_ns/op`, `cpu_ms/op`) is picked up.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections import defaultdict
+
+CPU_METRIC_RE = re.compile(r"([\d.]+)\s+(cpu_(?:ns|us|ms)/op)")
+BENCH_RE = re.compile(r"^(Benchmark\S*?)(?:-(\d+))?\s+(\d+)\s+(.*)$")
+NSOP_RE = re.compile(r"([\d.]+)\s+ns/op")
+BOP_RE = re.compile(r"(\d+)\s+B/op")
+ALLOC_RE = re.compile(r"(\d+)\s+allocs/op")
+
+CPU_UNIT_US = {"cpu_ns/op": 1e-3, "cpu_us/op": 1.0, "cpu_ms/op": 1e3}
+
+
+def run(cmd, cwd=None, timeout=None, env=None):
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout, env=env)
+
+
+def go_test_cmd(pkg, bench, benchtime, count, profile, extra):
+    cmd = ["go", "test", pkg, "-run", "^$", "-bench", bench, "-benchmem",
+           "-benchtime", benchtime, "-count", str(count)]
+    if profile:
+        cmd += ["-cpuprofile", profile["prof"], "-o", profile["bin"]]
+    return cmd + list(extra)
+
+
+def parse_benchmarks(stdout):
+    """-> {name: {metric: [samples...]}}"""
+    out = defaultdict(lambda: defaultdict(list))
+    for line in stdout.splitlines():
+        m = BENCH_RE.match(line.strip())
+        if not m:
+            continue
+        name, _procs, iters, rest = m.group(1), m.group(2), int(m.group(3)), m.group(4)
+        rec = out[name]
+        rec["iters"].append(iters)
+        cm = CPU_METRIC_RE.search(rest)
+        if cm:
+            rec["cpu_us"].append(float(cm.group(1)) * CPU_UNIT_US[cm.group(2)])
+        for regex, key, cast in ((NSOP_RE, "ns", float), (BOP_RE, "bytes", int), (ALLOC_RE, "allocs", int)):
+            mm = regex.search(rest)
+            if mm:
+                rec[key].append(cast(mm.group(1)))
+    return out
+
+
+def median(xs):
+    if not xs:
+        return None
+    s = sorted(xs)
+    n = len(s)
+    return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2
+
+
+def primary_metric(rec):
+    """cpu_us/op when the benchmark reports it, else ns/op. Returns (key, label, value)."""
+    if rec.get("cpu_us"):
+        return "cpu_us", "cpu_us/op", median(rec["cpu_us"])
+    if rec.get("ns"):
+        return "ns", "ns/op", median(rec["ns"])
+    return None, None, None
+
+
+def fmt(v, digits=0):
+    if v is None:
+        return "-"
+    return f"{v:,.{digits}f}"
+
+
+def delta(new, old):
+    if not new or not old:
+        return "-"
+    ratio = old / new
+    if ratio >= 1:
+        return f"{ratio:.2f}x faster"
+    return f"{1 / ratio:.2f}x SLOWER"
+
+
+def pprof_rows(binary, prof, focus, top, cum=False):
+    cmd = ["go", "tool", "pprof", "-top", "-nodecount", str(top * 3)]
+    if cum:
+        cmd.append("-cum")
+    if focus:
+        cmd += ["-focus", focus]
+    cmd += ([binary] if binary and os.path.exists(binary) else []) + [prof]
+    res = run(cmd)
+    if res.returncode != 0:
+        return [], None
+    rows, total = [], None
+    for line in res.stdout.splitlines():
+        m = re.search(r"Total samples = ([\d.]+\s*\w+)", line)
+        if m:
+            total = m.group(1).replace(" ", "")
+        m = re.match(r"^\s*([\d.]+\w*)\s+([\d.]+)%\s+([\d.]+)%\s+([\d.]+\w*)\s+([\d.]+)%\s+(.+)$", line)
+        if m:
+            rows.append({"flat_pct": float(m.group(2)), "cum_pct": float(m.group(5)), "fn": m.group(6).strip()})
+    return rows, total
+
+
+def shorten(fn, width=58):
+    fn = re.sub(r"^(github\.com|gitlab\.com)/[^/]+/", "", fn)
+    return fn if len(fn) <= width else fn[: width - 1] + "…"
+
+
+def package_of(fn):
+    head = re.sub(r"^(github\.com|gitlab\.com)/[^/]+/", "", fn).split("(")[0]
+    parts = head.split("/")
+    if len(parts) > 1:
+        return "/".join(parts[:-1]) + "/" + parts[-1].split(".")[0]
+    return head.split(".")[0] or "runtime"
+
+
+def worktree_for(ref, repo_root):
+    tmp = tempfile.mkdtemp(prefix="gobench-ab-")
+    res = run(["git", "worktree", "add", "--detach", tmp, ref], cwd=repo_root)
+    if res.returncode != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise SystemExit(f"git worktree add {ref} failed:\n{res.stderr.strip()[:800]}")
+    return tmp
+
+
+def drop_worktree(path, repo_root):
+    run(["git", "worktree", "remove", "--force", path], cwd=repo_root)
+    shutil.rmtree(path, ignore_errors=True)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("pkg", help="package pattern, e.g. ./internal/rl")
+    ap.add_argument("-bench", "--bench", default=".", help="benchmark regex (default: all)")
+    ap.add_argument("--benchtime", default="1x", help="go test -benchtime (default 1x; use e.g. 30x for stability)")
+    ap.add_argument("--count", type=int, default=3, help="repetitions; the median is reported (default 3)")
+    ap.add_argument("--baseline", default="", help="git ref to A/B against, run in a temporary worktree")
+    ap.add_argument("--top", type=int, default=15)
+    ap.add_argument("--focus", default="", help="pprof -focus regex (default: the benchmark name)")
+    ap.add_argument("--no-profile", action="store_true", help="skip CPU profiling")
+    ap.add_argument("--timeout", type=float, default=3600)
+    ap.add_argument("--out", default="", help="write markdown here instead of stdout")
+    # argparse's REMAINDER swallows later options, so split on `--` by hand:
+    # everything after the first bare `--` is passed straight to `go test`.
+    argv = sys.argv[1:]
+    extra = []
+    if "--" in argv:
+        cut = argv.index("--")
+        argv, extra = argv[:cut], argv[cut + 1:]
+    args = ap.parse_args(argv)
+
+    repo_root = run(["git", "rev-parse", "--show-toplevel"]).stdout.strip() or os.getcwd()
+
+    tmpdir = tempfile.mkdtemp(prefix="gobench-md-")
+    profile = None
+    if not args.no_profile:
+        profile = {"prof": os.path.join(tmpdir, "cpu.prof"), "bin": os.path.join(tmpdir, "bench.test")}
+
+    cmd = go_test_cmd(args.pkg, args.bench, args.benchtime, args.count, profile, extra)
+    res = run(cmd, cwd=repo_root, timeout=args.timeout)
+    if res.returncode != 0:
+        sys.stderr.write(res.stdout[-3000:] + res.stderr[-2000:])
+        raise SystemExit(f"go test failed rc={res.returncode}")
+    current = parse_benchmarks(res.stdout)
+    if not current:
+        raise SystemExit("no benchmark lines parsed - did -bench match anything?")
+
+    base = {}
+    if args.baseline:
+        wt = worktree_for(args.baseline, repo_root)
+        try:
+            bres = run(go_test_cmd(args.pkg, args.bench, args.benchtime, args.count, None, extra),
+                       cwd=wt, timeout=args.timeout)
+            if bres.returncode != 0:
+                sys.stderr.write(bres.stdout[-2000:] + bres.stderr[-1500:])
+                sys.stderr.write(f"\n[warn] baseline {args.baseline} did not build/run; reporting current only\n")
+            else:
+                base = parse_benchmarks(bres.stdout)
+        finally:
+            drop_worktree(wt, repo_root)
+
+    L = ["# Go benchmark report", ""]
+    L.append(f"`{args.pkg}` · bench `{args.bench}` · benchtime `{args.benchtime}` · count {args.count}")
+    uses_cpu = any(rec.get("cpu_us") for rec in current.values())
+    if uses_cpu:
+        L.append("")
+        L.append("Ranked on **cpu_us/op** (process CPU time per op). ns/op is wall clock and is "
+                 "unreliable on a loaded machine - treat it as advisory.")
+    else:
+        L.append("")
+        L.append("**No `cpu_us/op` metric found** - ranking on ns/op, which is wall clock. If this "
+                 "machine is busy, these numbers are not comparable across runs.")
+    L.append("")
+
+    if base:
+        L.append(f"## Results vs `{args.baseline}`")
+        L.append("| benchmark | metric | baseline | current | change | B/op | allocs/op |")
+        L.append("|---|---|---:|---:|---|---:|---:|")
+    else:
+        L.append("## Results")
+        L.append("| benchmark | metric | value | B/op | allocs/op |")
+        L.append("|---|---|---:|---:|---:|")
+
+    for name in sorted(current):
+        rec = current[name]
+        key, label, val = primary_metric(rec)
+        b, a = median(rec.get("bytes", [])), median(rec.get("allocs", []))
+        if base:
+            brec = base.get(name, {})
+            _, _, bval = primary_metric(brec) if brec else (None, None, None)
+            bb, ba = median(brec.get("bytes", [])), median(brec.get("allocs", []))
+            allocs_cell = fmt(a)
+            if ba and a is not None and ba != a:
+                allocs_cell = f"{fmt(a)} (was {fmt(ba)})"
+            bytes_cell = fmt(b)
+            if bb and b is not None and bb != b:
+                bytes_cell = f"{fmt(b)} (was {fmt(bb)})"
+            L.append(f"| `{name}` | {label or '-'} | {fmt(bval)} | {fmt(val)} | "
+                     f"**{delta(val, bval)}** | {bytes_cell} | {allocs_cell} |")
+        else:
+            L.append(f"| `{name}` | {label or '-'} | {fmt(val)} | {fmt(b)} | {fmt(a)} |")
+    L.append("")
+
+    if profile and os.path.exists(profile["prof"]):
+        focus = args.focus or (args.bench if args.bench != "." else "")
+        flat, total = pprof_rows(profile["bin"], profile["prof"], focus, args.top)
+        cum, _ = pprof_rows(profile["bin"], profile["prof"], focus, args.top, cum=True)
+        if flat:
+            L.append(f"## CPU profile" + (f" (samples {total}" + (f", focus `{focus}`" if focus else "") + ")" if total else ""))
+            L.append("")
+            L.append("### Where time is spent (flat)")
+            L.append("| flat% | cum% | function |")
+            L.append("|---:|---:|---|")
+            for r in flat[: args.top]:
+                L.append(f"| {r['flat_pct']:.1f} | {r['cum_pct']:.1f} | `{shorten(r['fn'])}` |")
+            L.append("")
+            by_pkg = defaultdict(float)
+            for r in flat:
+                by_pkg[package_of(r["fn"])] += r["flat_pct"]
+            L.append("### Rolled up by package")
+            L.append("| flat% | package |")
+            L.append("|---:|---|")
+            for pkg, pct in sorted(by_pkg.items(), key=lambda kv: -kv[1])[:10]:
+                L.append(f"| {pct:.1f} | `{pkg}` |")
+            L.append("")
+            L.append("### Dominates the call tree (cumulative)")
+            L.append("| cum% | function |")
+            L.append("|---:|---|")
+            seen = set()
+            for r in cum:
+                if r["fn"] in seen:
+                    continue
+                seen.add(r["fn"])
+                L.append(f"| {r['cum_pct']:.1f} | `{shorten(r['fn'])}` |")
+                if len(seen) >= args.top:
+                    break
+            L.append("")
+            L.append(f"Profile kept at `{profile['prof']}` (binary `{profile['bin']}`) for "
+                     f"`go tool pprof -peek`/`-list`.")
+        else:
+            L.append("_No profile samples matched; the run may have been too short "
+                     "(raise --benchtime) or --focus matched nothing._")
+
+    md = "\n".join(L) + "\n"
+    if args.out:
+        with open(args.out, "w") as fh:
+            fh.write(md)
+        print(f"wrote {args.out}")
+    else:
+        print(md)
+
+
+if __name__ == "__main__":
+    main()

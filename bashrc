@@ -1,14 +1,11 @@
 #!/bin/bash
-# and environment variables live in lib/common_shell.
-alias clinst='curl -fsSL https://claude.ai/install.sh | bash'
-alias cinst='npm install -g @openai/codex@latest'
-# Startup timing - set DEBUG_STARTUP=1 to enable
-[ -n "$DEBUG_STARTUP" ] && echo "Bashrc start: $(date +%s.%N)"
-
-# Ensure ~/.local/bin is in PATH (for uv, claude, etc.)
-export PATH="$HOME/.local/bin:$PATH"
-
-export DOCKER_BUILDKIT=1
+# ~/.bashrc - Dotfiles entrypoint (thin wrapper)
+# This file lives in the dotfiles repo and is symlinked/copied to ~/.bashrc
+# It safely locates and sources the main shared config: lib/common_shell
+#
+# Works for: Linux, macOS, Git Bash (MINGW/MSYS), WSL, Cygwin
+# The real configuration (aliases, functions, PATH, cross-platform utils) lives in:
+#   lib/common_shell  (sourced by both bash and zsh)
 
 # If not running interactively, don't do anything
 case $- in
@@ -16,283 +13,207 @@ case $- in
       *) return;;
 esac
 
+# Resolve the directory containing this bashrc (works when symlinked)
+if [ -n "${BASH_SOURCE[0]}" ]; then
+    _df_bashrc_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+else
+    _df_bashrc_dir="$HOME/code/dotfiles"
+fi
+
+# Try to source the main common_shell from several likely locations
+_sourced_common=0
+
+_candidates=(
+    "$_df_bashrc_dir/lib/common_shell"
+    "$HOME/code/dotfiles/lib/common_shell"
+    "$HOME/.dotfiles/lib/common_shell"
+    "$HOME/dotfiles/lib/common_shell"
+    "$HOME/.config/dotfiles/lib/common_shell"
+    "$HOME/lib/common_shell"
+)
+
+for _cand in "${_candidates[@]}"; do
+    if [ -f "$_cand" ]; then
+        # shellcheck disable=SC1090
+        if . "$_cand"; then
+            _sourced_common=1
+            export DOTFILES_DIR="$(dirname "$(dirname "$_cand")")"
+            break
+        fi
+    fi
+done
+
+unset _cand _candidates
+
+if [ "$_sourced_common" -eq 0 ]; then
+    # Fallback: minimal useful aliases if common_shell missing
+    export EDITOR="${EDITOR:-nvim}"
+    export VISUAL="${VISUAL:-nvim}"
+    alias v='nvim'
+    alias vi='nvim'
+    alias vim='nvim'
+    alias c='cd ~/code'
+    alias u='cd ..'
+    alias o='explorer.exe . 2>/dev/null || open . 2>/dev/null || xdg-open . 2>/dev/null || echo "o: no file manager found"'
+    echo "WARNING: dotfiles lib/common_shell not found. Using minimal fallback." >&2
+fi
+
+unset _sourced_common
+
+# WSL-specific extras (in addition to what common_shell + cross_platform provide)
+if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ] || [ -n "${WSL_DISTRO_NAME:-}" ]; then
+    # Prefer repo wslbashrc if present (adds explorer aliases + X11 + completions)
+    for _wsl in \
+        "$HOME/code/dotfiles/wslbashrc" \
+        "$HOME/.dotfiles/wslbashrc" \
+        "$HOME/wslbashrc" \
+        "$_df_bashrc_dir/wslbashrc" ; do
+        if [ -f "$_wsl" ]; then
+            # shellcheck disable=SC1090
+            . "$_wsl" 2>/dev/null || true
+            break
+        fi
+    done
+    unset _wsl
+fi
+
 # ============================================================
-# Bash-specific options
+# Interactive bash options (distro defaults are gone once we own ~/.bashrc)
 # ============================================================
-# Don't put duplicate lines or lines starting with space in history
+shopt -s histappend checkwinsize 2>/dev/null
+shopt -s cmdhist 2>/dev/null
+shopt -s globstar 2>/dev/null   # bash 4+ only
+shopt -s autocd 2>/dev/null     # bash 4+ only
 HISTCONTROL=ignoreboth
 
-# Append to history, don't overwrite
-shopt -s histappend
-
-# Check window size after each command
-shopt -s checkwinsize
-
-# History file for bash
-export HISTFILE=~/.bash_eternal_history
-
-# Force prompt to write history after every command
-PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
-
-# Make less more friendly for non-text input files
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
-
 # ============================================================
-# Bash prompt
+# Bash completion (Linux, macOS/Homebrew; Git Bash ships its own)
 # ============================================================
-# Set variable identifying the chroot you work in
-if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
+if ! shopt -oq posix; then
+    for _bc in \
+        /usr/share/bash-completion/bash_completion \
+        /etc/bash_completion \
+        /usr/local/etc/profile.d/bash_completion.sh \
+        /opt/homebrew/etc/profile.d/bash_completion.sh ; do
+        if [ -r "$_bc" ]; then
+            # shellcheck disable=SC1090
+            . "$_bc"
+            break
+        fi
+    done
+    unset _bc
 fi
 
-# Set a fancy prompt
-case "$TERM" in
-    xterm-color|*-256color|xterm|screen|vt100) color_prompt=yes;;
+## =============    AI Coding Agents    =================
+# Pi Infinity (our fork of pi-mono with --auto-next-steps/--auto-next-idea)
+# pinf is installed at /usr/local/bin/pinf -> pi-infinity dist/cli.js
+# Original pi (upstream @mariozechner/pi-coding-agent) installed via bun
+# Run alongside each other: pinf uses .pinf/ config, pi uses .pi/ config
+
+# Export Claude Code OAuth token as ANTHROPIC_API_KEY (for tools that support it)
+export_claude_auth() {
+    local creds="${CLAUDE_HOME:-$HOME/.claude}/.credentials.json"
+    if [ -f "$creds" ]; then
+        local token
+        token=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('$creds'))
+    print(d.get('claudeAiOauth', {}).get('accessToken', ''))
+except Exception as e:
+    sys.exit(0)
+" 2>/dev/null)
+        if [ -n "$token" ]; then
+            export ANTHROPIC_API_KEY="$token"
+            echo "Claude auth loaded (${token:0:15}...)"
+        else
+            echo "No Claude OAuth token found at $creds"
+        fi
+    else
+        echo "No Claude credentials found at $creds"
+    fi
+}
+
+# Quick aliases for the two coding agents
+alias pinf-update='cd /nvme0n1-disk/code/pi-infinity && git pull && npm run build && sudo ln -sf /nvme0n1-disk/code/pi-infinity/packages/coding-agent/dist/cli.js /usr/local/bin/pinf'
+alias pi-update='bun add -g @mariozechner/pi-coding-agent'
+## =====================================================
+
+# ============================================================
+# Prompt - mirrors the zsh PROMPT in zshrc: cyan cwd, magenta git branch
+# ============================================================
+_df_git_branch() {
+    command -v git >/dev/null 2>&1 || return 0
+    local _b
+    _b="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 0
+    [ -n "$_b" ] && printf ' %s' "$_b"
+    return 0
+}
+
+# Modern terminals, including Kitty, Ghostty, Terminal.app, and Git Bash,
+# understand ANSI colour even when their terminfo entry is missing locally.
+# Only disable colour when the terminal explicitly identifies as dumb.
+_df_colors=1
+case "${TERM:-dumb}" in
+    dumb|'') _df_colors=0 ;;
 esac
 
-force_color_prompt=yes
-if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-        color_prompt=yes
-    else
-        color_prompt=
-    fi
+# Show user@host over SSH so remote sessions are obvious.
+_df_host_prefix=''
+if [ -n "${SSH_CONNECTION:-}" ] || [ -n "${SSH_TTY:-}" ]; then
+    _df_host_prefix='\u@\h '
 fi
 
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+if [ "$_df_colors" -eq 1 ]; then
+    PS1="\[\e[32m\]${_df_host_prefix}\[\e[36m\]\w\[\e[35m\]\$(_df_git_branch)\[\e[0m\] \$ "
 else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    PS1="${_df_host_prefix}\w\$(_df_git_branch) \$ "
 fi
-unset color_prompt force_color_prompt
+unset _df_colors _df_host_prefix
 
-# Set terminal title
+# Terminal title (skipped on dumb terminals)
 case "$TERM" in
-    xterm*|rxvt*)
-        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    xterm*|rxvt*|screen*|tmux*|alacritty|foot|*kitty*)
+        PS1="\[\e]0;\w\a\]$PS1"
         ;;
 esac
 
-# ============================================================
-# Bash-specific aliases
-# ============================================================
-alias reload='source ~/.bashrc'
-alias refresh='source ~/.bashrc'
+# Local user overrides (not tracked in dotfiles)
+[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local" 2>/dev/null || true
 
-# Bash-specific dir/vdir with color
-alias dir='dir --color=auto'
-alias vdir='vdir --color=auto'
-
-# ============================================================
-# Bash-specific completion
-# ============================================================
-if ! shopt -oq posix; then
-    if [ -f /usr/share/bash-completion/bash_completion ]; then
-        . /usr/share/bash-completion/bash_completion
-    fi
-fi
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-# ============================================================
-# Bash-specific keybindings
-# ============================================================
-# Ctrl+] to copy current command to clipboard
-bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
-
-# ============================================================
-# Platform-specific bash config
-# ============================================================
-unameOut="$(uname -s)"
-case "${unameOut}" in
-    Linux*)     machine=Linux;;
-    Darwin*)    machine=Mac;;
-    CYGWIN*)    machine=Cygwin;;
-    MINGW*)     machine=MinGw;;
-    MSYS_NT*)   machine=Git;;
-    *)          machine="UNKNOWN:${unameOut}"
-esac
-
-# Windows Git Bash specific
-if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [ "$machine" = "Cygwin" ] || [ "$machine" = "MinGw" ]; then
-    # Source Windows-specific config
-    [ -f ~/code/dotfiles/lib/winbashrc ] && . ~/code/dotfiles/lib/winbashrc
-
-    export GOROOT="/c/Program Files/Go"
-    alias pbcopy="clip"
-    alias pbpaste="powershell.exe -command 'Get-Clipboard'"
-    alias open="explorer.exe"
-    bind '"\C-]":"\C-e\C-u pbcopy <<"EOF"\n\C-y\nEOF\n"' 2>/dev/null || true
-
-    # Neovim paths for Windows
-    for nvim_path in \
-        "/c/Program Files/Neovim/bin" \
-        "/c/tools/neovim/Neovim/bin" \
-        "/c/Users/$USER/scoop/apps/neovim/current/bin" \
-        "/c/ProgramData/chocolatey/lib/neovim/tools/Neovim/bin"; do
-        [ -d "$nvim_path" ] && export PATH="$nvim_path:$PATH"
-    done
-
-    # WSL2 integration
-    alias wslhome='cd "//wsl$/Ubuntu/home/lee"'
-    alias wslcode='cd "//wsl$/Ubuntu/home/lee/code"'
-    alias w='wsl'
-    cdw() { cd "${1:+//wsl$/Ubuntu/home/lee/$1}" "${1:-//wsl$/Ubuntu/home/lee}"; }
-fi
-
-# macOS specific
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    export ARCHFLAGS="-arch x86_64"
-    chflags nohidden ~/Library/ 2>/dev/null
-fi
-
-# ============================================================
-# Bash-specific lazy loading: direnv
-# ============================================================
-direnv() {
-    eval "$(command direnv hook bash 2>/dev/null)"
-    command direnv "$@"
-}
-
-# ============================================================
-# Bash-specific function aliases
-# ============================================================
-ali()  { echo "alias $@" >> $HOME/.bashrc; source $HOME/.bashrc; }
-alis() { echo "alias $@" >> $HOME/.secretbashrc; source $HOME/.secretbashrc; }
-
-gali() {
-    [ $# -eq 0 ] && { echo "Usage: gali name='command'"; return 1; }
-    local def="$*"
-    local name="${def%%=*}"
-    [[ "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]] || { echo "Invalid alias name: $name"; return 1; }
-    [[ "$def" == *=* ]] || { echo "Missing '=' — usage: gali name='command'"; return 1; }
-    local val="${def#*=}"
-    eval "alias $def" 2>/dev/null || { echo "Invalid alias: $def"; return 1; }
-    echo "alias $def" >> "$HOME/.bashrc"
-    source "$HOME/.bashrc"
-    echo "Added & loaded: alias $def"
-}
-
-eep() { "$@"; local status=$?; espeak "${1:0:10}"; return $status; }
-
-# Enhanced Git status in prompt
-parse_git_branch() {
-    local branch=$(git branch --show-current 2>/dev/null)
-    if [ -n "$branch" ]; then
-        local upstream=$(git rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null)
-        if [ -n "$upstream" ]; then
-            local ahead=$(git rev-list --count @{u}.. 2>/dev/null || echo 0)
-            local behind=$(git rev-list --count ..@{u} 2>/dev/null || echo 0)
-            if [ "$ahead" -gt 0 ] && [ "$behind" -gt 0 ]; then
-                echo " ($branch ↑$ahead↓$behind)"
-            elif [ "$ahead" -gt 0 ]; then
-                echo " ($branch ↑$ahead)"
-            elif [ "$behind" -gt 0 ]; then
-                echo " ($branch ↓$behind)"
-            else
-                echo " ($branch ✓)"
-            fi
-        else
-            echo " ($branch ⚠️)"
+# Git Bash / MSYS specific tweaks (non-interactive safe)
+if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -o 2>/dev/null)" == Msys ]]; then
+    # Ensure explorer is callable for 'o'
+    if ! command -v explorer.exe >/dev/null 2>&1; then
+        if [ -x "/c/Windows/explorer.exe" ]; then
+            alias explorer.exe='/c/Windows/explorer.exe'
         fi
     fi
-}
 
-# ============================================================
-# Source shared shell configuration (MUST come after bash-specific setup)
-# ============================================================
-if [ -f ~/code/dotfiles/lib/common_shell ]; then
-    . ~/code/dotfiles/lib/common_shell
-elif [ -f ~/.common_shell ]; then
-    . ~/.common_shell
+    # Make vi/vim/nvim reliably use the full Windows Neovim (with our linked config)
+    # even if some other vim sneaks into PATH.
+    if [ -x "/c/Program Files/Neovim/bin/nvim.exe" ]; then
+        alias nvim='/c/Program\ Files/Neovim/bin/nvim.exe'
+        alias vim='/c/Program\ Files/Neovim/bin/nvim.exe'
+        alias vi='/c/Program\ Files/Neovim/bin/nvim.exe'
+        export EDITOR="/c/Program Files/Neovim/bin/nvim.exe"
+        export VISUAL="$EDITOR"
+    fi
 fi
 
-# ============================================================
-# Bash-specific FZF
-# ============================================================
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+unset _df_bashrc_dir
 
-# ============================================================
-# WSL-specific config
-# ============================================================
-if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
-    [ -f ~/wslbashrc ] && . ~/wslbashrc 2>/dev/null
-    alias o='explore'
-    alias oo='explore'
+# Handy one-liner reload for interactive use
+# Usage: reload
+if ! command -v reload >/dev/null 2>&1; then
+    # `function name` is immune to a stale same-named alias during parsing.
+    function reload {
+        echo "Reloading ~/.bashrc ..."
+        # shellcheck disable=SC1090
+        . "$HOME/.bashrc"
+        echo "Done."
+    }
 fi
 
-# ============================================================
-# Open file/dir aliases (platform-aware, set after common_shell)
-# ============================================================
-if [ "$machine" = "Git" ] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    alias o='explorer.exe .'
-    alias oo='explorer.exe'
-fi
-
-# virtualenv
-export WORKON_HOME=$HOME/.virtualenvs
-if [ -f /usr/local/bin/virtualenvwrapper.sh ]; then
-    source /usr/local/bin/virtualenvwrapper.sh
-elif command -v virtualenvwrapper.sh >/dev/null 2>&1; then
-    source $(which virtualenvwrapper.sh)
-fi
-
-unset DOCKER_HOST
-
-# Startup timing end
-[ -n "$DEBUG_STARTUP" ] && echo "Bashrc end: $(date +%s.%N)"
-
-# ZVM
-export ZVM_INSTALL="$HOME/.zvm/self"
-export PATH="$PATH:$HOME/.zvm/bin"
-export PATH="$PATH:$ZVM_INSTALL/"
-export PATH="/home/administrator/.pixi/bin:$PATH"
-
-# SSH agent setup is handled in lib/common_shell.
-
-alias tx='tmux attach'
-alias tls='tmux ls'
-alias tn='tmux new -s'
-alias cldd='claude --dangerously-skip-permissions'
-alias cldc='claude --dangerously-skip-permissions --chrome'
-alias clds='claude --dangerously-skip-permissions --model sonnet'
-alias cldsc='claude --dangerously-skip-permissions --model sonnet --chrome'
-alias cldsm='claude --dangerously-skip-permissions --model sonnet --effort medium'
-alias cldsmc='claude --dangerously-skip-permissions --model sonnet --effort medium --chrome'
-alias cldsl='claude --dangerously-skip-permissions --model sonnet --effort low'
-alias cldslc='claude --dangerously-skip-permissions --model sonnet --effort low --chrome'
-alias cldsh='claude --dangerously-skip-permissions --model sonnet --effort high'
-alias cldshc='claude --dangerously-skip-permissions --model sonnet --effort high --chrome'
-alias cldo='claude --dangerously-skip-permissions --model opus'
-alias cldoc='claude --dangerously-skip-permissions --model opus --chrome'
-alias cldom='claude --dangerously-skip-permissions --model opus --effort medium'
-alias cldomc='claude --dangerously-skip-permissions --model opus --effort medium --chrome'
-alias cldol='claude --dangerously-skip-permissions --model opus --effort low'
-alias cldolc='claude --dangerously-skip-permissions --model opus --effort low --chrome'
-alias cldoh='claude --dangerously-skip-permissions --model opus --effort high'
-alias cldohc='claude --dangerously-skip-permissions --model opus --effort high --chrome'
-
-# Search aliases and functions by pattern
-algrp() {
-    local pattern="$1"
-    [ -z "$pattern" ] && { echo "Usage: algrp <pattern>"; return 1; }
-    echo "=== Aliases ==="
-    alias | grep -i "$pattern"
-    echo -e "\n=== Functions ==="
-    declare -F | awk '{print $3}' | grep -i "$pattern" | while read fn; do
-        echo -n "$fn: "
-        type "$fn" | head -3 | tail -2 | tr '\n' ' '
-        echo
-    done
-}
-
-# opencode
-export PATH=/home/lee/.opencode/bin:$PATH
-. "$HOME/.cargo/env"
-export PATH="/c/zig/zig-x86_64-windows-0.16.0-dev.2682+02142a54d:$PATH"
-
-# >>> grok installer >>>
-export PATH="$HOME/.grok/bin:$PATH"
-# <<< grok installer <<<
+# user-local builds (ffmpeg n9 + NVENC)
+export PATH="$HOME/.local/bin:$PATH"
