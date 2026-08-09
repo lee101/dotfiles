@@ -795,7 +795,7 @@ _codex_local_or_upstream() {
 # functions below. None of the terminal, color, or general-purpose aliases are
 # touched. Bash expands aliases while parsing `name() { ... }`, so this must
 # happen before the declarations to keep reloads safe.
-unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh \
+unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh ccxt ccxtl ccxtm ccxth \
     cdx cdxd cdxf cdxr cdxw cdxa cdxe cdxs cdxo cdxed \
     cx cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
     cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxbuild 2>/dev/null || true
@@ -810,6 +810,10 @@ ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-l
 ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low "$@"; }
 ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"; }
 ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high "$@"; }
+ccxt() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"; }
+ccxtl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=low "$@"; }
+ccxtm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"; }
+ccxth() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=high "$@"; }
 
 # Standard codex aliases
 cdx() { _codex_upstream "$@"; }
@@ -872,7 +876,7 @@ cxs() {
 }
 
 cxsl() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=low "$@"
 }
 
 cxsm() {

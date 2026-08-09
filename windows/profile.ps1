@@ -452,6 +452,15 @@ function Invoke-CodexLocal {
     Write-Host "Codex not found. Install codex or build local Codex under ~/code/codex-infinity or ~/code/codex." -ForegroundColor Yellow
 }
 
+function Invoke-CodexUpstream {
+    param([string[]]$CodexArgs)
+    if (Get-Command codex -ErrorAction SilentlyContinue) {
+        codex @CodexArgs
+        return
+    }
+    Write-Host "OpenAI Codex not found. Install with: npm install -g @openai/codex" -ForegroundColor Yellow
+}
+
 function Invoke-CodexModel {
     param(
         [string]$Model,
@@ -472,10 +481,15 @@ function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox"
 function cxll { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "low" -CodexArgs $args }
 function cxlm { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "medium" -CodexArgs $args }
 function cxlh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "high" -CodexArgs $args }
+function cxsl { Invoke-CodexModel -Model "gpt-5.6-sol" -ReasoningEffort "low" -CodexArgs $args }
 function cxt { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxtl { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "low" -CodexArgs $args }
 function cxtm { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "medium" -CodexArgs $args }
 function cxth { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "high" -CodexArgs $args }
+function ccxt { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=xhigh") + $args) }
+function ccxtl { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=low") + $args) }
+function ccxtm { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=medium") + $args) }
+function ccxth { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=high") + $args) }
 function cxbuild {
     $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs") { "$HOME\code\codex" } else { $null }
     if (-not $codexDir) {
