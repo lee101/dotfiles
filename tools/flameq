@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""Capture, render, and query collapsed-stack flame profiles.
+
+The input format is Brendan Gregg's folded-stack format: ``root;child;leaf 42``.
+This deliberately keeps profiles portable: the same .folded file can be queried
+in a terminal, rendered here, or opened by any standard flamegraph viewer.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import html
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections import defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+@dataclass
+class Node:
+    name: str
+    value: int = 0
+    self_value: int = 0
+    children: dict[str, "Node"] = field(default_factory=dict)
+
+
+def read_folded(path: Path) -> Node:
+    root = Node("all")
+    for line_no, raw in enumerate(path.read_text(errors="replace").splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        try:
+            stack, count_text = line.rsplit(None, 1)
+            count = int(count_text)
+        except ValueError as error:
+            raise SystemExit(f"{path}:{line_no}: expected 'frame;frame count'") from error
+        if count <= 0:
+            continue
+        node = root
+        node.value += count
+        for frame in stack.split(";"):
+            node = node.children.setdefault(frame, Node(frame))
+            node.value += count
+        node.self_value += count
+    if root.value == 0:
+        raise SystemExit(f"{path}: no samples found")
+    return root
+
+
+def walk(node: Node, parents: tuple[str, ...] = ()):  # depth-first, without synthetic root
+    for child in node.children.values():
+        path = parents + (child.name,)
+        yield child, path
+        yield from walk(child, path)
+
+
+def rows(root: Node, needle: str | None = None):
+    needle = needle.lower() if needle else None
+    output = []
+    for node, path in walk(root):
+        label = ";".join(path)
+        if needle and needle not in node.name.lower() and needle not in label.lower():
+            continue
+        output.append((node.value, node.self_value, label))
+    return sorted(output, key=lambda row: (row[0], row[1]), reverse=True)
+
+
+def report(root: Node, top: int, needle: str | None = None) -> str:
+    matched = rows(root, needle)
+    label = f" matching {needle!r}" if needle else ""
+    lines = [
+        f"samples: {root.value:,}; frames{label}: {len(matched):,}",
+        " inclusive%    self%  stack",
+    ]
+    for inclusive, self_value, stack in matched[:top]:
+        lines.append(f" {inclusive / root.value * 100:9.2f} {self_value / root.value * 100:8.2f}  {stack}")
+    return "\n".join(lines)
+
+
+def colour(name: str) -> str:
+    digest = hashlib.blake2s(name.encode(), digest_size=3).digest()
+    return f"rgb({180 + digest[0] % 70},{55 + digest[1] % 120},{35 + digest[2] % 80})"
+
+
+def svg(root: Node, width: int, min_width: float) -> str:
+    max_depth = max((len(path) for _, path in walk(root)), default=0)
+    row_height = 20
+    height = (max_depth + 2) * row_height
+    rects: list[str] = []
+
+    def draw(node: Node, depth: int, x: float, span: float) -> None:
+        cursor = x
+        for child in sorted(node.children.values(), key=lambda item: item.value, reverse=True):
+            child_span = span * child.value / root.value
+            if child_span >= min_width:
+                y = height - (depth + 2) * row_height
+                title = f"{child.name} — {child.value / root.value * 100:.2f}% inclusive; {child.self_value / root.value * 100:.2f}% self"
+                label = child.name if child_span > 70 else ""
+                rects.append(
+                    f'<g><title>{html.escape(title)}</title><rect x="{cursor:.2f}" y="{y}" width="{child_span:.2f}" height="{row_height - 2}" fill="{colour(child.name)}" rx="2"/>'
+                    f'<text x="{cursor + 3:.2f}" y="{y + 14}" clip-path="url(#clip)">{html.escape(label)}</text></g>'
+                )
+            draw(child, depth + 1, cursor, child_span)
+            cursor += child_span
+
+    draw(root, 0, 0, width)
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+<style>text{{font:12px monospace;fill:#1c1010;pointer-events:none}} rect{{stroke:#fff;stroke-opacity:.24}}</style>
+<defs><clipPath id="clip"><rect width="{width}" height="{height}"/></clipPath></defs>
+<rect width="100%" height="100%" fill="#fff8f1"/>{''.join(rects)}
+</svg>\n'''
+
+
+def perf_to_folded(perf_data: Path) -> list[str]:
+    completed = subprocess.run(["perf", "script", "-i", str(perf_data)], check=True, text=True, capture_output=True)
+    stacks: defaultdict[str, int] = defaultdict(int)
+    current: list[str] = []
+    for raw in completed.stdout.splitlines() + [""]:
+        if not raw.strip():
+            if current:
+                stacks[";".join(reversed(current))] += 1
+                current = []
+            continue
+        if not raw[0].isspace():
+            if current:
+                stacks[";".join(reversed(current))] += 1
+                current = []
+            continue
+        frame = raw.strip()
+        if " (" in frame:
+            frame = frame.split(" (", 1)[0]
+        frame = frame.split("+0x", 1)[0].strip()
+        if frame and frame != "[unknown]":
+            current.append(frame)
+    return [f"{stack} {count}" for stack, count in sorted(stacks.items())]
+
+
+def capture(args: argparse.Namespace) -> None:
+    if shutil.which("perf") is None:
+        raise SystemExit("perf is not installed")
+    if not args.command:
+        raise SystemExit("capture needs a command after --")
+    output = Path(args.out).expanduser().resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="flameq-") as directory:
+        data = Path(directory) / "perf.data"
+        command = ["perf", "record", "-F", str(args.frequency), "-g", "--call-graph", "dwarf", "-o", str(data), "--", *args.command]
+        completed = subprocess.run(command)
+        if completed.returncode:
+            raise SystemExit(completed.returncode)
+        output.write_text("\n".join(perf_to_folded(data)) + "\n")
+    print(f"wrote {output}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Capture, render, and query folded-stack flame profiles.")
+    commands = parser.add_subparsers(dest="action", required=True)
+    capture_parser = commands.add_parser("capture", help="record a command with Linux perf into a .folded file")
+    capture_parser.add_argument("--out", required=True, help="destination .folded file")
+    capture_parser.add_argument("--frequency", type=int, default=199)
+    capture_parser.add_argument("command", nargs=argparse.REMAINDER, help="command after --")
+    for name, help_text in (("query", "show inclusive and self hotspots"), ("render", "write a portable SVG flamegraph"), ("report", "write a Markdown-friendly hotspot report")):
+        sub = commands.add_parser(name, help=help_text)
+        sub.add_argument("profile", type=Path)
+        sub.add_argument("--top", type=int, default=20)
+        sub.add_argument("--match", default=None, help="case-insensitive frame or stack substring")
+        if name == "render":
+            sub.add_argument("--out", type=Path, required=True)
+            sub.add_argument("--width", type=int, default=1600)
+            sub.add_argument("--min-width", type=float, default=1.0)
+        elif name == "report":
+            sub.add_argument("--out", type=Path, default=None)
+    args = parser.parse_args()
+    if args.action == "capture":
+        capture(args)
+        return
+    root = read_folded(args.profile)
+    if args.action == "query":
+        print(report(root, args.top, args.match))
+    elif args.action == "report":
+        content = "# Flame profile\n\n```text\n" + report(root, args.top, args.match) + "\n```\n"
+        if args.out:
+            args.out.write_text(content)
+            print(f"wrote {args.out}")
+        else:
+            print(content, end="")
+    else:
+        args.out.write_text(svg(root, args.width, args.min_width))
+        print(f"wrote {args.out}")
+
+
+if __name__ == "__main__":
+    main()

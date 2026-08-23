@@ -3,6 +3,7 @@
     "bindings": {
       "ctrl-g": "editor::FindAllReferences",
       "ctrl-shift-e": "project_panel::ToggleFocus",
+      "ctrl-alt-shift-`": "workspace::NewTerminal",
       "alt-y": "editor::SelectNext",
       "alt-shift-y": "editor::UndoSelection",
       "alt-left": "pane::GoBack",
@@ -27,7 +28,8 @@
       "alt-shift-right": "pane::ActivateNextItem",
       "cmd-alt-c": ["agent::NewExternalAgentThread", { "agent": { "custom": { "name": "codex-acp" } } }],
       "ctrl-alt-c": ["agent::NewExternalAgentThread", { "agent": { "custom": { "name": "codex-acp" } } }],
-      "ctrl-alt-shift-n": "agent::NewThread"
+      "ctrl-alt-shift-n": "agent::NewThread",
+      "ctrl-?": "agent::Toggle"
     }
   },
   {

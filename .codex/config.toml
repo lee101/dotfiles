@@ -1,5 +1,6 @@
-model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+service_tier = "default"
 
 [default]
 model_reasoning_effort = "high"

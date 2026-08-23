@@ -65,6 +65,25 @@ cldperf cuda -- <cmd>    # Alias for gpu
 - Performance optimization suggestions
 - Benchmark analysis
 
+### 🔥 flameq - Portable Flamegraphs + Hotspot Queries
+
+Creates a reusable folded-stack profile from a Linux command, renders it as a
+portable SVG, and answers targeted queries without loading an enormous graph.
+
+```bash
+# Capture a realistic server or benchmark run (Linux perf permissions required).
+flameq capture --out /tmp/manifold.folded -- go test ./server -run TestVideo -count=100
+
+# Browse visually, then ask the profile a precise question in the terminal.
+flameq render /tmp/manifold.folded --out /tmp/manifold.svg
+flameq query /tmp/manifold.folded --match render --top 15
+flameq report /tmp/manifold.folded --out /tmp/manifold-profile.md
+```
+
+Folded profiles are standard `frame;frame;leaf count` files, so captures also
+work with other flamegraph tooling. Query output separates inclusive time from
+self time, which helps avoid optimising a caller instead of the actual hotspot.
+
 ### 🔍 jscheck - JavaScript Error Checker
 Loads web pages in Chrome and collects JavaScript errors for debugging.
 
