@@ -186,6 +186,9 @@ alias v=nvim
 alias vi=nvim
 alias vim=nvim
 alias n=nvim
+
+# OpenRouter Ox Alpha launcher (available from any directory)
+alias opx="op --model 'openrouter/stealth/ox-alpha'"
 alias ni=nvim
 alias k='kubectl'
 alias y="yarn"
@@ -730,6 +733,16 @@ alias ca='cursor-agent-bun -f'
 alias cap='cursor-agent-bun -f -p'
 alias crs='cursor-agent --yolo --model cursor-grok-4.5-high'
 alias crsf='cursor-agent --yolo --model composer-2.5-fast'
+
+# OpenPaths model runners. Extra arguments are passed through, so for example
+# `opfb --continue` keeps the same model while resuming the last session.
+opfb() { op --model 'google/gemini-3.7-flash:batch' "$@"; }
+opfd() { op --model 'deepseek/deepseek-v4-flash-vision-exp' "$@"; }
+opdf() { opfd "$@"; }
+opgp() { op --model 'glm-5.3' "$@"; }
+opgo() { op --model 'anthropic/claude-opus-5' "$@"; }
+opgx() { op --model 'gpt-5.6-sol' "$@"; }
+opdp() { op --model 'deepseek/deepseek-v4-pro' "$@"; }
 
 # Cursor / Devin agent shortcuts
 alias crs='cursor-agent --yolo'
