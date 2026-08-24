@@ -13,7 +13,7 @@ for config in \
 done
 
 # Catch reload-only failures caused by aliases expanding function declarations.
-bash --noprofile --norc -c '
+bash --noprofile --norc -i -c '
   alias clinst="broken-alias"
   source "$1"
   declare -F clinst >/dev/null
