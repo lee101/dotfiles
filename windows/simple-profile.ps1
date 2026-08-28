@@ -68,6 +68,8 @@ function reload {
 
 # Add common paths to PATH
 $paths = @(
+    "$env:USERPROFILE\code\dotfiles\tools",
+    "$env:USERPROFILE\code\dotfiles\profiling\bin",
     # uv (Python package installer)
     "$env:USERPROFILE\.local\bin",
     "$env:APPDATA\npm",
@@ -81,4 +83,4 @@ foreach ($path in $paths) {
     }
 }
 
-Write-Host "PowerShell profile loaded!" -ForegroundColor Green 
+Write-Host "PowerShell profile loaded!" -ForegroundColor Green

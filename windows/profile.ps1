@@ -684,6 +684,8 @@ $env:VISUAL = "nvim"
 
 # PATH Configuration - Add common development tool paths
 $pathsToAdd = @(
+    "$env:USERPROFILE\code\dotfiles\tools",
+    "$env:USERPROFILE\code\dotfiles\profiling\bin",
     # uv (Python package installer)
     "$env:USERPROFILE\.local\bin",
     # WinGet command shims

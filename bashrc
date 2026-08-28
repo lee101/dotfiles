@@ -16,8 +16,10 @@ esac
 # Resolve the directory containing this bashrc (works when symlinked)
 if [ -n "${BASH_SOURCE[0]}" ]; then
     _df_bashrc_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+    DOTFILES_BASHRC="$_df_bashrc_dir/$(basename "${BASH_SOURCE[0]}")"
 else
     _df_bashrc_dir="$HOME/code/dotfiles"
+    DOTFILES_BASHRC="$_df_bashrc_dir/bashrc"
 fi
 
 # Try to source the main common_shell from several likely locations
@@ -203,17 +205,23 @@ fi
 
 unset _df_bashrc_dir
 
-# Handy one-liner reload for interactive use
-# Usage: reload
-if ! command -v reload >/dev/null 2>&1; then
-    # `function name` is immune to a stale same-named alias during parsing.
-    function reload {
-        echo "Reloading ~/.bashrc ..."
-        # shellcheck disable=SC1090
-        . "$HOME/.bashrc"
+# Handy one-liner reload for interactive use. Define it unconditionally so a
+# same-named system command cannot prevent the shell helper from being loaded.
+# `function name` is immune to a stale same-named alias during parsing.
+unalias reload 2>/dev/null || true
+function reload {
+    local bashrc_path="${DOTFILES_BASHRC:-$HOME/.bashrc}"
+    echo "Reloading $bashrc_path ..."
+    # shellcheck disable=SC1090
+    if . "$bashrc_path"; then
+        # Local config may install a legacy alias after this function is parsed.
+        unalias reload 2>/dev/null || true
         echo "Done."
-    }
-fi
+    else
+        echo "Failed to reload $bashrc_path." >&2
+        return 1
+    fi
+}
 
 # user-local builds (ffmpeg n9 + NVENC)
 export PATH="$HOME/.local/bin:$PATH"
