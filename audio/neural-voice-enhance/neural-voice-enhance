@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Real-time DeepFilterNet microphone for PulseAudio-compatible Linux desktops.
+
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+config_file="$config_home/neural-voice-enhance/config"
+
+SOURCE=""
+ATTENUATION_DB=24
+POST_FILTER=0.02
+BUFFER_FRAMES=1
+LOOPBACK_LATENCY_MS=40
+if [[ -r "$config_file" ]]; then
+    # This is a user-owned file written by install.sh.
+    # shellcheck disable=SC1090
+    source "$config_file"
+fi
+
+voice_attenuation="${VOICE_ENHANCE_ATTENUATION_DB:-$ATTENUATION_DB}"
+voice_post_filter="${VOICE_ENHANCE_POST_FILTER:-$POST_FILTER}"
+voice_buffer_frames="${VOICE_ENHANCE_BUFFER_FRAMES:-$BUFFER_FRAMES}"
+voice_loopback_latency="${VOICE_ENHANCE_LATENCY_MS:-$LOOPBACK_LATENCY_MS}"
+voice_plugin="${VOICE_ENHANCE_PLUGIN:-$HOME/.ladspa/libdeep_filter_ladspa.so}"
+voice_bus="deepfilter_voice_bus"
+voice_sink="deepfilter_voice"
+voice_monitor="${voice_bus}.monitor"
+voice_public="enhanced_voice"
+
+require_audio_server() {
+    if ! command -v pactl >/dev/null 2>&1; then
+        printf 'pactl is required (install pulseaudio-utils or pipewire-pulse).\n' >&2
+        exit 1
+    fi
+    if ! pactl info >/dev/null 2>&1; then
+        printf 'No PulseAudio-compatible user audio server is available.\n' >&2
+        exit 1
+    fi
+}
+
+source_exists() {
+    local candidate="$1"
+    pactl list short sources | awk -v source="$candidate" '$2 == source { found=1 } END { exit !found }'
+}
+
+detect_physical_source() {
+    local configured="${VOICE_ENHANCE_SOURCE:-$SOURCE}"
+    local current_default
+
+    if [[ -n "$configured" ]] && source_exists "$configured"; then
+        printf '%s\n' "$configured"
+        return
+    fi
+    if [[ -n "$configured" ]]; then
+        printf 'Configured microphone is unavailable; detecting another input: %s\n' "$configured" >&2
+    fi
+
+    current_default="$(pactl get-default-source 2>/dev/null || true)"
+    if [[ -n "$current_default" && "$current_default" != "$voice_public" && \
+          "$current_default" != "$voice_monitor" && "$current_default" != *.monitor ]] && \
+          source_exists "$current_default"; then
+        printf '%s\n' "$current_default"
+        return
+    fi
+
+    pactl list short sources | awk \
+        '$2 != "enhanced_voice" && $2 != "deepfilter_voice_bus.monitor" && $2 !~ /\.monitor$/ && $2 ~ /^(alsa|bluez)_input\./ { print $2; exit }'
+}
+
+unload_matching_module() {
+    local module_type="$1"
+    local argument_pattern="$2"
+    local module_ids=()
+    mapfile -t module_ids < <(
+        pactl list short modules |
+            awk -v module_type="$module_type" -v pattern="$argument_pattern" \
+                '$2 == module_type && index($0, pattern) { print $1 }'
+    )
+    local module_id
+    for module_id in "${module_ids[@]}"; do
+        pactl unload-module "$module_id" || true
+    done
+}
+
+stop_enhancer() {
+    local voice_source current_default
+    voice_source="$(detect_physical_source || true)"
+    current_default="$(pactl get-default-source 2>/dev/null || true)"
+    if [[ -n "$voice_source" && ("$current_default" == "$voice_monitor" || "$current_default" == "$voice_public") ]]; then
+        pactl set-default-source "$voice_source" || true
+    fi
+    unload_matching_module module-remap-source "source_name=${voice_public} "
+    unload_matching_module module-loopback "sink=${voice_sink} "
+    unload_matching_module module-ladspa-sink "sink_name=${voice_sink} "
+    unload_matching_module module-null-sink "sink_name=${voice_bus} "
+}
+
+start_enhancer() {
+    local voice_source
+    voice_source="$(detect_physical_source)"
+    if [[ -z "$voice_source" ]]; then
+        printf 'No physical microphone was found. Set VOICE_ENHANCE_SOURCE or rerun install.sh --source NAME.\n' >&2
+        exit 1
+    fi
+
+    if source_exists "$voice_public"; then
+        pactl set-default-source "$voice_public"
+        printf 'Neural voice enhancer is already active: %s\n' "$voice_public"
+        printf 'Physical input: %s\n' "$voice_source"
+        return
+    fi
+    if [[ ! -r "$voice_plugin" ]]; then
+        printf 'DeepFilterNet plugin not found: %s\n' "$voice_plugin" >&2
+        printf 'Run the dotfiles neural-voice installer first.\n' >&2
+        exit 1
+    fi
+
+    stop_enhancer
+
+    local bus_id filter_id loopback_id public_id
+    bus_id=$(pactl load-module module-null-sink \
+        sink_name="$voice_bus" \
+        sink_properties=device.description=Enhanced_Voice_DeepFilterNet \
+        rate=48000 channels=1 channel_map=mono)
+
+    if ! filter_id=$(pactl load-module module-ladspa-sink \
+        sink_name="$voice_sink" \
+        sink_master="$voice_bus" \
+        plugin="$voice_plugin" \
+        label=deep_filter_mono \
+        "control=${voice_attenuation},-10,30,20,${voice_buffer_frames},${voice_post_filter}" \
+        rate=48000 channels=1 channel_map=mono); then
+        pactl unload-module "$bus_id" || true
+        printf 'The audio server could not host the DeepFilterNet LADSPA plugin.\n' >&2
+        exit 1
+    fi
+
+    if ! loopback_id=$(pactl load-module module-loopback \
+        source="$voice_source" sink="$voice_sink" \
+        latency_msec="$voice_loopback_latency" max_latency_msec=120 adjust_time=1 \
+        source_dont_move=true sink_dont_move=true remix=true); then
+        pactl unload-module "$filter_id" || true
+        pactl unload-module "$bus_id" || true
+        exit 1
+    fi
+
+    if ! public_id=$(pactl load-module module-remap-source \
+        source_name="$voice_public" \
+        source_properties=device.description=Enhanced_Voice_DeepFilterNet \
+        master="$voice_monitor" \
+        rate=48000 channels=1 channel_map=mono remix=no); then
+        pactl unload-module "$loopback_id" || true
+        pactl unload-module "$filter_id" || true
+        pactl unload-module "$bus_id" || true
+        exit 1
+    fi
+
+    pactl set-default-source "$voice_public"
+    printf 'Neural voice enhancer started.\n'
+    printf 'Physical input: %s\n' "$voice_source"
+    printf 'Default microphone: Enhanced_Voice_DeepFilterNet (%s)\n' "$voice_public"
+    printf 'Attenuation: %s dB; post-filter: %s\n' "$voice_attenuation" "$voice_post_filter"
+}
+
+show_status() {
+    if source_exists "$voice_public"; then
+        printf 'active\n'
+        pactl list short sources | awk -v source="$voice_public" '$2 == source'
+        printf 'default-source: %s\n' "$(pactl get-default-source)"
+    else
+        printf 'inactive\n'
+        return 1
+    fi
+}
+
+require_audio_server
+case "${1:-start}" in
+    start) start_enhancer ;;
+    stop) stop_enhancer; printf 'Neural voice enhancer stopped.\n' ;;
+    restart) stop_enhancer; start_enhancer ;;
+    status) show_status ;;
+    *) printf 'Usage: %s {start|stop|restart|status}\n' "${0##*/}" >&2; exit 2 ;;
+esac

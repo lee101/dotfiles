@@ -1,0 +1,10 @@
+<application>
+  <component name="AdvancedSettings">
+    <option name="settings">
+      <map>
+        <entry key="show.diff.as.editor.tab" value="false" />
+        <entry key="terminal.escape.moves.focus.to.editor" value="false" />
+      </map>
+    </option>
+  </component>
+</application>

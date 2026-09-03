@@ -1,0 +1,22 @@
+<application>
+  <component name="FileTypeManager" version="19">
+    <ignoreFiles list="*$py.class;*.pyc;*.pyo;*.rbc;*~;.DS_Store;.git;.hg;.mypy_cache;.pytest_cache;.ruff_cache;.svn;CVS;RCS;SCCS;__pycache__;_svn;rcs" />
+    <extensionMap>
+      <mapping ext="docker" type="Dockerfile" />
+      <mapping pattern=".dockerignore" type="IgnoreLang file" />
+      <mapping pattern=".gcloudignore" type="IgnoreLang file" />
+      <mapping pattern="mcp.json" type="JSON5" />
+      <mapping ext="m4a" type="Native" />
+      <mapping ext="mp4" type="Native" />
+      <mapping ext="mp3" type="Native" />
+      <mapping pattern="crontab" type="PLAIN_TEXT" />
+      <mapping pattern="pymatting-scratch-py" type="PLAIN_TEXT" />
+      <mapping pattern="facebookintegration.js" type="PLAIN_TEXT" />
+      <mapping pattern="cloud_sql_proxy" type="PLAIN_TEXT" />
+      <mapping pattern="vimrc" type="PLAIN_TEXT" />
+      <mapping ext="info" type="PLAIN_TEXT" />
+      <removed_mapping pattern=".dockerignore" approved="true" type="DockerIgnore file" />
+      <mapping pattern="*tpl.php" type="PHP files" />
+    </extensionMap>
+  </component>
+</application>

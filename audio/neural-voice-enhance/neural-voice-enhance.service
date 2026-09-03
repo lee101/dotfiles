@@ -1,0 +1,13 @@
+[Unit]
+Description=DeepFilterNet neural microphone
+After=pulseaudio.service
+Wants=pulseaudio.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/.local/bin/neural-voice-enhance start
+ExecStop=%h/.local/bin/neural-voice-enhance stop
+
+[Install]
+WantedBy=default.target

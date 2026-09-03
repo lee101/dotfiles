@@ -1,0 +1,7 @@
+<templateSet group="Less/CSS">
+  <template name="media" value="@media($END$) {&#10;    $SELECTION$&#10;}" description="surround with media query" toReformat="true" toShortenFQNames="true">
+    <context>
+      <option name="CSS" value="true" />
+    </context>
+  </template>
+</templateSet>

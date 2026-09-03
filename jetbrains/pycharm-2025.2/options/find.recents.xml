@@ -1,0 +1,39 @@
+<application>
+  <component name="FindRecents">
+    <findStrings>
+      <find>multiplication-master</find>
+      <find>molehill</find>
+      <find>GridView</find>
+      <find>activeInput</find>
+      <find>titlescreen:start</find>
+      <find>textvi</find>
+      <find>remove</find>
+      <find>fall</find>
+      <find>falldown</find>
+      <find>gameo</find>
+      <find>settil</find>
+      <find>reset</find>
+      <find>animate</find>
+      <find>spark</find>
+      <find>\d</find>
+      <find>\d*</find>
+      <find>\d+</find>
+      <find>page-</find>
+      <find>dark</find>
+      <find>setup</find>
+      <find>setup_server</find>
+      <find>load_data</find>
+      <find>sys.argv[1]</find>
+      <find>.get</find>
+      <find>fake</find>
+      <find>session</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>gem-swapper</replace>
+      <replace>\n&quot;&quot;&quot;</replace>
+    </replaceStrings>
+    <dirStrings>
+      <dir>$USER_HOME$/code/whackthatmole/src</dir>
+    </dirStrings>
+  </component>
+</application>

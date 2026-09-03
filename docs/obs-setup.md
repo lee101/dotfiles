@@ -1,36 +1,75 @@
-# OBS CleanAudio Configuration
+# OBS CleanAudio configuration
 
-This repository contains an `OBS Studio` profile and scene collection that bootstraps a clean microphone chain with RNNoise suppression. The files live under `.config/obs-studio` so they can be symlinked by `linkdotfiles.py`.
+This repository includes an OBS profile and scene collection plus an optional
+DeepFilterNet3 microphone installer. Together they provide a clean 48 kHz voice
+chain without applying two neural suppressors in series.
 
-## What you get
+## Recommended: DeepFilterNet microphone
 
-- **Profile `CleanAudio`** with 48 kHz audio, simple output mode, and neutral video defaults.
-- **Scene collection `CleanAudio`** that keeps a single empty scene (`Mic Monitor`) so OBS starts quickly without probing a camera.
-- **Global audio filter**: the default `Mic/Aux` device has an enabled Noise Suppression filter using the RNNoise model (`method = 2`) with a -30 dB suppression level for strong background rejection without over-artifacting.citeturn0search0turn0search1
+Install the portable user service and OBS launcher:
 
-## Linking the config
+```bash
+./audio/neural-voice-enhance/install.sh
+```
 
-1. Run `python linkdotfiles.py` (or your usual dotfile deploy step) so `.config/obs-studio` is symlinked into `~/.config/obs-studio`.
-2. Launch OBS. On first launch it will pick the `CleanAudio` profile and scene collection automatically because `global.ini` defaults are included.
+The installer detects the current physical microphone, downloads and verifies
+the pinned DeepFilterNet Plus LADSPA release, and creates the normal input
+`Enhanced_Voice_DeepFilterNet`. It becomes the default microphone at login and
+whenever `obs` or the **OBS Studio (Neural Voice)** launcher starts.
 
-If you already had OBS open, switch to the profile via **Profile → CleanAudio** and the scene collection via **Scene Collection → CleanAudio**.
+The `CleanAudio` profile uses `Mic/Aux = Default`, so no machine-specific device
+identifier is committed. Its legacy RNNoise filter remains present as a quick
+fallback but is disabled by default.
 
-## Tweaking suppression strength
+Useful commands:
 
-- The RNNoise filter uses neural-network based denoising tuned for voice.citeturn0search1
-- Suppression is set to -30 dB by default. If it feels too aggressive, open **Edit → Advanced Audio Properties → Filters** on `Mic/Aux`, select **Noise Suppression**, and adjust the slider toward -20 dB. RNNoise adapts automatically and usually preserves speech clarity better than the legacy Speex modes.citeturn0search0
+```bash
+neural-voice-enhance status
+neural-voice-enhance restart
+neural-voice-enhance stop
+```
 
-## Verifying it works
+See [the neural voice README](../audio/neural-voice-enhance/README.md) for
+suppression tuning and uninstall instructions.
 
-1. In OBS, open **Edit → Advanced Audio Properties** and confirm `Mic/Aux` has the filter entry.
-2. Talk near a constant noise source (fan, keyboard) and watch the **Filters** window meter drop when the filter is enabled.
-3. (Optional) Record a short clip—without the filter toggled you should hear the raw noise; with RNNoise on, the background should collapse while voice remains natural.
+## What the OBS profile provides
+
+- Profile `CleanAudio` with 48 kHz stereo output and neutral video defaults.
+- Scene collection `CleanAudio` with one lightweight `Mic Monitor` scene.
+- Global `Mic/Aux` set to the default system microphone.
+- A disabled RNNoise filter that can be enabled if DeepFilterNet is unavailable.
+
+## Linking the OBS configuration
+
+Run `python linkdotfiles.py` (or your normal dotfile deployment) so the files in
+`.config/obs-studio` are linked beneath `~/.config/obs-studio`. If OBS is already
+open, switch to **Profile → CleanAudio** and **Scene Collection → CleanAudio**.
+
+## Verification
+
+1. Run `neural-voice-enhance status`; it should report `active` and
+   `default-source: enhanced_voice`.
+2. In OBS, leave **Settings → Audio → Mic/Auxiliary Audio** on **Default**, or
+   explicitly select **Enhanced_Voice_DeepFilterNet**.
+3. Confirm **Mic/Aux → Filters → RNNoise Suppression** is disabled.
+4. Record a short clip with speech, keyboard noise, and silence. Increase from
+   the default 24 dB attenuation only if the background remains distracting.
+
+For a lightweight headless OBS configuration check:
+
+```bash
+xvfb-run -a timeout 5 /usr/bin/obs \
+  --disable-shutdown-check --collection CleanAudio --profile CleanAudio \
+  --minimize-to-tray --multi
+```
 
 ## Troubleshooting
 
-- If OBS starts with a different profile/collection, make sure `~/.config/obs-studio/global.ini` points to `CleanAudio` in the `[Basic]` section, then relaunch.
-- To re-run with the bundled headless test harness you can execute:
-  ```bash
-  xvfb-run -a timeout 5 obs --disable-shutdown-check --collection CleanAudio --profile CleanAudio --minimize-to-tray --multi
-  ```
-  This should log `filter: 'RNNoise Suppression'` for the `Mic/Aux` source, proving the filter is active.
+- If the enhanced source is absent, run `neural-voice-enhance restart` and
+  inspect `journalctl --user -u neural-voice-enhance.service`.
+- If the wrong hardware microphone is detected, reinstall with
+  `./audio/neural-voice-enhance/install.sh --source NAME`; obtain `NAME` from
+  `pactl list short sources`.
+- If audio sounds watery or clipped, use the 24 dB default and keep RNNoise
+  disabled.
+- Launch `/usr/bin/obs` to bypass the enhancer wrapper temporarily.

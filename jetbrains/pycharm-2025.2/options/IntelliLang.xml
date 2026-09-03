@@ -1,0 +1,46 @@
+<application>
+  <component name="LanguageInjectionConfiguration">
+    <injection language="SQLite" injector-id="js">
+      <display-name>flash.data (SQLite)</display-name>
+      <single-file value="true" />
+      <place><![CDATA[jsLiteral().and(asAssignedValue("text", "*", "dbStatement"))]]></place>
+      <place><![CDATA[jsLiteral().and(asAssignedValue("text", "flash.data.SQLStatement"))]]></place>
+    </injection>
+    <injection language="SQL" injector-id="python">
+      <display-name>&quot;SQL select/delete/insert/update/create&quot;</display-name>
+      <single-file value="true" />
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*((ALTER|DROP)\\s+INDEX\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*((ALTER|DROP)\\s+VIEW\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*((ALTER|TRUNCATE)\\s+TABLE\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*((BEGIN)|(START TRANSACTION))(\\s[^\n\r]+)?;")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*((CREATE|DROP)\\s+DATABASE\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*((CREATE|DROP)\\s+EXTENSION\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(ALTER\\s+EXTENSION\\s.+?\\s(UPDATE|(SET SCHEMA)|ADD|DROP))")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(ALTER\\s+SEQUENCE\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(BEGIN\\s+TRAN(SACTION)?\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(BEGIN\\s.+\\sEND;?$)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(COPY\\s.+?\\s(FROM|TO)\\s.+;$)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(CREATE\\s+((TEMP(ORARY)?|(GLOBAL\\s+TEMPORARY))\\s+)?TABLE\\s.+?\\(.+?\\))")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(CREATE\\s+(OR\\s+REPLACE\\s+)?FUNCTION\\s.+?\\sRETURNS?\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(CREATE\\s+(OR\\s+REPLACE\\s+)?PROC(EDURE)?\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(CREATE\\s+(OR\\s+REPLACE\\s+)?TRIGGER\\s.+?\\sON\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(CREATE\\s+(OR\\s+REPLACE\\s+)?VIEW\\s.+?\\sAS\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(CREATE\\s+(UNIQUE\\s+)?INDEX\\s.+?\\sON\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(DELETE\\s+(\\*\\s+)?FROM\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(DROP\\s+TABLE\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(INSERT\\s+((OR\\s+)?IGNORE\\s+)?INTO\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(REPLACE\\s+INTO\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(SELECT\\s.+?\\sFROM\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(UPDATE\\s.+?\\sSET\\s.+)")]]></place>
+      <place><![CDATA[pyStringLiteralMatches("^(\\s*((((--|#)[^\n\r]*)|(/\\*([^*])+\\*+/))(\r\n|\n|\r))+)?\\s*(WITH\\s.+?\\sAS\\s.+)")]]></place>
+    </injection>
+    <injection language="SQLite" injector-id="python">
+      <display-name>sqlite3</display-name>
+      <single-file value="true" />
+      <place><![CDATA[pyLiteralExpression().and(pyMethodArgument("execute", 0, "_sqlite3.Connection"))]]></place>
+      <place><![CDATA[pyLiteralExpression().and(pyMethodArgument("execute", 0, "_sqlite3.Cursor"))]]></place>
+      <place><![CDATA[pyLiteralExpression().and(pyMethodArgument("executemany", 0, "_sqlite3.Connection"))]]></place>
+      <place><![CDATA[pyLiteralExpression().and(pyMethodArgument("executemany", 0, "_sqlite3.Cursor"))]]></place>
+    </injection>
+  </component>
+</application>

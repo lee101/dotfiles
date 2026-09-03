@@ -1,0 +1,6 @@
+<application>
+  <component name="PySdkSettings">
+    <option name="PREFERRED_VIRTUALENV_BASE_PATH" value="$VIRTUALENV_ROOT_DIR$" />
+    <option name="PREFERRED_VIRTUALENV_BASE_SDK" value="/usr/bin/python3.9" />
+  </component>
+</application>

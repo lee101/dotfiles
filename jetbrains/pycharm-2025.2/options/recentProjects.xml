@@ -1,0 +1,581 @@
+<application>
+  <component name="RecentProjectsManager">
+    <option name="additionalInfo">
+      <map>
+        <entry key="$USER_HOME$/PycharmProjects/agflow">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357441780" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1506717756034" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/addictingwordgames">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1466287940141" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/algorithmns">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357460956" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1513451779116" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/bitbank-gekko">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357432305" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1524258727324" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/bitbank-node-js-api">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357463069" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1592809851128" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/bitbank-python-api">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357442706" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1516695686443" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/blackboxtest">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357420914" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1519264756456" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/bm">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357420914" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1519512816392" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/btcmarketsbot">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357422743" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1524691977342" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/casper">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357445956" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1510989607265" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/crunch">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357462349" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1498681294651" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/crunch-fitness">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357420194" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1499067908943" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/devkit-core">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1491616583694" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/gekko">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357433418" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1518482838259" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/gem-swapper">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1493196368296" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/graphite-stack">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357432305" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1524258753739" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/kraken-crypto-payments-hiring-test-v1.3.0">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357436531" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1522129123217" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/lee101.github.io">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357436531" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1522129183177" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/mmochess">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1468915525586" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/multiplicationmaster">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1491689383689" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/poloniex-api">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357448337" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1519083562507" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/readingtime">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1494407770481" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/sample-market-maker">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357420914" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1519248191279" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/testinstall/gemswapper">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="2" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1492214748084" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/webfiddle">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-171.4694.38" />
+              <option name="buildTimestamp" value="1497357442722" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="1" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1510082688591" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/whackthatmole">
+          <value>
+            <RecentProjectMetaInfo>
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-145.260" />
+              <option name="buildTimestamp" value="1458558000000" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="0" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1492214740487" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/Deep-Image-Matting-PyTorch">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="1dfI1S8UE5v1XSRnWkAO6G9CLPr">
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-202.5792.43" />
+              <option name="buildTimestamp" value="1592491265574" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="8" />
+              </option>
+              <option name="eap" value="true" />
+              <frame x="65" y="-4" width="1855" height="1084" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1592870170305" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/GCA-Matting">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="1dhOS92j7aur9t4DwEaTt5QEvbC">
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-202.6397.98" />
+              <option name="buildTimestamp" value="1595861064511" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="7" />
+              </option>
+              <frame x="64" y="-4" width="1857" height="1085" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1596502312479" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/lee101-removebg-training">
+          <value>
+            <RecentProjectMetaInfo frameTitle="lee101-removebg-training – ~/.pyenv/versions/3.8.3/lib/python3.8/site-packages/_pytest/python.py" projectWorkspaceId="1dfI7IKoR6kDhKHCXVt0FGKUJty">
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-213.5744.131" />
+              <option name="buildTimestamp" value="1637179331558" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="6" />
+              </option>
+              <frame x="0" y="1080" width="2048" height="1152" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1640917823828" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/work/screenreader">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="22zOBg8juKqKkbEveTfH8kFL1QA">
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-213.5744.131" />
+              <option name="buildTimestamp" value="1637179331558" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="5" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1640917823828" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/work/compose-extension">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="1wKOxygvceDQE7ZWNMgYdy4wBzy">
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-213.5744.131" />
+              <option name="buildTimestamp" value="1637179345650" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="3" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1642534772037" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/work/data">
+          <value>
+            <RecentProjectMetaInfo frameTitle="data – vocab.json" projectWorkspaceId="1wFT56AjJTgvTp84Z0FsQTSxT8M">
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-213.5744.131" />
+              <option name="buildTimestamp" value="1637179345650" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="2" />
+              </option>
+              <frame x="2120" y="27" width="2478" height="1413" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1642455109931" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="/tmp/README.md">
+          <value>
+            <RecentProjectMetaInfo frameTitle="README.md – README.md" projectWorkspaceId="2E9OTdNGlKClroiZN6VMUFCo2Yo">
+              <option name="activationTimestamp" value="1662004502311" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651949426" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="1" />
+              </option>
+              <frame x="72" y="27" width="2488" height="1413" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1662004343238" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="/media/lee/T7 Touch/code/20-questions">
+          <value>
+            <RecentProjectMetaInfo frameTitle="20-questions – README.md" projectWorkspaceId="2E9WGa8DGprXrG0KFOTApZrNnrv">
+              <option name="activationTimestamp" value="1662011591343" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651974173" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="0" />
+              </option>
+              <frame x="72" y="27" width="2488" height="1413" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1662008196671" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/wordsmashing">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="2EBmaqR8QOvC85dyCRAqf87RoWT">
+              <option name="activationTimestamp" value="1662077417737" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651974173" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="8" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1662280211510" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/work/autocomplete">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="1wEmwBx30FoXXhgSBbpMVHWGLaa">
+              <option name="activationTimestamp" value="1662280483213" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651974173" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="7" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1662280211510" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/work/cluster-gitops">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="1wKOwQ6GKPCPUi2io7gKZhHKGVw">
+              <option name="activationTimestamp" value="1662280212889" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651974173" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="6" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1662280211510" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/shared-embedding">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="2EeDZY7VXhklwI7sJ6xWHjR0JjW">
+              <option name="activationTimestamp" value="1663214201625" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651936167" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="5" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1662947213339" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/20-questions">
+          <value>
+            <RecentProjectMetaInfo projectWorkspaceId="2E9WGa8DGprXrG0KFOTApZrNnrv">
+              <option name="activationTimestamp" value="1675940942226" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651929722" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="4" />
+              </option>
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1663807215379" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/netwrck">
+          <value>
+            <RecentProjectMetaInfo frameTitle="netwrck – README.md" projectWorkspaceId="2ZPczJaLOX6rnOSJIRBUROnjY3b">
+              <option name="activationTimestamp" value="1757717197566" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-222.3739.56" />
+              <option name="buildTimestamp" value="1660651953914" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="3" />
+              </option>
+              <frame x="235" y="27" width="1400" height="1000" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1702327416335" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="/vfast/data/code/fal-demos">
+          <value>
+            <RecentProjectMetaInfo frameTitle="fal-demos – hunyuan3d.py" projectWorkspaceId="32cTynPOhURcnP0OaxFFUIE3CSJ">
+              <option name="activationTimestamp" value="1758795494421" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-252.25557.178" />
+              <option name="buildTimestamp" value="1756841760000" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="4" />
+              </option>
+              <frame x="3162" y="27" width="1400" height="1000" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1757719117861" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="/vfast/data/code/askfelix">
+          <value>
+            <RecentProjectMetaInfo frameTitle="askfelix – benchmark_fireducks.py" projectWorkspaceId="2MrDSRHHiL8h93AVi8Le9ATeKrV">
+              <option name="activationTimestamp" value="1760482934907" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-252.25557.178" />
+              <option name="buildTimestamp" value="1756841760000" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="3" />
+              </option>
+              <frame x="0" y="0" width="2560" height="1440" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1760479074896" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/code/stock">
+          <value>
+            <RecentProjectMetaInfo frameTitle="stock – runner.py" projectWorkspaceId="21D06GvJkLnHR2kakrEPMf8CDC2">
+              <option name="activationTimestamp" value="1761192113862" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-252.25557.178" />
+              <option name="buildTimestamp" value="1756841760000" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="4" />
+              </option>
+              <frame x="961" y="0" width="1400" height="1000" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1760482935969" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+        <entry key="/vfast/data/code/fal3/falwan22gctaylor">
+          <value>
+            <RecentProjectMetaInfo frameTitle="falwan22gctaylor – simulator.py" projectWorkspaceId="3329EKvP7E25acWdLIMTSLismSG">
+              <option name="activationTimestamp" value="1761197003914" />
+              <option name="binFolder" value="$APPLICATION_HOME_DIR$/bin" />
+              <option name="build" value="PY-252.25557.178" />
+              <option name="buildTimestamp" value="1756841760000" />
+              <option name="colorInfo">
+                <RecentProjectColorInfo associatedIndex="5" />
+              </option>
+              <frame x="443" y="0" width="1400" height="1000" extendedState="6" />
+              <option name="productionCode" value="PY" />
+              <option name="projectOpenTimestamp" value="1760777258312" />
+            </RecentProjectMetaInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="lastOpenedProject" value="/vfast/data/code/fal3/falwan22gctaylor" />
+    <option name="lastProjectLocation" value="$USER_HOME$/PycharmProjects" />
+  </component>
+</application>

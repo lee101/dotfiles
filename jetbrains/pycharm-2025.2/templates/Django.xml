@@ -1,0 +1,5 @@
+<templateSet group="Django">
+  <template name="if" value="{% if $VARIABLE$ %}&#10;$END$&#10;{% endif %} " description="{% if %} / {% endif %}" toReformat="false" toShortenFQNames="true">
+    <variable name="VARIABLE" expression="djangoVariable()" defaultValue="" alwaysStopAt="true" />
+  </template>
+</templateSet>

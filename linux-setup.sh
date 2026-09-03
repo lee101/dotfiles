@@ -413,3 +413,13 @@ SHOW_KB_RATE:TRUE
 EOF
 
 echo "Lynx browser installed and configured successfully"
+
+# Install the DeepFilterNet virtual microphone when running inside a desktop
+# audio session. Headless/SSH bootstrap runs can install it later with the same
+# standalone command.
+if command -v pactl >/dev/null 2>&1 && pactl info >/dev/null 2>&1; then
+  "${SCRIPT_DIR}/audio/neural-voice-enhance/install.sh"
+else
+  echo "No active desktop audio server; skipping neural voice enhancement."
+  echo "Later, run: ${SCRIPT_DIR}/audio/neural-voice-enhance/install.sh"
+fi

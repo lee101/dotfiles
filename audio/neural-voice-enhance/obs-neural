@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+"$HOME/.local/bin/neural-voice-enhance" start
+
+if [[ -n "${VOICE_ENHANCE_OBS_BINARY:-}" ]]; then
+    exec "$VOICE_ENHANCE_OBS_BINARY" "$@"
+fi
+for obs_binary in /usr/bin/obs /usr/local/bin/obs; do
+    if [[ -x "$obs_binary" ]]; then
+        exec "$obs_binary" "$@"
+    fi
+done
+if command -v flatpak >/dev/null 2>&1 && flatpak info com.obsproject.Studio >/dev/null 2>&1; then
+    exec flatpak run com.obsproject.Studio "$@"
+fi
+
+printf 'OBS Studio was not found. Install OBS or set VOICE_ENHANCE_OBS_BINARY.\n' >&2
+exit 1

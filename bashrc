@@ -106,7 +106,7 @@ fi
 
 ## =============    AI Coding Agents    =================
 # Pi Infinity (our fork of pi-mono with --auto-next-steps/--auto-next-idea)
-# pinf is installed at /usr/local/bin/pinf -> pi-infinity dist/cli.js
+# pinf runs from /vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js
 # Original pi (upstream @mariozechner/pi-coding-agent) installed via bun
 # Run alongside each other: pinf uses .pinf/ config, pi uses .pi/ config
 
@@ -135,8 +135,14 @@ except Exception as e:
 }
 
 # Quick aliases for the two coding agents
-alias pinf-update='cd /nvme0n1-disk/code/pi-infinity && git pull && npm run build && sudo ln -sf /nvme0n1-disk/code/pi-infinity/packages/coding-agent/dist/cli.js /usr/local/bin/pinf'
+alias pinf-update='cd /vfast/data/code/pi/pi-mono && git pull origin main && git fetch upstream && git merge upstream/main && NODE_OPTIONS=--experimental-strip-types npm run build:offline'
 alias pi-update='bun add -g @mariozechner/pi-coding-agent'
+alias pinf='/vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js'
+alias pinfn='/vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js --auto-next-steps'
+alias pinfni='/vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js --auto-next-idea'
+alias fx='/vfast/data/code/fx/zig-out/bin/fx'
+alias fxn='fx --auto-next-steps'
+alias fxni='fx --auto-next-steps --auto-next-idea'
 ## =====================================================
 
 # ============================================================

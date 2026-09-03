@@ -1,0 +1,9 @@
+<application>
+  <component name="FileEditorProviderManager">
+    <option name="selectedProviders">
+      <map>
+        <entry key="text-editor,csv-data-editor" value="csv-data-editor" />
+      </map>
+    </option>
+  </component>
+</application>
