@@ -41,9 +41,7 @@ export MAX_MCP_OUTPUT_TOKENS=100000
 export DISABLE_COST_WARNINGS=1
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0
 
-# ============================================================
-# PATH setup
-# ============================================================
+alias mu='muse --yolo'
 # Go
 export GOPATH=$HOME/go
 if [ -d "/usr/local/go/bin" ]; then
@@ -72,6 +70,7 @@ export CUDA_HOME='/usr/local/cuda-12.0'
 [ -d "/opt/nvim-linux64/bin" ] && export PATH="$PATH:/opt/nvim-linux64/bin"
 [ -d "$HOME/.pixi/bin" ] && export PATH="$HOME/.pixi/bin:$PATH"
 [ -d "$HOME/code/dotfiles/tools" ] && [[ ":$PATH:" != *":$HOME/code/dotfiles/tools:"* ]] && export PATH="$PATH:$HOME/code/dotfiles/tools"
+[ -d "$HOME/code/dotfiles/browserautomation" ] && [[ ":$PATH:" != *":$HOME/code/dotfiles/browserautomation:"* ]] && export PATH="$PATH:$HOME/code/dotfiles/browserautomation"
 
 # pnpm
 export PNPM_HOME="$HOME/.local/share/pnpm"
@@ -753,10 +752,16 @@ alias dvni="~/programs/Devin/bin/devin-desktop"
 # CLI installers/updaters
 unalias clinst 2>/dev/null || true
 clinst() {
-    # Claude's native updater requires this path, which may be absent when a
-    # Windows cache junction/symlink target is temporarily unavailable.
-    mkdir -p "$HOME/.cache/claude/staging" 2>/dev/null || true
-    claude update "$@"
+    # Prefer Claude's native installer over the legacy Bun/npm copy.
+    local claude_bin="$HOME/.local/bin/claude"
+    if [ ! -x "$claude_bin" ]; then
+        claude_bin="$(type -P claude 2>/dev/null || true)"
+    fi
+    if [ -z "$claude_bin" ] || [ ! -x "$claude_bin" ]; then
+        echo "Claude Code is not installed." >&2
+        return 1
+    fi
+    "$claude_bin" install "$@"
 }
 alias cinst='npm install -g @openai/codex@latest'
 
@@ -1146,9 +1151,11 @@ $plan_content"
 }
 
 cld() {
-    # Call Claude directly. Running the ELF binary through "bun run"
-    # causes parse errors like "Unexpected ... ELF".
-    ANTHROPIC_API_KEY="" command claude --dangerously-skip-permissions "$@"
+    # Prefer the native installer binary; PATH may still find an older Bun copy.
+    local claude_bin="$HOME/.local/bin/claude"
+    [ -x "$claude_bin" ] || claude_bin="$(type -P claude 2>/dev/null || true)"
+    [ -x "$claude_bin" ] || { echo "Claude Code is not installed." >&2; return 1; }
+    ANTHROPIC_API_KEY="" "$claude_bin" --dangerously-skip-permissions "$@"
 }
 
 cldgdfaa() {
@@ -1348,8 +1355,15 @@ esac
 # Source local environment
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 
-# Hub setup
-command -v hub >/dev/null 2>&1 && eval "$(hub alias -s)" 2>/dev/null
+# Hub setup: pass shell explicitly (hub's process-tree autodetection fails
+# under some parents) and silence hub's own stderr before eval sees it.
+if command -v hub >/dev/null 2>&1; then
+    _hub_shell=sh
+    [ -n "${BASH_VERSION:-}" ] && _hub_shell=bash
+    [ -n "${ZSH_VERSION:-}" ] && _hub_shell=zsh
+    eval "$(hub alias -s "$_hub_shell" 2>/dev/null)"
+    unset _hub_shell
+fi
 
 # ============================================================
 # NVM (lazy loaded)

@@ -1,0 +1,8 @@
+<application>
+  <component name="UISettings">
+    <option name="ACTIVATE_MRU_EDITOR_ON_CLOSE" value="true" />
+    <option name="CONSOLE_COMMAND_HISTORY_LIMIT" value="5000" />
+    <option name="EDITOR_TAB_LIMIT" value="15" />
+    <option name="UI_DENSITY" value="COMPACT" />
+  </component>
+</application>

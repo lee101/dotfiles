@@ -1,0 +1,9 @@
+<application>
+  <component name="EventLogAllowedList">
+    <build recorder-id="MP" build-number="PY-252.25557.178" />
+    <build recorder-id="FUS" build-number="PY-252.25557.178" />
+    <build recorder-id="MLSE" build-number="PY-252.25557.178" />
+    <build recorder-id="LLMC" build-number="PY-252.25557.178" />
+    <build recorder-id="ML" build-number="PY-252.25557.178" />
+  </component>
+</application>

@@ -1,0 +1,170 @@
+<application>
+  <component name="DimensionService">
+    <location key="WELCOME_SCREEN.0.0.1920.1080" x="992" y="244" />
+    <location key="FileChooserDialogImpl.0.0.1920.1080" x="1140" y="129" />
+    <location key="#com.intellij.ide.actions.ChooseComponentsToExportDialog.0.0.1920.1080" x="703" y="340" />
+    <location key="SettingsEditor.0.0.1920.1080" x="424" y="295" />
+    <location key="ProcessPopupWindow.0.0.1920.1080" x="1331" y="879" />
+    <location key="#com.intellij.execution.impl.EditConfigurationsDialog.0.0.1920.1080" x="463" y="279" />
+    <location key="findTextDialog.0.0.1920.1080" x="750" y="370" />
+    <location key="#Images.0.0.1920.1080" x="724" y="323" />
+    <location key="com.intellij.openapi.editor.actions.MultiplePasteAction$1.0.0.1920.1080" x="821" y="285" />
+    <location key="ReplaceDuplicatesPrompt.0.0.1920.1080" x="425" y="631" />
+    <location key="findTextDialog.1920.0.1920.1080" x="2670" y="435" />
+    <location key="com.intellij.lang.javascript.refactoring.extractMethod.JSExtractFunctionDialog.1920.0.1920.1080" x="2656" y="216" />
+    <location key="com.intellij.lang.javascript.refactoring.extractMethod.JSExtractFunctionDialog.0.0.1920.1080" x="732" y="209" />
+    <location key="FileChooserDialogImpl.1920.0.1920.1080" x="2695" y="472" />
+    <location key="#com.intellij.fileTypes.FileTypeChooser.0.0.1920.1080" x="656" y="341" />
+    <location key="#com.intellij.fileTypes.FileTypeChooser.1920.0.1920.1080" x="2631" y="346" />
+    <location key="SettingsEditor.1920.0.1920.1080" x="2396" y="234" />
+    <location key="#com.intellij.execution.impl.EditConfigurationsDialog.1920.0.1920.1080" x="2489" y="267" />
+    <location key="com.intellij.openapi.editor.actions.MultiplePasteAction$1.1920.0.1920.1080" x="2745" y="246" />
+    <location key="#tests.1920.0.1920.1080" x="2630" y="170" />
+    <location key="jetbrains.javascript.buildTools.run-task-popup.1920.0.1920.1080" x="2785" y="417" />
+    <location key="RollbackChangesDialog.0.0.1920.1080" x="809" y="252" />
+    <location key="#SQL_Dialects.0.0.1920.1080" x="432" y="241" />
+    <location key="com.intellij.database.view.ui.DeleteDialog.0.0.1920.1080" x="711" y="394" />
+    <location key="find.popup.0.0.1920.1080" x="763" y="261" />
+    <location key="find.popup.1920.0.1920.1080" x="2579" y="102" />
+    <location key="StructurePopup.1920.0.1920.1080" x="2705" y="339" />
+    <location key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog.1920.0.1920.1080" x="2748" y="434" />
+    <location key="#xdebugger.evaluate.1920.0.1920.1080" x="2385" y="142" />
+    <location key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog.1920.0.1920.1080" x="2650" y="286" />
+    <location key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog.0.0.1920.1080" x="764" y="289" />
+    <location key="#xdebugger.evaluate.0.0.1920.1080" x="648" y="606" />
+    <location key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2.0.0.1920.1080" x="530" y="275" />
+    <location key="#xdebugger.code.fragment.editor.0.0.1920.1080" x="826" y="389" />
+    <location key="#Unnamed.0.0.1920.1080" x="711" y="159" />
+    <location key="FileDocumentManager.FileCacheConflict.0.0.1920.1080" x="65" y="24" />
+    <location key="com.intellij.database.view.ui.DbObjectDialog.0.0.1920.1080" x="655" y="351" />
+    <location key="com.intellij.database.dbimport.ImportDialog.0.0.1920.1080" x="580" y="188" />
+    <location key="DUMP_DIALOG_DIMENSION_KEY.0.0.1920.1080" x="680" y="338" />
+    <location key="com.intellij.database.dbimport.ImportUtil.MyDialog.0.0.1920.1080" x="730" y="338" />
+    <location key="#user_payer.0.0.1920.1080" x="711" y="156" />
+    <location key="VCS.ChangeListViewerDialog.0.0.1920.1080" x="799" y="222" />
+    <location key="#user_emailer.0.0.1920.1080" x="711" y="159" />
+    <location key="com.intellij.database.view.ui.DeleteDialog.1920.0.1920.1080" x="2670" y="437" />
+    <location key="com.intellij.database.extractors.ui.ChooseExtractorForm.1920.0.1920.1080" x="2500" y="191" />
+    <location key="ReplaceDuplicatesPrompt.1920.0.1920.1080" x="2354" y="467" />
+    <location key="com.intellij.database.extractors.ui.ChooseExtractorForm.0.0.1920.1080" x="580" y="191" />
+    <location key="find.popup.0.0.2560.1440" x="440" y="201" />
+    <location key="find.popup.0.1080.2048.1152" x="1198" y="1372" />
+    <location key="find.popup.2048.1080.2560.1440" x="3173" y="1381" />
+    <location key="find.popup.2560.0.2048.1152" x="3533" y="286" />
+    <location key="find.popup.0.0.2048.1152" x="797" y="163" />
+    <location key="find.popup.2560.0.2560.1440" x="3615" y="272" />
+    <size key="FileChooserDialogImpl.0.0.1920.1080" width="510" height="520" />
+    <size key="#com.intellij.ide.actions.ChooseComponentsToExportDialog.0.0.1920.1080" width="560" height="264" />
+    <size key="SettingsEditor.0.0.1920.1080" width="1052" height="664" />
+    <size key="ProcessPopupWindow.0.0.1920.1080" width="353" height="195" />
+    <size key="GridCell.Tab.0.left.0.0.1920.1080" width="1807" height="343" />
+    <size key="GridCell.Tab.0.center.0.0.1920.1080" width="1807" height="343" />
+    <size key="GridCell.Tab.0.right.0.0.1920.1080" width="1807" height="343" />
+    <size key="GridCell.Tab.0.bottom.0.0.1920.1080" width="1807" height="343" />
+    <size key="findTextDialog.0.0.1920.1080" width="475" height="576" />
+    <size key="#Images.0.0.1920.1080" width="840" height="733" />
+    <size key="GridCell.Tab.1.left.0.0.1920.1080" width="1807" height="344" />
+    <size key="GridCell.Tab.1.center.0.0.1920.1080" width="1807" height="344" />
+    <size key="GridCell.Tab.1.right.0.0.1920.1080" width="1807" height="344" />
+    <size key="GridCell.Tab.1.bottom.0.0.1920.1080" width="1807" height="344" />
+    <size key="com.intellij.openapi.editor.actions.MultiplePasteAction$1.0.0.1920.1080" width="324" height="751" />
+    <size key="ReplaceDuplicatesPrompt.0.0.1920.1080" width="1117" height="136" />
+    <size key="findTextDialog.1920.0.1920.1080" width="465" height="534" />
+    <size key="com.intellij.lang.javascript.refactoring.extractMethod.JSExtractFunctionDialog.1920.0.1920.1080" width="502" height="728" />
+    <size key="com.intellij.lang.javascript.refactoring.extractMethod.JSExtractFunctionDialog.0.0.1920.1080" width="502" height="703" />
+    <size key="FileChooserDialogImpl.1920.0.1920.1080" width="424" height="466" />
+    <size key="#com.intellij.fileTypes.FileTypeChooser.0.0.1920.1080" width="654" height="413" />
+    <size key="GridCell.Tab.0.left.1920.0.1920.1080" width="1855" height="263" />
+    <size key="GridCell.Tab.0.center.1920.0.1920.1080" width="1855" height="263" />
+    <size key="GridCell.Tab.0.right.1920.0.1920.1080" width="1855" height="263" />
+    <size key="GridCell.Tab.0.bottom.1920.0.1920.1080" width="1855" height="263" />
+    <size key="#com.intellij.fileTypes.FileTypeChooser.1920.0.1920.1080" width="591" height="410" />
+    <size key="SettingsEditor.1920.0.1920.1080" width="1022" height="665" />
+    <size key="GridCell.Tab.1.left.1920.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.1.center.1920.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.1.right.1920.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.1.bottom.1920.0.1920.1080" width="1855" height="366" />
+    <size key="com.intellij.openapi.editor.actions.MultiplePasteAction$1.1920.0.1920.1080" width="324" height="755" />
+    <size key="#tests.1920.0.1920.1080" width="565" height="790" />
+    <size key="DebuggerActiveHint.1920.0.1920.1080" width="879" height="423" />
+    <size key="XDebugger.FullValuePopup.1920.0.1920.1080" width="929" height="530" />
+    <size key="jetbrains.javascript.buildTools.run-task-popup.1920.0.1920.1080" width="252" height="268" />
+    <size key="GridCell.Tab.0.left.0.0.1920.1080@192dpi" width="1920" height="286" />
+    <size key="GridCell.Tab.0.center.0.0.1920.1080@192dpi" width="1920" height="286" />
+    <size key="GridCell.Tab.0.right.0.0.1920.1080@192dpi" width="1920" height="286" />
+    <size key="GridCell.Tab.0.bottom.0.0.1920.1080@192dpi" width="1920" height="286" />
+    <size key="find.popup.0.0.1920.1080" width="647" height="584" />
+    <size key="find.popup.1920.0.1920.1080" width="834" height="630" />
+    <size key="StructurePopup.1920.0.1920.1080" width="412" height="367" />
+    <size key="#xdebugger.evaluate.1920.0.1920.1080" width="1154" height="871" />
+    <size key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog.0.0.1920.1080" width="446" height="487" />
+    <size key="DebuggerActiveHint.0.0.1920.1080" width="1229" height="423" />
+    <size key="#xdebugger.evaluate.0.0.1920.1080" width="589" height="474" />
+    <size key="javadoc.popup.0.0.1920.1080" width="483" height="177" />
+    <size key="GridCell.Tab.2.left.0.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.center.0.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.right.0.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.bottom.0.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.left.1920.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.center.1920.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.right.1920.0.1920.1080" width="1855" height="366" />
+    <size key="GridCell.Tab.2.bottom.1920.0.1920.1080" width="1855" height="366" />
+    <size key="com.intellij.database.extractors.ui.ChooseExtractorForm.0.0.1920.1080" width="824" height="694" />
+    <size key="XDebugger.FullValuePopup.0.0.1920.1080" width="929" height="544" />
+    <size key="find.popup.0.0.2560.1440" width="649" height="528" />
+    <size key="GridCell.Tab.0.left.0.0.2560.1440" width="2494" height="606" />
+    <size key="GridCell.Tab.0.center.0.0.2560.1440" width="2494" height="606" />
+    <size key="GridCell.Tab.0.right.0.0.2560.1440" width="2494" height="606" />
+    <size key="GridCell.Tab.0.bottom.0.0.2560.1440" width="2494" height="606" />
+    <size key="GridCell.Tab.1.left.0.0.2560.1440" width="2441" height="522" />
+    <size key="GridCell.Tab.1.center.0.0.2560.1440" width="2441" height="522" />
+    <size key="GridCell.Tab.1.right.0.0.2560.1440" width="2441" height="522" />
+    <size key="GridCell.Tab.1.bottom.0.0.2560.1440" width="2441" height="522" />
+    <size key="GridCell.Tab.0.left.0.1080.2048.1152" width="999" height="366" />
+    <size key="GridCell.Tab.0.center.0.1080.2048.1152" width="999" height="366" />
+    <size key="GridCell.Tab.0.right.0.1080.2048.1152" width="999" height="366" />
+    <size key="GridCell.Tab.0.bottom.0.1080.2048.1152" width="999" height="366" />
+    <size key="find.popup.0.1080.2048.1152" width="769" height="780" />
+    <size key="GridCell.Tab.1.left.0.1080.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.1.center.0.1080.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.1.right.0.1080.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.1.bottom.0.1080.2048.1152" width="2004" height="418" />
+    <size key="find.popup.2048.1080.2560.1440" width="927" height="780" />
+    <size key="GridCell.Tab.0.left.2048.1080.2560.1440" width="2444" height="426" />
+    <size key="GridCell.Tab.0.center.2048.1080.2560.1440" width="2444" height="426" />
+    <size key="GridCell.Tab.0.right.2048.1080.2560.1440" width="2444" height="426" />
+    <size key="GridCell.Tab.0.bottom.2048.1080.2560.1440" width="2444" height="426" />
+    <size key="GridCell.Tab.1.left.2048.1080.2560.1440" width="2444" height="523" />
+    <size key="GridCell.Tab.1.center.2048.1080.2560.1440" width="2444" height="523" />
+    <size key="GridCell.Tab.1.right.2048.1080.2560.1440" width="2444" height="523" />
+    <size key="GridCell.Tab.1.bottom.2048.1080.2560.1440" width="2444" height="523" />
+    <size key="find.popup.2560.0.2048.1152" width="645" height="780" />
+    <size key="find.popup.0.0.2048.1152" width="1251" height="983" />
+    <size key="GridCell.Tab.0.left.0.0.2048.1152" width="963" height="529" />
+    <size key="GridCell.Tab.0.center.0.0.2048.1152" width="963" height="529" />
+    <size key="GridCell.Tab.0.right.0.0.2048.1152" width="963" height="529" />
+    <size key="GridCell.Tab.0.bottom.0.0.2048.1152" width="963" height="529" />
+    <size key="GridCell.Tab.1.left.0.0.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.1.center.0.0.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.1.right.0.0.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.1.bottom.0.0.2048.1152" width="2004" height="418" />
+    <size key="GridCell.Tab.0.left.2560.0.2560.1440" width="2443" height="426" />
+    <size key="GridCell.Tab.0.center.2560.0.2560.1440" width="2443" height="426" />
+    <size key="GridCell.Tab.0.right.2560.0.2560.1440" width="2443" height="426" />
+    <size key="GridCell.Tab.0.bottom.2560.0.2560.1440" width="2443" height="426" />
+    <size key="find.popup.2560.0.2560.1440" width="805" height="552" />
+  </component>
+  <component name="WindowManager">
+    <frame x="961" y="0" width="1400" height="1000" extendedState="6" />
+  </component>
+  <component name="WindowStateApplicationService">
+    <state width="608" height="95" key="ShowUsagesActions.dimensionServiceKey" timestamp="1758692180440">
+      <screen x="2560" y="0" width="2560" height="1440" />
+    </state>
+    <state width="608" height="95" key="ShowUsagesActions.dimensionServiceKey/2560.0.2560.1440/0.0.2560.1440" timestamp="1758692180440" />
+    <state x="1280" y="600" width="1000" height="720" key="WELCOME_SCREEN" timestamp="1761197016996">
+      <screen x="0" y="0" width="2560" height="1440" />
+    </state>
+    <state x="1280" y="600" width="1000" height="720" key="WELCOME_SCREEN/2560.0.2560.1440/0.0.2560.1440" timestamp="1761197016996" />
+  </component>
+</application>

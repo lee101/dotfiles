@@ -1,0 +1,301 @@
+<application>
+  <component name="DynamicPluginEnabler">
+    <trackers>
+      <map>
+        <entry key="1dfI7IKoR6kDhKHCXVt0FGKUJty">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="1wEmwBx30FoXXhgSBbpMVHWGLaa">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="1wFT56AjJTgvTp84Z0FsQTSxT8M">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="1wKOwQ6GKPCPUi2io7gKZhHKGVw">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="1wKOxygvceDQE7ZWNMgYdy4wBzy">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="21D06GvJkLnHR2kakrEPMf8CDC2">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="22zOBg8juKqKkbEveTfH8kFL1QA">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="2E9OTdNGlKClroiZN6VMUFCo2Yo">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="2E9WGa8DGprXrG0KFOTApZrNnrv">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="2EBmaqR8QOvC85dyCRAqf87RoWT">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="2EeDZY7VXhklwI7sJ6xWHjR0JjW">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+        <entry key="2ZPczJaLOX6rnOSJIRBUROnjY3b">
+          <value>
+            <ProjectPluginTracker />
+          </value>
+        </entry>
+      </map>
+    </trackers>
+  </component>
+  <component name="FileEditorProviderManager">{
+  &quot;selectedProviders&quot;: {
+    &quot;csv-data-editor,text-editor&quot;: &quot;csv-data-editor&quot;
+  }
+}</component>
+  <component name="LangManager">
+    <option name="languageName" value="Python" />
+  </component>
+  <component name="NotRoamableUiSettings">
+    <option name="fontSize" value="15.0" />
+    <option name="presentationModeIdeScale" value="1.75" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="#xdebugger.evaluate.splitter" value="0.6251673" />
+    <property name="ColorChooser.RecentColors" value="102-102-190-255,,,151-98-190-255,,,202-85-140-255,,,215-40-28-255,,,202-74-158-255,,,90-221-122-255,,,58-193-203-255,,,53-83-191-255,,,202-0-187-255,,,97-32-190-255,,,197-142-202-255,,,202-101-148-255,,,209-105-20-255,,,71-208-124-255,,,70-196-114-255,,,68-182-102-255,,,191-55-89-255,,,158-84-39-255,,,230-171-140-255,,,239-166-193-255" />
+    <property name="CommitChangeListDialog.DETAILS_SPLITTER_PROPORTION_2" value="0.60186416" />
+    <property name="DBE.Default.Dialect" value="" />
+    <property name="DeploymentNotificationsComponent.WarnDisplayed.Java7&amp;Windows7FTPIssue" value="false" />
+    <property name="ExpandBeforeRunStepsPanel" value="true" />
+    <property name="ExpandRunDashboardTypesPanel" value="false" />
+    <property name="ExternalToolDialog.advanced.expanded" value="true" />
+    <property name="FindSplitterProportion" value="0.60294116" />
+    <property name="HbAutoCollapseBlocks" value="disabled" />
+    <property name="InstalledPluginsSearchHistory" value="keymap&#10;key" />
+    <property name="JestJavaScriptTestRunnerSupport.hideIgnoredTests" value="true" />
+    <property name="JestJavaScriptTestRunnerSupport.hidePassedTests" value="false" />
+    <property name="JestJavaScriptTestRunnerSupport.scrollToSource" value="true" />
+    <property name="JestJavaScriptTestRunnerSupport.selectFirtsDefect" value="true" />
+    <property name="KEYMAP" value="actions&#10;redo&#10;increase&#10;decrease&#10;copy path" />
+    <property name="LayoutCode.optimizeImports" value="true" />
+    <property name="LayoutCode.processChangedText" value="false" />
+    <property name="MarketplacePluginsSearchHistory" value="code openai&#10;code&#10;code po&#10;code po;&#10;code p" />
+    <property name="NextRunPlatformUpdateBuild" value="PY-213.6461.77/2021.3.1" />
+    <property name="NextRunPlatformUpdateVersion" value="2021.3.1" />
+    <property name="NonModalCommitPromotionState" value="SHOWN" />
+    <property name="OpenOrAttachDialog.OpenMode" value="new" />
+    <property name="PACKAGE_FILTER" value="pytest" />
+    <property name="PG_DUMP_PROPERTIES_COMMAND" value="--table=public.featureset --file=&quot;/home/lee/dump2.sql&quot; --dbname=btcbot --inserts --data-only" />
+    <property name="PG_DUMP_PROPERTIES_EXPANDED" value="true" />
+    <property name="PG_DUMP_PROPERTIES_PATH" value="/usr/bin/pg_dump" />
+    <property name="PG_DUMP_PROPERTIES_VARIANTS_1694034474" value="-f --file= -F --format= -j --jobs= -v --verbose -V --version -Z --compress= --lock-wait-timeout= --help -a --data-only -b --blobs -c --clean -C --create -E --encoding= -n --schema= -N --exclude-schema= -o --oids -O --no-owner -s --schema-only -S --superuser= -t --table= -T --exclude-table= -x --no-privileges --binary-upgrade --column-inserts --disable-dollar-quoting --disable-triggers --enable-row-security --exclude-table-data= --if-exists --inserts --no-security-labels --no-synchronized-snapshots --no-tablespaces --no-unlogged-table-data --quote-all-identifiers --section= --serializable-deferrable --snapshot= --use-set-session-authorization -d --dbname= -h --host= -p --port= -U --username= -w --no-password -W --password --role=" />
+    <property name="PluginConfigurable.selectionTab" value="1" />
+    <property name="PyCharm.InitialConfiguration" value="true" />
+    <property name="PyCharm.InitialConfiguration.V2" value="true" />
+    <property name="PyCharm.InitialConfiguration.V3" value="true" />
+    <property name="PyCharm.InitialConfiguration.V4" value="true" />
+    <property name="PyCharm.InitialConfiguration.V5" value="true" />
+    <property name="PyCharm.InitialConfiguration.V6" value="true" />
+    <property name="PyCharm.InitialConfiguration.V7" value="true" />
+    <property name="PyCharm.initialConfigurationShown" value="true" />
+    <property name="PythonUnitTestRunner.Splitter.Proportion" value="0.30057144" />
+    <property name="PythonUnitTestRunnerSupport.hidePassedTests" value="false" />
+    <property name="SHELLCHECK.PATH" value="$APPLICATION_PLUGINS_DIR$/Shell Script/shellcheck" />
+    <property name="SettingsSearchHistory" value="format&#10;typescript&#10;javascript&#10;r&#10;interp" />
+    <property name="SplitFileEditor.Proportion" value="0.3707094" />
+    <property name="appcds.runOnSecondStart" value="PY-213.5744.131-76a765a593de75d2e9a0567255b519071b541771bc4d3fb8ad7dbd7d54c24cd7" />
+    <property name="bundled.plugins.list.saved.version" value="PY-213.5744.131" />
+    <property name="com.intellij.database.view.ui.DeleteDialog.previewExpanded" value="true" />
+    <property name="completion.stats.experiment.salt" value="dd66e3db" />
+    <property name="completion.stats.experiment.version" value="2" />
+    <property name="completion.stats.status.updated.ts" value="1597373640288" />
+    <property name="dir.diff.space.button.info" value="3" />
+    <property name="evlsprt.202" value="1745172ad75" />
+    <property name="evlsprt.PY-202.6397.18" value="173ebd62efc" />
+    <property name="evlsprt2.202" value="17413a66194" />
+    <property name="evlsprt2.PY-202.6397.18" value="173d55db2e5" />
+    <property name="evlsprt3.171" value="11" />
+    <property name="evlsprt3.202" value="12" />
+    <property name="evlsprt3.213" value="5" />
+    <property name="evlsprt3.6" value="13" />
+    <property name="evlsprt3.PY-202.5792.43" value="13" />
+    <property name="evlsprt3.PY-202.6397.18" value="14" />
+    <property name="experimentalFeature.terminal.shell.command.handling" value="false" />
+    <property name="export.settings.path" value="$APPLICATION_CONFIG_DIR$/settings2.zip" />
+    <property name="file.chooser.recent.files" value="$USER_HOME$/work/cluster-gitops&#10;/home/lee/work/screenreader&#10;/home/lee/work/data&#10;/home/lee/work/autocomplete&#10;/home/lee/work/compose-extension&#10;/home/lee/work&#10;/home/lee/code/stock&#10;/home/lee/code/testgca.py&#10;/home/lee/code/GCA-Matting/networks/generators.py&#10;/home/lee/.config/JetBrains/PyCharm2020.2/settings.zip&#10;/home/lee/.PyCharm2017.1/config/settings.jar&#10;/home/lee/.pyenv/versions/3.8.3/bin/python&#10;/home/lee/code/GCA-Matting&#10;/home/lee/code/lee101-removebg-training&#10;/home/lee/code/Deep-Image-Matting-PyTorch&#10;/home/lee/code/kraken-crypto-payments-hiring-test-v1.3.0&#10;/home/lee/code/graphite-stack&#10;/home/lee/code/bm&#10;/home/lee/code/bitbank-gekko&#10;/home/lee/code/blackboxtest&#10;/home/lee/code&#10;/home/lee/code/poloniex-ticker-30-day-ending-17-feb-2018.csv&#10;/home/lee/code/poloniex-api&#10;/home/lee/code/featuresets-export-26-jan-2day-hasfuture-data.csv&#10;/home/lee/code/bitbank-featuresets-18jan-2018.csv&#10;/home/lee/code/bitbank-python-api&#10;/home/lee/code/bitbank-node-js-api&#10;/home/lee/code/gekko&#10;/home/lee/code/sample-market-maker&#10;/home/lee/code/casper" />
+    <property name="file.gist.reindex.count" value="80167" />
+    <property name="fileTypeChangedCounter" value="9" />
+    <property name="fileTypeDetectors" value="com.intellij.database.vfs.DbStorageFileType$Detector:com.intellij.docker.dockerFile.DockerFileTypeDetector:com.intellij.ide.scratch.ScratchFileServiceImpl$Detector:com.intellij.javascript.debugger.sourcemap.SourceMapFileType$MyFileTypeDetector:com.jetbrains.nodejs.util.NodeFileTypeDetector$JavaScriptFileTypeDetector:com.jetbrains.nodejs.util.NodeFileTypeDetector$TypeScriptFileTypeDetector:org.jetbrains.plugins.textmate.TextMateFileType$TextMateFileDetector" />
+    <property name="got.it.tooltip.cwm.invitation.notification" value="1" />
+    <property name="got.it.tooltip.js.debugger.terminal.start.debugger.from.url" value="1" />
+    <property name="got.it.tooltip.reader.mode.got.it" value="1" />
+    <property name="got.it.tooltip.show.diff.in.editor" value="1" />
+    <property name="gotit.previous.run" value="PY-213.5744.131" />
+    <property name="import_modality_state" value="false" />
+    <property name="input.method.disabler.muted" value="true" />
+    <property name="installation.uid" value="6cd540c0-a4ef-4b3d-9f19-c26e728fb850" />
+    <property name="js.rename.search.for.text.occurrences" value="false" />
+    <property name="js.rename.search.in.comments" value="true" />
+    <property name="last_opened_file_path" value="$USER_HOME$/work" />
+    <property name="log.trace.categories" value="#com.jetbrains.rdserver.requests&#10;#com.jetbrains.rd.ide.document&#10;#com.jetbrains.rdserver.document&#10;#com.jetbrains.rdserver.editors&#10;#com.jetbrains.rdserver.actions&#10;#com.jetbrains.rdserver.permissions" />
+    <property name="python.app.engine.sdk.path" value="$USER_HOME$/programs/google_appengine" />
+    <property name="python.move.module.members.dialog.show.table" value="true" />
+    <property name="registry.to.advanced.settings.migration.build" value="PY-213.5744.131" />
+    <property name="run.configuration.edit.ad" value="true" />
+    <property name="selected.color.option.type" value="PY.FSTRING_FRAGMENT_COLON" />
+    <property name="settings.code.style.selected.tab.TypeScript" value="Spaces" />
+    <property name="sm_test_statistics_table_columnsOrder0" value="0" />
+    <property name="sm_test_statistics_table_columnsOrder1" value="1" />
+    <property name="sm_test_statistics_table_columnsOrder2" value="2" />
+    <property name="sm_test_statistics_table_columnsWidth0" value="75" />
+    <property name="sm_test_statistics_table_columnsWidth1" value="75" />
+    <property name="sm_test_statistics_table_columnsWidth2" value="75" />
+    <property name="stats.collector.latest.sending.timestamp" value="1597209047507" />
+    <property name="stats.collector.today.sent.data.size" value="131032" />
+    <property name="tasks.pass.word.conversion.enforced" value="true" />
+    <property name="toolwindow.stripes.buttons.info.shown" value="true" />
+    <property name="ts.lib.d.ts.version" value="4.4.4" />
+  </component>
+  <component name="PropertyService"><![CDATA[{
+  "keyToString": {
+    "AIHubNotificationManager.lastUsedLicenseType": "PRO_TRIAL",
+    "CWM_LOGGING_VERSION": "1",
+    "ExpandBeforeRunStepsPanel": "true",
+    "FindSplitterProportion": "0.32985157",
+    "InstalledPluginsSearchHistory": "claude\nclaud\ncla\ncl\ncopilot",
+    "KEYMAP": "cyclic\nsplit\nsplit right\nopen terminal",
+    "LAST_CALCULATED_COLOR_INDEX_KEY": "5",
+    "LAST_EXTRACTOR_SCRIPTS_CLEANUP_VERSION/data/aggregators": "PY-252.25557.178",
+    "LayoutCode.codeCleanup": "true",
+    "LayoutCode.optimizeImports": "true",
+    "LayoutCode.processChangedText": "false",
+    "Markdown Split EditorLayout": "Editor and Preview",
+    "MarketplacePluginsSearchHistory": "claude",
+    "NextRunPlatformUpdateBuild": "PY-252.26199.168",
+    "NextRunPlatformUpdateSelfBuild": "PY-252.25557.178",
+    "NextRunPlatformUpdateVersion": "2025.2.2",
+    "PluginConfigurable.selectionTab": "1",
+    "PyCharm.InitialConfiguration": "true",
+    "PyCharm.InitialConfiguration.V2": "true",
+    "PyCharm.InitialConfiguration.V3": "true",
+    "PyCharm.InitialConfiguration.V4": "true",
+    "PyCharm.InitialConfiguration.V5": "true",
+    "PyCharm.InitialConfiguration.V6": "true",
+    "PyCharm.InitialConfiguration.V7": "true",
+    "PyCharm.InitialConfiguration.V8": "true",
+    "PyCharm.Uv.Path": "/home/lee/.pyenv/shims/uv",
+    "RunOnceActivity.TerminalFontSettingsService.fixStoredNonMonospacedFonts": "true",
+    "RunOnceActivity.TerminalOptionsProvider.migration.2025.1.1": "true",
+    "RunOnceActivity.VFSInitializationConditionsToFusReporter": "true",
+    "RunOnceActivity.git.modal.commit.toggle": "true",
+    "RunOnceActivity.se.text.search": "true",
+    "SettingsSearchHistory": "formatt\ninterp\nkeyboard\ncopilot",
+    "TextEditorWithPreview.SplitterProportionKey": "0.45350173",
+    "WelcomeFeature.SHORT_WELCOME_GUIDE_SHOWN": "true",
+    "appcds.runOnSecondStart": "PY-222.3739.56-9a93102a264f1375d84d670a05f5d783cff105087aa8ea3c991efde82db407ff",
+    "bundled.plugins.list.saved.version": "PY-222.3739.56",
+    "enter_selection_count": "5",
+    "evlsprt.252": "1994818aa00",
+    "evlsprt3.222": "22",
+    "evlsprt3.252": "6",
+    "experimental.ui.on.first.startup": "true",
+    "experimental.ui.onboarding.proposed.version": "252.25557.178",
+    "experimental.ui.used.version": "252.25557.178",
+    "experimentalFeature.terminal.shell.command.handling": "false",
+    "export.settings.path": "/home/lee/.config/pycharmsettings.zip",
+    "file.gist.reindex.count": "14",
+    "fileTypeChangedCounter": "60",
+    "fontSizeToResetConsole": "13.0",
+    "fontSizeToResetEditor": "13.0",
+    "got.it.tooltip.Plugins Auto-Update": "1",
+    "got.it.tooltip.reader.mode.got.it": "1",
+    "got.it.tooltip.settings.sync.in.settings": "1",
+    "got.it.tooltip.trial.state.widget.trial.available.got.it.id": "1",
+    "got.it.tooltip.trial.state.widget.trial.started.got.it.id": "1",
+    "idea.islands.enabled": "true",
+    "input.method.disabler.muted": "true",
+    "last_opened_file_path": "/media/lee/T7 Touch/code/20-questions",
+    "llm.installer.last.toolwindow.state": "AI_ASSISTANT",
+    "migrated.non.roamable.values.from.general.settings": "true",
+    "previousColorScheme": "_@user_Dark",
+    "python.app.engine.sdk.path": "",
+    "registry.to.advanced.settings.migration.build": "PY-252.25557.178",
+    "settings.code.style.selected.tab.Python": "Tabs and Indents",
+    "tasks.pass.word.conversion.enforced": "true",
+    "terminal.gen.one.option.visible": "false",
+    "trial.state.last.availability.check": "1760482608271",
+    "trial.state.last.availability.state": "false",
+    "trial.state.last.state": "FREE",
+    "ts.lib.d.ts.version": "5.7.3",
+    "whats.new.last.shown.version": "2025-2.1.1-25557-bf9800fe06357a8d934337c13de66c2b153b9545"
+  },
+  "keyToStringList": {
+    "AIHubNotificationManager.lastAllNotifications": [],
+    "AIHubNotificationManager.notifications": [],
+    "AIHubNotificationManager.seenNotifications": [],
+    "file.chooser.recent.files": [
+      "/vfast/data/code/askfelix",
+      "/vfast/data/code/fal3/falwan22gctaylor",
+      "/vfast/data/code/fal-demos",
+      "/vfast/data/code/fal3",
+      "/home/lee/code/20-questions/main.py",
+      "/home/lee/code/20-questions",
+      "/home/lee/code/20-questions/inference_server/inference_server.py",
+      "/media/lee/T7 Touch/code/20-questions",
+      "/media/lee/T7 Touch/code/README.md"
+    ],
+    "fileTypeDetectors": [
+      "com.intellij.ide.scratch.ScratchFileServiceImpl$Detector",
+      "com.intellij.docker.dockerFile.DockerFileTypeDetector",
+      "org.jetbrains.plugins.textmate.TextMateFileType$TextMateFileDetector"
+    ]
+  }
+}]]></component>
+  <component name="PyCodeInsightSettings">
+    <option name="RENAME_SEARCH_IN_COMMENTS_FOR_FUNCTION" value="true" />
+    <option name="RENAME_SEARCH_NON_CODE_FOR_FUNCTION" value="true" />
+  </component>
+  <component name="PyTestFrameworkService">
+    <option name="SDK_TO_PYTEST">
+      <map>
+        <entry key="$USER_HOME$/.pyenv/versions/3.8.3/bin/python" value="true" />
+        <entry key="$USER_HOME$/.virtualenvs/GCA-Matting/bin/python" value="true" />
+        <entry key="$USER_HOME$/.virtualenvs/venv/bin/python" value="true" />
+        <entry key="/usr/bin/python2.7" value="true" />
+        <entry key="/usr/bin/python3.5" value="true" />
+      </map>
+    </option>
+    <option name="SDK_TO_NOSETEST">
+      <map>
+        <entry key="$USER_HOME$/.pyenv/versions/3.8.3/bin/python" value="false" />
+        <entry key="$USER_HOME$/.virtualenvs/GCA-Matting/bin/python" value="false" />
+        <entry key="$USER_HOME$/.virtualenvs/venv/bin/python" value="false" />
+        <entry key="/usr/bin/python2.7" value="true" />
+        <entry key="/usr/bin/python3.5" value="false" />
+      </map>
+    </option>
+    <option name="SDK_TO_TRIALTEST">
+      <map>
+        <entry key="$USER_HOME$/.pyenv/versions/3.8.3/bin/python" value="false" />
+        <entry key="$USER_HOME$/.virtualenvs/GCA-Matting/bin/python" value="false" />
+      </map>
+    </option>
+  </component>
+</application>

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Installed as ~/.local/bin/obs. obs-neural locates the non-wrapper OBS binary.
+exec "$HOME/.local/bin/obs-neural" "$@"

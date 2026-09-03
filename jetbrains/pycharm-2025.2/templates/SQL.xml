@@ -1,0 +1,30 @@
+<templateSet group="SQL">
+  <template name="sela" value="select * from $table$ $alias$ where $alias$.$END$;" description="select * from table with alias" toReformat="true" toShortenFQNames="false">
+    <variable name="table" expression="complete()" defaultValue="" alwaysStopAt="true" />
+    <variable name="alias" expression="complete()" defaultValue="&quot;alias&quot;" alwaysStopAt="true" />
+  </template>
+  <template name="ins" value="insert into $table$ ($columns$) values ($END$);" description="insert into table values" toReformat="true" toShortenFQNames="false">
+    <variable name="table" expression="complete()" defaultValue="" alwaysStopAt="true" />
+    <variable name="columns" expression="complete()" defaultValue="" alwaysStopAt="true" />
+  </template>
+  <template name="selc" value="select count(*) from $table$ $alias$ where $alias$.$END$;" description="select count(*) from table with alias" toReformat="true" toShortenFQNames="false">
+    <variable name="table" expression="complete()" defaultValue="" alwaysStopAt="true" />
+    <variable name="alias" expression="complete()" defaultValue="&quot;alias&quot;" alwaysStopAt="true" />
+  </template>
+  <template name="tab" value="create table $table$ (&#10;  $col$ $type$ $null$$END$&#10;);" description="create table (column)" toReformat="true" toShortenFQNames="false">
+    <variable name="table" expression="" defaultValue="&quot;new_table&quot;" alwaysStopAt="true" />
+    <variable name="col" expression="" defaultValue="&quot;col&quot;" alwaysStopAt="true" />
+    <variable name="type" expression="" defaultValue="&quot;int&quot;" alwaysStopAt="true" />
+    <variable name="null" expression="" defaultValue="&quot;not null&quot;" alwaysStopAt="true" />
+  </template>
+  <template name="col" value="$col$ $type$ $null$$END$" description="column definition" toReformat="true" toShortenFQNames="false">
+    <variable name="col" expression="" defaultValue="&quot;col&quot;" alwaysStopAt="true" />
+    <variable name="type" expression="" defaultValue="&quot;int&quot;" alwaysStopAt="true" />
+    <variable name="null" expression="" defaultValue="&quot;not null&quot;" alwaysStopAt="true" />
+  </template>
+  <template name="upd" value="update $table_name$ set $col$ = $value$ where $END$;" description="update table set column value" toReformat="true" toShortenFQNames="false">
+    <variable name="table_name" expression="" defaultValue="" alwaysStopAt="true" />
+    <variable name="col" expression="complete()" defaultValue="" alwaysStopAt="true" />
+    <variable name="value" expression="" defaultValue="" alwaysStopAt="true" />
+  </template>
+</templateSet>

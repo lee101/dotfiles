@@ -30,7 +30,7 @@
     "volume": 1.0,
     "filters": [
       {
-        "enabled": true,
+        "enabled": false,
         "flags": 0,
         "hotkeys": {},
         "id": "noise_suppress_filter",

@@ -52,6 +52,18 @@ dotfiles/
 4. **Install**: `python linkdotfiles.py`
 5. **Force overwrite**: `python linkdotfiles.py -f`
 
+### Neural microphone for OBS (Linux)
+
+Install the DeepFilterNet voice-enhancement microphone and automatic OBS
+launcher with:
+
+```bash
+./audio/neural-voice-enhance/install.sh
+```
+
+See [audio/neural-voice-enhance/README.md](audio/neural-voice-enhance/README.md)
+for microphone selection, tuning, verification, and uninstall instructions.
+
 ### Manual Setup
 ```bash
 # Link individual files

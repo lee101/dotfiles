@@ -1,0 +1,21 @@
+<application>
+  <component name="LocalDatabaseDriverManager" version="201">
+    <driver id="sqlserver.ms" name="SQL Server (Microsoft)" />
+    <driver id="sqlserver.jtds" name="SQL Server (jTds)" />
+    <driver id="sqlite.xerial" name="Sqlite (Xerial)" />
+    <driver id="mysql" name="MySQL">
+      <property name="autoReconnect" value="true" />
+    </driver>
+    <driver id="postgresql">
+      <artifact id="PostgreSQL" name="PostgreSQL" use="true" version="42.1.1" />
+    </driver>
+    <driver id="oracle" name="Oracle">
+      <option name="auto-sync" value="false" />
+    </driver>
+    <driver id="db2" name="DB2 (LUW)" />
+    <driver id="db2.jtopen" name="DB2 (JTOpen)" />
+    <driver id="derby.embedded" name="Derby (Embedded)" />
+    <driver id="derby.remote" name="Derby (Remote)" />
+    <driver id="sybase.ase" name="Sybase (Native)" />
+  </component>
+</application>

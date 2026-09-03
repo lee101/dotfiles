@@ -1,0 +1,31 @@
+<application>
+  <component name="Trusted.Paths">
+    <option name="TRUSTED_PROJECT_PATHS">
+      <map>
+        <entry key="$USER_HOME$/code/20-questions" value="true" />
+        <entry key="$USER_HOME$/code/netwrck" value="true" />
+        <entry key="$USER_HOME$/code/shared-embedding" value="true" />
+        <entry key="$USER_HOME$/code/stock" value="true" />
+        <entry key="$USER_HOME$/code/wordsmashing" value="true" />
+        <entry key="$USER_HOME$/work/autocomplete" value="true" />
+        <entry key="$USER_HOME$/work/cluster-gitops" value="true" />
+        <entry key="/media/lee/T7 Touch/code/20-questions" value="true" />
+        <entry key="/tmp/README.md" value="true" />
+        <entry key="/vfast/data/code/askfelix" value="true" />
+        <entry key="/vfast/data/code/fal-demos" value="true" />
+        <entry key="/vfast/data/code/fal3" value="true" />
+        <entry key="/vfast/data/code/fal3/falwan22gctaylor" value="true" />
+      </map>
+    </option>
+  </component>
+  <component name="Trusted.Paths.Settings">
+    <option name="TRUSTED_PATHS">
+      <list>
+        <option value="/media/lee/T7 Touch/code" />
+        <option value="$USER_HOME$/code" />
+        <option value="$USER_HOME$/work" />
+        <option value="/vfast/data/code" />
+      </list>
+    </option>
+  </component>
+</application>

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=OBS Studio (Neural Voice)
+GenericName=Streaming/Recording Software
+Comment=Start DeepFilterNet neural voice enhancement, then launch OBS Studio
+Exec=@HOME@/.local/bin/obs-neural
+Icon=com.obsproject.Studio
+Terminal=false
+Type=Application
+Categories=AudioVideo;Recorder;
+StartupNotify=true
+StartupWMClass=obs
