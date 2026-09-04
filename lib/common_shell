@@ -813,7 +813,7 @@ opfd() { op --model 'deepseek/deepseek-v4-flash-vision-exp' "$@"; }
 opdf() { opfd "$@"; }
 opgp() { op --model 'glm-5.3' "$@"; }
 opgo() { op --model 'anthropic/claude-opus-5' "$@"; }
-opgx() { op --model 'gpt-5.6-sol' "$@"; }
+opgx() { op --model 'gpt-5.6-astra' "$@"; }
 opdp() { op --model 'deepseek/deepseek-v4-pro' "$@"; }
 
 # Cursor / Devin agent shortcuts
@@ -952,30 +952,30 @@ cdxed() { _codex_upstream exec --dangerously-bypass-approvals-and-sandbox "$@"; 
 
 # Local Codex Infinity build - cx* aliases
 cx() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra "$@"
 }
 
 cxxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh "$@"
 }
 
 cxxhn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
 }
 cxi() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --auto-next-idea "$@"
 }
 
 cxn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --auto-next-steps "$@"
 }
 
 cxm() {
