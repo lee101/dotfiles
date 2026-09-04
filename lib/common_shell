@@ -41,7 +41,70 @@ export MAX_MCP_OUTPUT_TOKENS=100000
 export DISABLE_COST_WARNINGS=1
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0
 
-alias mu='muse --yolo'
+# ============================================================
+# Muse agent shortcuts
+# ============================================================
+# Keep these as functions instead of aliases so options and prompts are
+# forwarded as distinct arguments. `mu` preserves the old `muse --yolo`
+# behavior; use `mu-safe` when approval and sandboxing should stay enabled.
+unalias mu mu-safe mu-medium muh mux mum mue mup muw mur mut muplan muhelp 2>/dev/null || true
+
+_muse() {
+    local muse_command="${MUSE_COMMAND:-muse}"
+    if ! command -v "$muse_command" >/dev/null 2>&1; then
+        echo "Muse CLI not found. Install it or set MUSE_COMMAND to its path." >&2
+        return 127
+    fi
+    command "$muse_command" "$@"
+}
+
+mu()       { _muse --yolo "$@"; }
+mu-safe()  { _muse "$@"; }
+mu-medium(){ _muse --yolo --reasoning-effort medium "$@"; }
+muh()      { _muse --yolo --reasoning-effort high "$@"; }
+mux()      { _muse --yolo --reasoning-effort xhigh "$@"; }
+mum()      { _muse --yolo --reasoning-effort ultra "$@"; }
+mue()      { _muse --yolo exec "$@"; }
+muw()      { _muse --yolo --worktree create "$@"; }
+
+mup() {
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: mup PROMPT_FILE [muse exec options]" >&2
+        return 2
+    fi
+    _muse --yolo exec --prompt-file "$@"
+}
+
+mur() {
+    local prompt="Review the current git diff for correctness, regressions, missing tests, and security issues."
+    [ "$#" -gt 0 ] && prompt="$prompt User focus: $*"
+    mue "$prompt"
+}
+
+mut() {
+    local prompt="Run the repository's relevant tests, diagnose failures, and implement focused fixes."
+    [ "$#" -gt 0 ] && prompt="$prompt User focus: $*"
+    mue "$prompt"
+}
+
+muplan() {
+    local prompt="Do not modify files. Inspect the repository and produce a concrete implementation plan with risks, tests, and verification steps."
+    [ "$#" -gt 0 ] && prompt="$prompt User request: $*"
+    _muse --disable-write --reasoning-effort high "$prompt"
+}
+
+muhelp() {
+    printf '%s\n' \
+        'mu       interactive Muse with the existing --yolo behavior' \
+        'mu-safe  interactive Muse with approvals and sandboxing enabled' \
+        'mu-medium / muh / mux / mum  yolo modes: medium / high / xhigh / max' \
+        'mue      one-shot headless execution' \
+        'mup FILE headless execution from a prompt file' \
+        'muw      yolo session in a new Git worktree' \
+        'mur      review the current git diff' \
+        'mut      run and improve the repository tests' \
+        'muplan   read-only planning pass'
+}
 # Go
 export GOPATH=$HOME/go
 if [ -d "/usr/local/go/bin" ]; then
@@ -173,6 +236,16 @@ fi
 alias d='cd'
 alias c='cd ~/code'
 alias u='cd ..'
+
+# zoxide provides z/zi when installed. Keep initialization shell-specific
+# because this file is shared by Bash and Zsh.
+if command -v zoxide >/dev/null 2>&1; then
+    if [ -n "${BASH_VERSION:-}" ]; then
+        eval "$(zoxide init bash)"
+    elif [ -n "${ZSH_VERSION:-}" ]; then
+        eval "$(zoxide init zsh)"
+    fi
+fi
 
 # ============================================================
 # General aliases
@@ -1198,7 +1271,7 @@ if [[ ! "$(uname -s)" = "Darwin" ]]; then
     alias pbcopy='xclip -selection clipboard'
     alias pbpaste='xclip -selection clipboard -o'
     alias open='xdg-open'
-    alias say='echo "$1" | espeak -s 120'
+    say() { printf '%s\n' "$1" | espeak -s 120; }
 fi
 
 # ============================================================
@@ -1249,10 +1322,33 @@ portkill() {
 # ============================================================
 # FZF configuration
 # ============================================================
-export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'bat --style=numbers --color=always --line-range :500 {}'"
-export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+_df_fd_bin=''
+_df_bat_bin=''
+if [ -n "${BASH_VERSION:-}" ]; then
+    type -P fd >/dev/null 2>&1 && _df_fd_bin=fd
+    type -P bat >/dev/null 2>&1 && _df_bat_bin=bat
+elif [ -n "${ZSH_VERSION:-}" ]; then
+    whence -p fd >/dev/null 2>&1 && _df_fd_bin=fd
+    whence -p bat >/dev/null 2>&1 && _df_bat_bin=bat
+fi
+command -v fdfind >/dev/null 2>&1 && [ -z "$_df_fd_bin" ] && _df_fd_bin=fdfind
+command -v batcat >/dev/null 2>&1 && [ -z "$_df_bat_bin" ] && _df_bat_bin=batcat
+
+if [ -n "$_df_fd_bin" ]; then
+    export FZF_DEFAULT_COMMAND="$_df_fd_bin --type f --hidden --follow --exclude .git"
+    export FZF_ALT_C_COMMAND="$_df_fd_bin --type d --hidden --follow --exclude .git"
+else
+    export FZF_DEFAULT_COMMAND='find . -type f -not -path "./.git/*"'
+    export FZF_ALT_C_COMMAND='find . -type d -not -path "./.git/*"'
+fi
+
+if [ -n "$_df_bat_bin" ]; then
+    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview '$_df_bat_bin --style=numbers --color=always --line-range :500 {}'"
+else
+    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview 'cat {}'"
+fi
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_ALT_C_COMMAND="fd --type d --hidden --follow --exclude .git"
+unset _df_fd_bin _df_bat_bin
 
 # FZF functions
 fe() {

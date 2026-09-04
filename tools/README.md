@@ -6,6 +6,18 @@ A collection of AI-powered developer tools for code quality, testing, and perfor
 
 Everything in this directory is designed to be runnable by name from any shell.
 
+### Running the repository tests
+
+Run the available shell, Python, and Neovim checks with:
+
+```bash
+tools/test-all.sh
+```
+
+The pre-commit hook runs the same command. Tests that depend on external
+projects or optional toolchains remain manual (`test_nvim_ctags.sh` is one
+example).
+
 - **`tools/` is on your `PATH`.** `lib/common_shell` adds `~/code/dotfiles/tools`
   to `PATH` (see `lib/common_shell` line ~74), so any executable placed directly
   in `tools/` becomes a command. Shell and Python tools are named without an

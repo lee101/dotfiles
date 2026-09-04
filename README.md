@@ -114,6 +114,30 @@ o            # open current directory
 refresh      # reload shell configuration
 ```
 
+### Muse Agent Shortcuts
+
+The shared shell config exposes reload-safe functions around `muse`:
+
+```bash
+mu "implement this"       # existing yolo behavior, interactive
+mu-safe "inspect this"     # approvals and sandboxing enabled
+mu-medium "..."            # medium reasoning
+muh "..."                  # high reasoning
+mux "..."                  # xhigh reasoning
+mum "..."                  # maximum reasoning (ultra)
+mue "..."                  # one-shot/headless execution
+mup prompt.md              # headless execution from a prompt file
+muw "..."                  # yolo session in a new Git worktree
+mur                        # review the current git diff
+mut                        # run tests and fix focused failures
+muplan "..."               # read-only implementation planning
+muhelp                     # show the shortcut list
+```
+
+Use `MUSE_COMMAND=/path/to/muse` if the CLI is not named `muse` or is not on
+`PATH`. The `--yolo` wrappers intentionally retain Muse's approval/sandbox
+behavior from the original `mu` alias; use `mu-safe` for an approval-gated run.
+
 ## 📋 What's Included
 
 ### Core Configurations
