@@ -515,6 +515,12 @@ main() {
     ripgrep \
     fd-find \
     fzf \
+    shellcheck \
+    shfmt \
+    bats \
+    python3-pytest \
+    zoxide \
+    hyperfine \
     valgrind \
     linux-perf \
     bat \

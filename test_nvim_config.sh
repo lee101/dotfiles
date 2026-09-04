@@ -32,11 +32,12 @@ for tool in nvim git fzf rg; do
 done
 pass "required tools are installed"
 
-for tool in fd bat; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "WARN: optional tool missing from PATH: $tool"
-  fi
-done
+if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
+  echo "WARN: optional tool missing from PATH: fd (or Debian's fdfind)"
+fi
+if ! command -v bat >/dev/null 2>&1 && ! command -v batcat >/dev/null 2>&1; then
+  echo "WARN: optional tool missing from PATH: bat (or Debian's batcat)"
+fi
 
 rg -q 'fzf-lua' "$DOC" || fail "navigation doc should name fzf-lua"
 rg -q 'Space fg' "$DOC" || fail "navigation doc should document Space fg"
