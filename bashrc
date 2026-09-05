@@ -140,9 +140,18 @@ alias pi-update='bun add -g @mariozechner/pi-coding-agent'
 alias pinf='/vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js'
 alias pinfn='/vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js --auto-next-steps'
 alias pinfni='/vfast/data/code/pi/pi-mono/packages/coding-agent/dist/cli.js --auto-next-idea'
-alias fx='/vfast/data/code/fx/zig-out/bin/fx'
-alias fxn='fx --auto-next-steps'
-alias fxni='fx --auto-next-steps --auto-next-idea'
+# di (lee101/di, fork of vercel-labs/fx). Model-pinned subagents live in
+# ~/code/dotfiles/subagents/di-*.sh; FX_MODEL selects the OpenPaths model.
+alias di='/vfast/data/code/fx/zig-out/bin/di'
+alias din='di --auto-next-steps'
+alias dini='di --auto-next-steps --auto-next-idea'
+alias dimuse="$HOME/code/dotfiles/subagents/di-muse.sh"
+alias digpt="$HOME/code/dotfiles/subagents/di-gpt.sh"
+alias diglm="$HOME/code/dotfiles/subagents/di-glm.sh"
+alias dideep="$HOME/code/dotfiles/subagents/di-deep.sh"
+alias diself='/vfast/data/code/fx/scripts/self-improve.sh'
+alias diup='/vfast/data/code/fx/scripts/self-improve.sh --merge-upstream'
+alias fx='di'
 ## =====================================================
 
 # ============================================================
