@@ -1,5 +1,5 @@
-model = "gpt-5.6-luna"
-model_reasoning_effort = "low"
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"
 service_tier = "default"
 
 [default]
@@ -89,6 +89,9 @@ trust_level = "trusted"
 [projects."/home/lee/code/netwrck"]
 trust_level = "trusted"
 
+[projects."/vfast/data/code/bitbankgo"]
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
@@ -101,6 +104,7 @@ gpt-5-codex = "gpt-5.2-codex"
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
+gpt-6-astra = 3
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
@@ -136,7 +140,7 @@ source_type = "local"
 source = "/home/lee/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-09-04T03:03:53Z"
+last_updated = "2026-09-05T06:03:54Z"
 source_type = "local"
 source = "/home/lee/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
