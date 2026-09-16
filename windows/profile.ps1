@@ -482,7 +482,7 @@ function cxll { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "low" -
 function cxlm { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "medium" -CodexArgs $args }
 function cxlh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "high" -CodexArgs $args }
 function cxlxh { Invoke-CodexModel -Model "gpt-5.6-luna" -ReasoningEffort "xhigh" -CodexArgs $args }
-function cxsl { Invoke-CodexModel -Model "gpt-5.6-sol" -ReasoningEffort "low" -CodexArgs $args }
+function cxsl { Invoke-CodexModel -Model "gpt-6-astra" -ReasoningEffort "low" -CodexArgs $args }
 function cxt { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxtl { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "low" -CodexArgs $args }
 function cxtm { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "medium" -CodexArgs $args }

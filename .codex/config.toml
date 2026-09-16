@@ -92,6 +92,9 @@ trust_level = "trusted"
 [projects."/vfast/data/code/bitbankgo"]
 trust_level = "trusted"
 
+[projects."/tmp/machine-repair-eval-t5g8k8j1"]
+trust_level = "trusted"
+
 [sandbox_workspace_write]
 network_access = true
 
@@ -104,7 +107,7 @@ gpt-5-codex = "gpt-5.2-codex"
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
-gpt-6-astra = 3
+gpt-6-astra = 4
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
