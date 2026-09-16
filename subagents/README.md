@@ -17,6 +17,7 @@ Commands:
 - `op-gemini.sh` — Gemini 3.7 Flash through OpenRouter
 - `op-opus.sh` — Claude Opus 5 through OpenRouter
 - `op-gpt.sh` — GPT 6 Astra through OpenRouter
+- `op-muse.sh` — Meta Muse Spark 1.3 through OpenPaths (`muse-spark-1.3`); cheap fixer: `op-muse.sh -p --auto-approve "fix failing test X"`
 - `op-oxalpha.sh` — Ox Alpha through OpenRouter stealth routing
 
 # di subagents
