@@ -1267,6 +1267,11 @@ alias tn='tmux new -s'
 # ============================================================
 # Platform-specific clipboard/open
 # ============================================================
+# An existing `say` alias breaks parsing of the definition below: bash reads the
+# whole `if` block at once, so alias expansion turns `say()` into a bad command.
+# Must run as a standalone command before the compound block is parsed.
+unalias say 2>/dev/null || true
+
 if [[ ! "$(uname -s)" = "Darwin" ]]; then
     alias pbcopy='xclip -selection clipboard'
     alias pbpaste='xclip -selection clipboard -o'
