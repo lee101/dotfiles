@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+repo_native="$root/tools/.bin/profile-md-mojo"
+cache_native="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-tools/profile-md-mojo"
+source_file="$root/profiling/mojo/profile_md.mojo"
+python_backend="$root/profiling/profile_md.py"
+
+is_native_input=1
+previous=""
+for arg in "$@"; do
+  if [[ "$previous" == kind && "$arg" != auto && "$arg" != trtexec ]]; then
+    is_native_input=0
+  fi
+  case "$arg" in
+    *.nsys-rep|*.sqlite|*.ncu-rep|*.ncu|*.csv|--kind=nsys|--kind=ncu)
+      is_native_input=0
+      ;;
+    --nsys|--ncu|--report)
+      is_native_input=0
+      ;;
+  esac
+  if [[ "$arg" == --kind ]]; then
+    previous=kind
+  else
+    previous=""
+  fi
+done
+if [[ ${PROFILE_MD_DISABLE_NATIVE:-0} == 1 ]]; then
+  is_native_input=0
+fi
+
+if [[ $is_native_input -eq 1 ]]; then
+  for native in "$repo_native" "$cache_native"; do
+    if [[ -x "$native" && "$native" -nt "$source_file" ]]; then
+      exec "$native" "$@"
+    fi
+  done
+fi
+
+# Build once on Linux when a compiler is already available. Set
+# PROFILE_MD_AUTO_BUILD=1 to allow Pixi to provision the pinned compiler too.
+if [[ $is_native_input -eq 1 && "$(uname -s 2>/dev/null || true)" == Linux* ]]; then
+  native="$cache_native"
+  mkdir -p "$(dirname "$native")"
+  if command -v mojo >/dev/null 2>&1; then
+    if "$root/profiling/mojo/build.sh" "$native" >/dev/null 2>&1; then
+      exec "$native" "$@"
+    fi
+  elif [[ ${PROFILE_MD_AUTO_BUILD:-0} == 1 ]] && command -v pixi >/dev/null 2>&1; then
+    if pixi run --manifest-path "$root/profiling/mojo/pixi.toml" build "$native" >/dev/null 2>&1; then
+      exec "$native" "$@"
+    fi
+  fi
+fi
+
+exec python3 "$python_backend" "$@"

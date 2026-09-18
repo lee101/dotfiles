@@ -658,7 +658,8 @@ export PLATFORM
 # (WSL users usually have their own explorer alias in wslbashrc.)
 # ------------------------------------------------------------------
 if [ "$PLATFORM" = "Git" ] || [ "$PLATFORM" = "Cygwin" ]; then
-    explorer() {
+    # `function name` avoids alias expansion when this file is sourced again.
+    function explorer {
         local target="${1:-.}"
         local wp
         wp="$(_to_windows_path "$target")"
