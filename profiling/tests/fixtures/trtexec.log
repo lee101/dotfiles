@@ -1,0 +1,6 @@
+[04/26/2024-00:31:43] [I] [TRT] Throughput: 1234.56 qps
+[04/26/2024-00:31:43] [I] [TRT] Latency: min = 0.100 ms, max = 0.200 ms, mean = 0.150 ms, median = 0.140 ms, percentile(90%) = 0.180 ms
+[04/26/2024-00:31:43] [I] [TRT] Enqueue Time: min = 0.050 ms, max = 0.080 ms, mean = 0.060 ms
+[04/26/2024-00:31:43] [I] [TRT] GPU Compute Time: min = 0.040 ms, max = 0.070 ms, mean = 0.050 ms
+[04/26/2024-00:31:43] [I] [TRT] conv1 0.123 ms
+[04/26/2024-00:31:43] [I] [TRT] attention_block 0.456 ms
