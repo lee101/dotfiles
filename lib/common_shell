@@ -878,19 +878,27 @@ _codex_local_runtime_ready() {
         return 0
     fi
 
+    # Best effort only: codex falls back to direct tools when the host is
+    # absent (e.g. its sandbox-enabled V8 prebuilt has no published archive),
+    # so a failed rebuild must never block startup.
+    local fail_marker="${resolved_codex%/*}/.codex-code-mode-host-build-failed"
+    if [ -f "$fail_marker" ] && [ -n "$(find "$fail_marker" -mmin -1440 2>/dev/null)" ]; then
+        echo "codex-code-mode-host missing (rebuild failed recently); continuing without code mode. Run: cxbuild" >&2
+        return 0
+    fi
+
     echo "Local codex-code-mode-host is missing; rebuilding it..." >&2
     if ! (
         cd "$CODEX_LOCAL_SOURCE_ROOT/codex-rs" &&
             cargo build --release -p codex-code-mode-host
-    ); then
-        echo "Failed to rebuild local codex-code-mode-host. Run: cxbuild" >&2
-        return 1
+    ) || [ ! -x "$code_mode_host" ]; then
+        echo "Failed to rebuild codex-code-mode-host; continuing without code mode. Run: cxbuild" >&2
+        touch "$fail_marker" 2>/dev/null || true
+        return 0
     fi
 
-    if [ ! -x "$code_mode_host" ]; then
-        echo "Build completed but codex-code-mode-host is still missing beside $resolved_codex" >&2
-        return 1
-    fi
+    rm -f "$fail_marker" 2>/dev/null || true
+    return 0
 }
 
 _codex_local_or_upstream() {
