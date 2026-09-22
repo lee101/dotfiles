@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-set -euo pipefail
-exec op --model 'glm-5.3-flash' "$@"
+# Direct DeepSeek (DEEPSEEK_API_KEY), not via OpenRouter.
+exec op --provider deepseek --model 'deepseek-v4-flash-vision-exp' "$@"
