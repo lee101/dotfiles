@@ -18,6 +18,8 @@ Commands:
 - `op-opus.sh` — Claude Opus 5 through OpenRouter
 - `op-gpt.sh` — GPT 6 Astra through OpenRouter
 - `op-muse.sh` — Meta Muse Spark 1.3 through OpenPaths (`muse-spark-1.3`); cheap fixer: `op-muse.sh -p --auto-approve "fix failing test X"`
+- `op-mimo.sh` — Xiaomi MiMo-V2.6-Pro through OpenPaths (`xiaomi/mimo-v2.6-pro`), 1M context agentic model
+- `op-runanywhere.sh` (`opany`) — GLM-5.3-Flash direct on RunAnywhere/Wally Cloud (`runanywhere` provider, `RUNANYWHERE_API_KEY`), not via OpenRouter; `OPANY_MODEL=qwen3.8-27b` swaps to the other model on the same key
 
 # di subagents
 
