@@ -813,7 +813,7 @@ opfd() { op --model 'deepseek/deepseek-v4-flash-vision-exp' "$@"; }
 opdf() { opfd "$@"; }
 opgp() { op --model 'glm-5.3' "$@"; }
 opgo() { op --model 'anthropic/claude-opus-5' "$@"; }
-opgx() { op --model 'gpt-5.6-astra' "$@"; }
+opgx() { op --model 'gpt-5.6-sol' "$@"; }
 opdp() { op --model 'deepseek/deepseek-v4-pro' "$@"; }
 
 # Cursor / Devin agent shortcuts
@@ -928,8 +928,11 @@ _codex_local_or_upstream() {
 # happen before the declarations to keep reloads safe.
 unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh ccxt ccxtl ccxtm ccxth \
     cdx cdxd cdxf cdxr cdxw cdxa cdxe cdxs cdxo cdxed \
-    cx cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
+    cx cxd cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
     cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxll cxlm cxlh cxlxh cxt cxtl cxtm cxth cxbuild 2>/dev/null || true
+
+# gpt-5.6-terra is retired; drop the functions earlier reloads left behind.
+unset -f ccxt ccxtl ccxtm ccxth cxt cxtl cxtm cxth 2>/dev/null || true
 
 # Upstream codex - ccx* aliases
 ccx()  { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"; }
@@ -941,10 +944,6 @@ ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-l
 ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low "$@"; }
 ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"; }
 ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high "$@"; }
-ccxt() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"; }
-ccxtl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=low "$@"; }
-ccxtm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"; }
-ccxth() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=high "$@"; }
 
 # Standard codex aliases
 cdx() { _codex_upstream "$@"; }
@@ -960,30 +959,30 @@ cdxed() { _codex_upstream exec --dangerously-bypass-approvals-and-sandbox "$@"; 
 
 # Local Codex Infinity build - cx* aliases
 cx() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol "$@"
 }
 
 cxxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxxhn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
 }
 cxi() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-idea "$@"
 }
 
 cxn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-steps "$@"
 }
 
 cxm() {
@@ -992,6 +991,12 @@ cxm() {
 
 cxim() {
     _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna --auto-next-idea "$@"
+}
+
+# DeepSeek flash, direct to api.deepseek.com (provider inferred from the slug).
+# The 4.1 name is a local alias; codex sends deepseek-flash on the wire.
+cxd() {
+    _codex_local_or_upstream --yolo3 -m deepseek-v4.1-flash "$@"
 }
 
 cxl() {
@@ -1025,22 +1030,6 @@ cxh() {
         esac
     done
     _codex_local_or_upstream --yolo3 -m gpt-6-astra --config model_reasoning_effort=high "$@"
-}
-
-cxt() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"
-}
-
-cxtl() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=low "$@"
-}
-
-cxtm() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"
-}
-
-cxth() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=high "$@"
 }
 
 cxs() {
