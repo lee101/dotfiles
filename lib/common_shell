@@ -813,7 +813,7 @@ opfd() { op --model 'deepseek/deepseek-v4-flash-vision-exp' "$@"; }
 opdf() { opfd "$@"; }
 opgp() { op --model 'glm-5.3' "$@"; }
 opgo() { op --model 'anthropic/claude-opus-5' "$@"; }
-opgx() { op --model 'gpt-5.6-sol' "$@"; }
+opgx() { op --model 'gpt-6-luna' "$@"; }
 opdp() { op --model 'deepseek/deepseek-v4-pro' "$@"; }
 
 # Cursor / Devin agent shortcuts
@@ -940,10 +940,10 @@ ccxl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config mod
 ccxm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"; }
 ccxh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
 ccxf() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
-ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"; }
-ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low "$@"; }
-ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"; }
-ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high "$@"; }
+ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"; }
+ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=low "$@"; }
+ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=medium "$@"; }
+ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=high "$@"; }
 
 # Standard codex aliases
 cdx() { _codex_upstream "$@"; }
@@ -959,38 +959,38 @@ cdxed() { _codex_upstream exec --dangerously-bypass-approvals-and-sandbox "$@"; 
 
 # Local Codex Infinity build - cx* aliases
 cx() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna "$@"
 }
 
 cxxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh "$@"
 }
 
 cxxhn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
 }
 cxi() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --auto-next-idea "$@"
 }
 
 cxn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-sol --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --auto-next-steps "$@"
 }
 
 cxm() {
-    _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna "$@"
+    _codex_local_or_upstream --yolo3 --config model=gpt-6-sol "$@"
 }
 
 cxim() {
-    _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 --config model=gpt-6-sol --auto-next-idea "$@"
 }
 
 # DeepSeek flash, direct to api.deepseek.com (provider inferred from the slug).
@@ -1004,19 +1004,19 @@ cxl() {
 }
 
 cxll() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=low "$@"
 }
 
 cxlm() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxlh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=high "$@"
 }
 
 cxlxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxh() {
@@ -1033,7 +1033,7 @@ cxh() {
 }
 
 cxs() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxsl() {
@@ -1041,23 +1041,23 @@ cxsl() {
 }
 
 cxsm() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxsh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=high "$@"
 }
 
 cxsi() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxsn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-steps "$@"
 }
 
 cxsni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxni() {
