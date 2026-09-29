@@ -478,19 +478,15 @@ function cxm { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox"
 function cxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high") + $args) }
 function cxxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=xhigh") + $args) }
 function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high", "--full-auto") + $args) }
+# gpt-5.6-terra is retired; drop the functions earlier reloads left behind.
+foreach ($terra in 'cxt', 'cxtl', 'cxtm', 'cxth', 'ccxt', 'ccxtl', 'ccxtm', 'ccxth') {
+    if (Test-Path "Function:\$terra") { Remove-Item "Function:\$terra" -Force }
+}
 function cxll { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "low" -CodexArgs $args }
 function cxlm { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "medium" -CodexArgs $args }
 function cxlh { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "high" -CodexArgs $args }
 function cxlxh { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxsl { Invoke-CodexModel -Model "gpt-6-astra" -ReasoningEffort "low" -CodexArgs $args }
-function cxt { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
-function cxtl { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "low" -CodexArgs $args }
-function cxtm { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "medium" -CodexArgs $args }
-function cxth { Invoke-CodexModel -Model "gpt-5.6-terra" -ReasoningEffort "high" -CodexArgs $args }
-function ccxt { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=xhigh") + $args) }
-function ccxtl { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=low") + $args) }
-function ccxtm { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=medium") + $args) }
-function ccxth { Invoke-CodexUpstream (@("--dangerously-bypass-approvals-and-sandbox", "-m", "gpt-5.6-terra", "--config", "model_reasoning_effort=high") + $args) }
 function cxbuild {
     $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs") { "$HOME\code\codex" } else { $null }
     if (-not $codexDir) {
