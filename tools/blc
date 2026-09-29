@@ -127,8 +127,21 @@ def extract_links(html_body, base_url):
         if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
             continue
         full_url = urljoin(base_url, href)
+        if is_edge_pseudo_url(full_url):
+            continue
         resolved.append((tag, full_url))
     return resolved
+
+
+def is_edge_pseudo_url(url):
+    """CDN-injected links that only work in a browser, not as a plain GET.
+
+    Cloudflare's Email Obfuscation rewrites `mailto:` into
+    `/cdn-cgi/l/email-protection#<hex>` and decodes it client-side with
+    email-decode.min.js. The bare path (fragments are never sent to the server)
+    returns 404 by design, so reporting it as a broken link is a false positive.
+    """
+    return "/cdn-cgi/" in urlparse(url).path
 
 
 def check_link(url, timeout=10):
@@ -141,12 +154,70 @@ def is_same_domain(url, base_url):
     return urlparse(url).netloc == urlparse(base_url).netloc
 
 
-def crawl(start_url, max_depth=2, check_external=False, timeout=10, max_pages=200, workers=10):
+def fetch_sitemap_urls(sitemap_url, timeout=10, _depth=0):
+    """Return every <loc> in a sitemap, following sitemap-index files one level.
+
+    Client-rendered SPAs expose almost no links in their served HTML, so a
+    plain crawl only ever sees the shell. Seeding from the sitemap is the only
+    way to actually exercise the real routes.
+    """
+    import xml.etree.ElementTree as ET
+
+    status, _, _, error = fetch_url(sitemap_url, timeout)
+    if error or not status or status >= 400:
+        sys.stderr.write(f"sitemap fetch failed ({status or error}): {sitemap_url}\n")
+        return []
+
+    if HAS_DEPS:
+        body = requests.get(sitemap_url, timeout=timeout,
+                            headers={"User-Agent": "BrokenLinkChecker/1.0"}).text
+    else:
+        req = urllib.request.Request(sitemap_url, headers={"User-Agent": "BrokenLinkChecker/1.0"})
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        body = urllib.request.urlopen(req, timeout=timeout, context=ctx).read().decode(
+            "utf-8", errors="replace")
+
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError as exc:
+        sys.stderr.write(f"sitemap parse failed: {sitemap_url}: {exc}\n")
+        return []
+
+    locs = [el.text.strip() for el in root.iter()
+            if el.tag.endswith("loc") and el.text and el.text.strip()]
+
+    # A sitemap index points at more sitemaps; follow those once.
+    if root.tag.endswith("sitemapindex") and _depth == 0:
+        nested = []
+        for child_sitemap in locs:
+            nested.extend(fetch_sitemap_urls(child_sitemap, timeout, _depth + 1))
+        return nested
+    return locs
+
+
+def crawl(start_url, max_depth=2, check_external=False, timeout=10, max_pages=200,
+          workers=10, sitemap=None):
     """Crawl starting from start_url and check all links."""
     visited = set()
     results = []  # list of dicts
     pages_crawled = 0
     queue = [(start_url, 0, None)]  # (url, depth, source_page)
+
+    if sitemap:
+        sitemap_url = sitemap if sitemap.startswith(("http://", "https://")) else urljoin(
+            start_url, "/sitemap.xml")
+        seeded = fetch_sitemap_urls(sitemap_url, timeout)
+        sys.stderr.write(f"sitemap: seeded {len(seeded)} urls from {sitemap_url}\n")
+        if len(seeded) > max_pages:
+            # Never let a capped run read as full coverage.
+            sys.stderr.write(
+                f"sitemap: WARNING --max-pages={max_pages} covers only "
+                f"{max_pages / len(seeded):.2%} of {len(seeded)} sitemap urls; "
+                f"raise --max-pages for fuller coverage\n"
+            )
+        queue.extend((url, max_depth, sitemap_url) for url in seeded)
 
     # Track which pages link to which URLs
     link_sources = defaultdict(list)  # url -> [(source_page, tag)]
@@ -289,6 +360,11 @@ def main():
     parser.add_argument("--external", action="store_true", help="Also check external links")
     parser.add_argument("--timeout", type=int, default=10, help="Request timeout in seconds")
     parser.add_argument("--max-pages", type=int, default=200, help="Max pages to crawl")
+    parser.add_argument("--sitemap", nargs="?", const="auto", default=None,
+                        metavar="URL",
+                        help="Seed the crawl from sitemap.xml (follows a sitemap index). "
+                             "Bare --sitemap uses <site>/sitemap.xml. Required for SPAs, "
+                             "whose served HTML contains almost no links.")
     parser.add_argument("--workers", type=int, default=10, help="Concurrent workers")
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     parser.add_argument("--output", "-o", help="Write markdown to file")
@@ -304,7 +380,8 @@ def main():
 
     start = time.time()
     results, pages_crawled, link_sources = crawl(
-        url, args.depth, args.external, args.timeout, args.max_pages, args.workers
+        url, args.depth, args.external, args.timeout, args.max_pages, args.workers,
+        args.sitemap
     )
     elapsed = time.time() - start
 

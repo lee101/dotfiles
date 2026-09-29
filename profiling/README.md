@@ -19,6 +19,25 @@ to `file:line` instead of paging through 20MB of perf/ncu output.
 | `c-inspect` | `find` + `awk` | source-tree map: per-file functions, types, TODOs |
 
 All tools accept `--out PATH` to write a `.md` file (default: stdout).
+`profile-md --compact` limits reports to 10 rows and 6,000 characters; use
+`--top N --max-chars N` for an explicit agent context budget.
+
+The normal `tools/profile-md` command automatically uses the compiled Mojo
+core for large TensorRT text logs. Nsight binary artifact orchestration and
+hosts without Mojo—including native Windows—use the compatible Python backend
+with the same bounded CLI. Build every local native tool with:
+
+```bash
+tools/cmd/build.sh
+```
+
+On Linux, `PROFILE_MD_AUTO_BUILD=1 profile-md report.log` can provision the
+pinned compiler through Pixi and cache the binary on first use. It is opt-in so
+a small report never unexpectedly downloads a compiler toolchain.
+PowerShell resolves `tools/profile-md.cmd`, so the command also works without
+Git Bash after installing any profile from `windows/`.
+Set `PROFILE_MD_DISABLE_NATIVE=1` to force the portable backend when comparing
+outputs or diagnosing a local Mojo toolchain.
 
 ## Install
 
@@ -62,6 +81,8 @@ cuda-sanitize-md --out /tmp/cs.md -- ./build/cuda_bench
 profile-md /tmp/e2e_profile.nsys-rep
 profile-md /tmp/attn_profile.ncu-rep
 profile-md /tmp/trtexec.log --out /tmp/trtexec.md
+profile-md /tmp/trtexec.log --compact
+profile-md /tmp/trtexec.log --top 8 --max-chars 4000
 ```
 
 The Nsight Systems markdown now includes:

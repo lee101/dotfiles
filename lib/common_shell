@@ -9,9 +9,6 @@ case $- in
       *) return;;
 esac
 
-# ============================================================
-# Environment variables
-# ============================================================
 export DOCKER_BUILDKIT=1
 export NODE_OPTIONS="--max-old-space-size=8192"
 export GO111MODULE=on
@@ -41,9 +38,6 @@ export MAX_MCP_OUTPUT_TOKENS=100000
 export DISABLE_COST_WARNINGS=1
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=0
 
-# ============================================================
-# Muse agent shortcuts
-# ============================================================
 # Keep these as functions instead of aliases so options and prompts are
 # forwarded as distinct arguments. `mu` preserves the old `muse --yolo`
 # behavior; use `mu-safe` when approval and sandboxing should stay enabled.
@@ -185,12 +179,6 @@ fi
 # grok installer
 [ -d "$HOME/.grok/bin" ] && export PATH="$HOME/.grok/bin:$PATH"
 
-# ============================================================
-# Color support
-# ============================================================
-# This is an interactive shell configuration and intentionally enables color.
-# Some launchers export NO_COLOR globally, which otherwise disables both the
-# prompt and tools such as eza even in a full-color terminal.
 unset NO_COLOR
 
 if [ -x /usr/bin/dircolors ]; then
@@ -200,9 +188,6 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
-# ============================================================
-# Directory listing (eza or fallback to ls)
-# ============================================================
 if command -v eza >/dev/null 2>&1; then
     alias ls='eza --group-directories-first --color=auto'
     alias ll='eza -al --group-directories-first --classify --git'
@@ -230,9 +215,6 @@ else
     alias lrecent='ls -ltr'
 fi
 
-# ============================================================
-# Navigation aliases
-# ============================================================
 alias d='cd'
 alias c='cd ~/code'
 alias u='cd ..'
@@ -247,9 +229,6 @@ if command -v zoxide >/dev/null 2>&1; then
     fi
 fi
 
-# ============================================================
-# General aliases
-# ============================================================
 alias r='rm -rf'
 alias rr='trash-put'
 alias tli='terraform console'
@@ -275,9 +254,6 @@ command -v xh >/dev/null 2>&1 && alias http='xh'
 command -v procs >/dev/null 2>&1 && alias psx='procs'
 # 'o' and 'oo' aliases set in cross_platform_utils or shell-specific config
 
-# ============================================================
-# Python / uv aliases
-# ============================================================
 alias uva='source .venv/bin/activate'
 alias sve='source .venv/bin/activate'
 alias sni='sudo snap install --classic'
@@ -296,17 +272,11 @@ pins() {
     uv pip install "$package_name" --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org && pip freeze | grep -i "$package_name" >> "$requirements_file"
 }
 
-# ============================================================
-# Bun aliases
-# ============================================================
 alias brb='bun run build'
 alias brl='bun run lint'
 alias brf='bun run format'
 alias brt='bun run test'
 
-# ============================================================
-# Docker aliases
-# ============================================================
 alias dps='docker ps'
 alias dim='docker images'
 alias dlg='docker logs'
@@ -328,9 +298,6 @@ dbashg() { docker run -i -t --entrypoint=/bin/bash --gpus all "$@" -c /bin/bash;
 dbashu() { docker run -i -t --entrypoint=/bin/bash "$@" -c /bin/bash; }
 dbashe() { docker exec -it "$@" /bin/bash; }
 
-# ============================================================
-# Kubernetes aliases
-# ============================================================
 alias klg='k logs -n'
 alias kdlp='k delete pod -n'
 alias kdsp='k describe pod -n'
@@ -340,9 +307,6 @@ alias kdlap='kdlpn'
 kbash() { k exec -it -n "$@" -- /bin/bash; }
 ksh()   { k exec -it -n "$@" -- /bin/sh; }
 
-# ============================================================
-# Git aliases
-# ============================================================
 alias gst='git status'
 alias gstt='git status -uno'
 alias gco='git checkout'
@@ -435,7 +399,6 @@ alias gll='git log --graph --pretty=oneline --abbrev-commit'
 alias gg="git log --graph --pretty=format:'%C(bold)%h%Creset%C(yellow)%d%Creset %s %C(yellow)%an %C(cyan)%cr%Creset' --abbrev-commit --date=relative"
 alias ggs="gg --stat"
 
-# Quick git status variations
 alias gsu='git status -uno'
 alias gss='git status -s'
 alias gstas='git stash save'
@@ -443,7 +406,6 @@ alias gsl='git status --long'
 alias gdfn='gun'
 alias gdfu='git ls-files --others --exclude-standard'
 
-# Modern Git tools
 alias lg='lazygit'
 alias gti='tig status'
 alias tgi='tig status'
@@ -451,7 +413,6 @@ alias tg='tig'
 alias gdiff='git difftool --no-symlinks --dir-diff'
 alias gmerge='git mergetool'
 
-# Difftastic
 alias gdft='difft'
 alias gdfts='difft --display side-by-side'
 
@@ -469,9 +430,6 @@ alias gpuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-ve
 alias gsu_branch='git push -u origin $(git branch --show-current)'
 alias gsuf='SKIP_TESTS=1 git push -u origin $(git branch --show-current) --no-verify'
 
-# ============================================================
-# Jujutsu (jj) aliases - mirrors git aliases for familiarity
-# ============================================================
 alias jst='jj status'
 alias jdf='jj diff'
 alias jdfs='jj diff --stat'
@@ -505,9 +463,6 @@ alias jrl='jj op log'
 alias jru='jj op undo'
 alias jrv='jj resolve'
 
-# ============================================================
-# Git functions
-# ============================================================
 function findn { find . -name "$@"; }
 __auto_commit_message_from_diff() {
     local vcs="$1"
@@ -773,9 +728,6 @@ git-tools-debug() {
     echo "Delta pager: $(git config --get core.pager 2>/dev/null || echo 'none')"
 }
 
-# ============================================================
-# NVIDIA/GPU aliases
-# ============================================================
 alias smi='nvidia-smi'
 alias wsmi='watch -n 1 nvidia-smi'
 alias smidmon='nvidia-smi dmon -s um -d 1'
@@ -787,9 +739,6 @@ alias smim='nvidia-smi -q -d MEMORY'
 alias nt='nvtop'
 alias ntop='nvtop'
 
-# ============================================================
-# Claude / Codex / AI tool aliases
-# ============================================================
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cldc='cld --continue'
 alias cldf='cld --continue --fork-session'
@@ -808,18 +757,19 @@ alias cap='cursor-agent-bun -f -p'
 alias crs='cursor-agent --yolo --model cursor-grok-4.5-high'
 alias crsf='cursor-agent --yolo --model composer-2.5-fast'
 
-# OpenPaths model runners. Extra arguments are passed through, so for example
 # `opfb --continue` keeps the same model while resuming the last session.
 opfb() { op --model 'google/gemini-3.7-flash:batch' "$@"; }
 opfd() { op --provider deepseek --model 'deepseek-v4-flash-vision-exp' "$@"; }
 opdf() { opfd "$@"; }
 opgp() { op --model 'glm-5.3' "$@"; }
 opgo() { op --model 'anthropic/claude-opus-5' "$@"; }
-opgx() { op --model 'gpt-5.6-astra' "$@"; }
+opga() { op --model 'gpt-5.6-astra' "$@"; }
 opdp() { op --provider deepseek --model 'deepseek-v4-pro' "$@"; }
 opd() { op --provider deepseek --model 'deepseek-flash' "$@"; }
 opm() { op --model 'xiaomi/mimo-v2.6-pro' "$@"; }
 opmu() { op --model 'muse-spark-1.3-contributor' "$@"; }
+opgl() { op --model 'gpt-6-luna' "$@"; }
+opdp() { op --model 'deepseek/deepseek-v4-pro' "$@"; }
 
 # Cursor / Devin agent shortcuts
 alias crs='cursor-agent --yolo'
@@ -883,19 +833,27 @@ _codex_local_runtime_ready() {
         return 0
     fi
 
+    # Best effort only: codex falls back to direct tools when the host is
+    # absent (e.g. its sandbox-enabled V8 prebuilt has no published archive),
+    # so a failed rebuild must never block startup.
+    local fail_marker="${resolved_codex%/*}/.codex-code-mode-host-build-failed"
+    if [ -f "$fail_marker" ] && [ -n "$(find "$fail_marker" -mmin -1440 2>/dev/null)" ]; then
+        echo "codex-code-mode-host missing (rebuild failed recently); continuing without code mode. Run: cxbuild" >&2
+        return 0
+    fi
+
     echo "Local codex-code-mode-host is missing; rebuilding it..." >&2
     if ! (
         cd "$CODEX_LOCAL_SOURCE_ROOT/codex-rs" &&
             cargo build --release -p codex-code-mode-host
-    ); then
-        echo "Failed to rebuild local codex-code-mode-host. Run: cxbuild" >&2
-        return 1
+    ) || [ ! -x "$code_mode_host" ]; then
+        echo "Failed to rebuild codex-code-mode-host; continuing without code mode. Run: cxbuild" >&2
+        touch "$fail_marker" 2>/dev/null || true
+        return 0
     fi
 
-    if [ ! -x "$code_mode_host" ]; then
-        echo "Build completed but codex-code-mode-host is still missing beside $resolved_codex" >&2
-        return 1
-    fi
+    rm -f "$fail_marker" 2>/dev/null || true
+    return 0
 }
 
 _codex_local_or_upstream() {
@@ -925,8 +883,11 @@ _codex_local_or_upstream() {
 # happen before the declarations to keep reloads safe.
 unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh ccxt ccxtl ccxtm ccxth \
     cdx cdxd cdxf cdxr cdxw cdxa cdxe cdxs cdxo cdxed \
-    cx cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
+    cx cxd cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
     cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxll cxlm cxlh cxlxh cxt cxtl cxtm cxth cxbuild 2>/dev/null || true
+
+# gpt-5.6-terra is retired; drop the functions earlier reloads left behind.
+unset -f ccxt ccxtl ccxtm ccxth cxt cxtl cxtm cxth 2>/dev/null || true
 
 # Upstream codex - ccx* aliases
 ccx()  { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"; }
@@ -934,14 +895,10 @@ ccxl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config mod
 ccxm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"; }
 ccxh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
 ccxf() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
-ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"; }
-ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=low "$@"; }
-ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"; }
-ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna --config model_reasoning_effort=high "$@"; }
-ccxt() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"; }
-ccxtl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=low "$@"; }
-ccxtm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"; }
-ccxth() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra --config model_reasoning_effort=high "$@"; }
+ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"; }
+ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=low "$@"; }
+ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=medium "$@"; }
+ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=high "$@"; }
 
 # Standard codex aliases
 cdx() { _codex_upstream "$@"; }
@@ -957,38 +914,44 @@ cdxed() { _codex_upstream exec --dangerously-bypass-approvals-and-sandbox "$@"; 
 
 # Local Codex Infinity build - cx* aliases
 cx() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna "$@"
 }
 
 cxxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh "$@"
 }
 
 cxxhn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
 }
 cxi() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --auto-next-idea "$@"
 }
 
 cxn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-astra --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-luna --auto-next-steps "$@"
 }
 
 cxm() {
-    _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna "$@"
+    _codex_local_or_upstream --yolo3 --config model=gpt-6-sol "$@"
 }
 
 cxim() {
-    _codex_local_or_upstream --yolo3 --config model=gpt-5.6-luna --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 --config model=gpt-6-sol --auto-next-idea "$@"
+}
+
+# DeepSeek flash, direct to api.deepseek.com (provider inferred from the slug).
+# The 4.1 name is a local alias; codex sends deepseek-flash on the wire.
+cxd() {
+    _codex_local_or_upstream --yolo3 -m deepseek-v4.1-flash "$@"
 }
 
 cxl() {
@@ -996,19 +959,19 @@ cxl() {
 }
 
 cxll() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=low "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=low "$@"
 }
 
 cxlm() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxlh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=high "$@"
 }
 
 cxlxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxh() {
@@ -1024,24 +987,8 @@ cxh() {
     _codex_local_or_upstream --yolo3 -m gpt-6-astra --config model_reasoning_effort=high "$@"
 }
 
-cxt() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=xhigh "$@"
-}
-
-cxtl() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=low "$@"
-}
-
-cxtm() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=medium "$@"
-}
-
-cxth() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-terra --config model_reasoning_effort=high "$@"
-}
-
 cxs() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxsl() {
@@ -1049,23 +996,23 @@ cxsl() {
 }
 
 cxsm() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=medium "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxsh() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=high "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=high "$@"
 }
 
 cxsi() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxsn() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-steps "$@"
 }
 
 cxsni() {
-    _codex_local_or_upstream --yolo3 -m gpt-5.6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxni() {
@@ -1272,6 +1219,11 @@ alias tn='tmux new -s'
 # ============================================================
 # Platform-specific clipboard/open
 # ============================================================
+# An existing `say` alias breaks parsing of the definition below: bash reads the
+# whole `if` block at once, so alias expansion turns `say()` into a bad command.
+# Must run as a standalone command before the compound block is parsed.
+unalias say 2>/dev/null || true
+
 if [[ ! "$(uname -s)" = "Darwin" ]]; then
     alias pbcopy='xclip -selection clipboard'
     alias pbpaste='xclip -selection clipboard -o'

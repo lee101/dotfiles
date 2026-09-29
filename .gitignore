@@ -36,6 +36,7 @@ __pycache__/
 # Compiled go tools (built from tools/cmd via build.sh)
 /tools/gtree
 tools/netwrck-route-prof
+/tools/.bin/
 # go-line-profiler binary (built in place via `go build` in its module dir)
 /tools/golang/go-line-profiler/go-line-profiler
 /tools/golang/go-line-profiler/go-line-profiler.exe

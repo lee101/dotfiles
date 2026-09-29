@@ -89,8 +89,50 @@ def test_parse_trtexec_log_and_render_summary_and_layers():
     assert "attention_block" in md
     assert "Throughput" in md
 
+    compact = profile_md.render_trtexec_markdown(
+        Path("trtexec.log"), data, top_n=1
+    )
+    assert "attention_block" in compact
+    assert "conv1" not in compact
+
+
+def test_cap_markdown_is_bounded_on_a_line_boundary():
+    report = "# Report\n\n" + "one complete line\n" * 200
+    capped = profile_md.cap_markdown(report, 1000)
+
+    assert len(capped) <= 1000
+    assert capped.endswith("_Output capped by `--max-chars`._\n")
+
+
+def test_main_compact_allows_explicit_tighter_top(tmp_path):
+    source = ROOT / "tests" / "fixtures" / "trtexec.log"
+    output = tmp_path / "profile.md"
+
+    assert profile_md.main(
+        [str(source), "--compact", "--top", "1", "--out", str(output)]
+    ) == 0
+    markdown = output.read_text()
+    assert "attention_block" in markdown
+    assert "conv1" not in markdown
+
 
 def test_detect_kind_from_suffix_and_content():
     assert profile_md.detect_kind(Path("e2e_profile.nsys-rep")) == "nsys"
     assert profile_md.detect_kind(Path("attn_profile.ncu-rep")) == "ncu"
     assert profile_md.detect_kind(Path("trtexec.log")) == "trtexec"
+
+
+def test_windows_launcher_and_profiles_auto_include_tools():
+    repository = ROOT.parent
+    launcher = (repository / "tools" / "profile-md.cmd").read_text()
+    assert "profiling\\profile_md.py" in launcher
+    assert "py -3" in launcher
+
+    for profile_name in (
+        "profile.ps1",
+        "simple-profile.ps1",
+        "minimal-safe-profile.ps1",
+        "profile-clean.ps1",
+    ):
+        profile = (repository / "windows" / profile_name).read_text()
+        assert "$env:USERPROFILE\\code\\dotfiles\\tools" in profile

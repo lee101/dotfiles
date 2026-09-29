@@ -2,6 +2,8 @@
 
 # Basic PATH setup for essential tools
 $pathsToAdd = @(
+    "$env:USERPROFILE\code\dotfiles\tools",     # cross-platform dotfile tools
+    "$env:USERPROFILE\code\dotfiles\profiling\bin",
     "$env:USERPROFILE\.local\bin",           # uv and other local tools
     "$env:APPDATA\npm",                      # npm global packages
     "$env:LOCALAPPDATA\Yarn\bin",            # yarn global packages

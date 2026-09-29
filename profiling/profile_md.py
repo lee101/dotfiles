@@ -709,6 +709,7 @@ def render_nsys_markdown(
     reports: dict[str, TableReport],
     *,
     command: str | None = None,
+    top_n: int = 20,
 ) -> str:
     api = reports.get("cuda_api_sum", TableReport("cuda_api_sum", [], []))
     kernels = reports.get("cuda_gpu_kern_sum", TableReport("cuda_gpu_kern_sum", [], []))
@@ -740,7 +741,7 @@ def render_nsys_markdown(
     if api.rows:
         lines.extend(["", "## CUDA API Hotspots", ""])
         api_rows = []
-        for row in _top_rows(api, 10):
+        for row in _top_rows(api, top_n):
             api_rows.append(
                 [
                     row.get("Name") or row.get("Operation") or "unknown",
@@ -754,7 +755,7 @@ def render_nsys_markdown(
     if kernels.rows:
         lines.extend(["", "## GPU Kernels", ""])
         kernel_rows = []
-        for row in _top_rows(kernels, 10):
+        for row in _top_rows(kernels, top_n):
             kernel_rows.append(
                 [
                     row.get("Name") or row.get("Kernel Name") or row.get("Operation") or "unknown",
@@ -773,7 +774,7 @@ def render_nsys_markdown(
             key = _row_label(row)
             if key:
                 size_index[key] = row
-        for row in _top_rows(mem_time, 10):
+        for row in _top_rows(mem_time, top_n):
             name = _row_label(row)
             size_row = size_index.get(name, {})
             size_value = parse_float(
@@ -794,12 +795,18 @@ def render_nsys_markdown(
 
     if nvtx.rows:
         lines.extend(["", "## NVTX Ranges", ""])
-        lines.append(_nsys_range_table(nvtx, 10))
+        lines.append(_nsys_range_table(nvtx, top_n))
 
     return "\n".join(lines) + "\n"
 
 
-def render_ncu_markdown(report_path: Path, kernels: dict[str, dict[str, object]], *, command: str | None = None) -> str:
+def render_ncu_markdown(
+    report_path: Path,
+    kernels: dict[str, dict[str, object]],
+    *,
+    command: str | None = None,
+    top_n: int = 20,
+) -> str:
     lines = [
         f"# Nsight Compute Report: {report_path.name}",
         "",
@@ -812,12 +819,18 @@ def render_ncu_markdown(report_path: Path, kernels: dict[str, dict[str, object]]
     lines.extend(["", "## Executive Summary", ""])
     lines.extend(_ncu_summary_lines(kernels))
     lines.extend(["", "## Kernel Metrics", ""])
-    lines.extend(_ncu_metrics_table(kernels, top_n=20))
+    lines.extend(_ncu_metrics_table(kernels, top_n=top_n))
 
     return "\n".join(lines) + "\n"
 
 
-def render_trtexec_markdown(report_path: Path, data: dict[str, object], *, command: str | None = None) -> str:
+def render_trtexec_markdown(
+    report_path: Path,
+    data: dict[str, object],
+    *,
+    command: str | None = None,
+    top_n: int = 20,
+) -> str:
     layers = data.get("layers", [])
     lines = [
         f"# TensorRT trtexec Report: {report_path.name}",
@@ -833,7 +846,11 @@ def render_trtexec_markdown(report_path: Path, data: dict[str, object], *, comma
     if isinstance(layers, list) and layers:
         lines.extend(["", "## Per-Layer Runtime", ""])
         layer_rows = []
-        for row in sorted(layers, key=lambda item: float(item.get("time_ms", 0.0)), reverse=True)[:20]:
+        for row in sorted(
+            layers,
+            key=lambda item: float(item.get("time_ms", 0.0)),
+            reverse=True,
+        )[:top_n]:
             layer_rows.append(
                 [
                     str(row.get("name", "unknown")),
@@ -849,6 +866,19 @@ def render_trtexec_markdown(report_path: Path, data: dict[str, object], *, comma
         for note in data["notes"]:
             lines.append(f"- {note}")
     return "\n".join(lines) + "\n"
+
+
+def cap_markdown(markdown: str, max_chars: int) -> str:
+    """Bound reports without leaving a half-written Markdown row."""
+    if max_chars < 1_000:
+        raise ValueError("max_chars must be at least 1000")
+    if len(markdown) <= max_chars:
+        return markdown
+    marker = "\n\n_Output capped by `--max-chars`._\n"
+    body = markdown[: max_chars - len(marker)]
+    if "\n" in body:
+        body = body.rsplit("\n", 1)[0]
+    return body.rstrip() + marker
 
 
 def detect_kind(input_path: Path, explicit_kind: str | None = None) -> str:
@@ -889,6 +919,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ncu", default="ncu", help="Path to the ncu binary")
     parser.add_argument("--top", type=int, default=20, help="How many rows to include in each table")
     parser.add_argument(
+        "--max-chars",
+        type=int,
+        default=12_000,
+        help="Maximum Markdown characters to emit (default: 12000)",
+    )
+    parser.add_argument(
+        "--compact",
+        action="store_true",
+        help="Agent-friendly shorthand for --top 10 --max-chars 6000",
+    )
+    parser.add_argument(
         "--report",
         action="append",
         default=[],
@@ -902,19 +943,33 @@ def main(argv: Iterable[str] | None = None) -> int:
     input_path = args.input_file
     kind = detect_kind(input_path, args.kind)
     command = None
+    top_n = 10 if args.compact and args.top == 20 else args.top
+    max_chars = 6_000 if args.compact and args.max_chars == 12_000 else args.max_chars
+    if top_n < 1:
+        raise SystemExit("--top must be positive")
+    if max_chars < 1_000:
+        raise SystemExit("--max-chars must be at least 1000")
 
     if kind == "nsys":
         report_names = tuple(args.report or NSYS_DEFAULT_REPORTS)
         reports, _output = analyze_nsys_report(input_path, nsys_bin=args.nsys, report_names=report_names)
-        markdown = render_nsys_markdown(input_path, reports, command=command)
+        markdown = render_nsys_markdown(
+            input_path, reports, command=command, top_n=top_n
+        )
     elif kind == "ncu":
         kernels, _output = analyze_ncu_report(input_path, ncu_bin=args.ncu)
-        markdown = render_ncu_markdown(input_path, kernels, command=command)
+        markdown = render_ncu_markdown(
+            input_path, kernels, command=command, top_n=top_n
+        )
     elif kind == "trtexec":
         data = analyze_trtexec_log(input_path)
-        markdown = render_trtexec_markdown(input_path, data, command=command)
+        markdown = render_trtexec_markdown(
+            input_path, data, command=command, top_n=top_n
+        )
     else:
         raise SystemExit(f"Unsupported profile kind: {kind}")
+
+    markdown = cap_markdown(markdown, max_chars)
 
     if args.out:
         args.out.write_text(markdown)

@@ -57,6 +57,8 @@ function refresh-env {
 
 # PATH Configuration
 $pathsToAdd = @(
+    "$env:USERPROFILE\code\dotfiles\tools",
+    "$env:USERPROFILE\code\dotfiles\profiling\bin",
     "$env:APPDATA\npm",
     "$env:LOCALAPPDATA\Yarn\bin",
     "$env:ALLUSERSPROFILE\chocolatey\bin",
@@ -93,4 +95,4 @@ try {
     # Silently continue if modules aren't available
 }
 
-Write-Host "PowerShell profile loaded successfully!" -ForegroundColor Green 
+Write-Host "PowerShell profile loaded successfully!" -ForegroundColor Green
