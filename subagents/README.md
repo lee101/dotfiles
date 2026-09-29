@@ -19,10 +19,11 @@ Commands:
 - `op-gpt.sh` — GPT 6 Astra through OpenRouter
 - `op-muse.sh` — Meta Muse Spark 1.3 through OpenPaths (`muse-spark-1.3`); cheap fixer: `op-muse.sh -p --auto-approve "fix failing test X"`
 - `op-oxalpha.sh` — Ox Alpha through OpenRouter stealth routing
+- `op-bunny.sh` — Space Bunny Alpha through OpenRouter stealth routing
 
 # di subagents
 
-Model-pinned launchers for `di` (`/vfast/data/code/fx/zig-out/bin/di`, the
+Model-pinned launchers for `di` (`/nvme0n1-disk/code/di/zig-out/bin/di`, the
 `lee101/di` fork of fx). Set `OPENPATHS_API_KEY` first; `FX_MODEL` picks the
 OpenPaths model and di selects the matching credential and route itself.
 
@@ -43,3 +44,23 @@ Aliases (bashrc) and scripts:
 - `diup` — `scripts/self-improve.sh --merge-upstream`: merge `vercel-labs/fx` main into di, let di resolve conflicts, gate, push
 
 Every launcher forwards extra arguments, so `dimuse ask --json -- "..."` works.
+
+# Unattended monitor fallback chain
+
+Production monitors do not call a model CLI directly; they call the shim
+`~/.local/monitor-bin/codex` (source: `bitbankgo/monitoring/codex-agent.sh`),
+which tries, in order:
+
+1. locally built codex (`~/code/codex`)
+2. stock codex (`/usr/local/bin/codex`)
+3. DeepSeek V4 Flash through `op` (needs `DEEPSEEK_API_KEY`)
+4. Meta Muse Spark through `omp` (needs `META_API_KEY`)
+
+Keys are read from `~/.secretbashrc` / project `.env`, never from unit files.
+Only when every tier fails does the monitor fall through to emailing a human.
+Force one tier for testing with `CODEX_SHIM_FORCE=deepseek|muse|local|stock`.
+
+Both codex tiers run `gpt-6-sol` with reasoning effort `high` by default
+(`MONITOR_MODEL` / `MONITOR_EFFORT` override it); a monitor that passes its own
+`-m`/`--model` or `model_reasoning_effort` still wins. The op/omp fallback tiers
+keep their own independent models.
