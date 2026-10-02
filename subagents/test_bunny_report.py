@@ -1,6 +1,8 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -70,6 +72,17 @@ class ReportTests(unittest.TestCase):
             path = Path(directory) / "log"
             path.write_bytes(b"\xff" * report.MAX_PREVIEW_BYTES)
             self.assertLessEqual(len(report.preview(path).encode()), report.MAX_PREVIEW_BYTES)
+
+    def test_summary_only_omits_large_tool_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "output.jsonl"
+            path.write_text(json.dumps({"final_output": "final summary", "exit_code": 0,
+                                        "tool_calls": [{"output": "PRIVATE_TOOL_TRACE" * 10000}]}))
+            result = subprocess.run([sys.executable, spec.origin, str(path), "--summary-only"],
+                                    check=True, capture_output=True, text=True)
+            self.assertIn("final summary", result.stdout)
+            self.assertNotIn("PRIVATE_TOOL_TRACE", result.stdout)
+            self.assertLess(len(result.stdout), 1000)
 
 
 if __name__ == "__main__":
