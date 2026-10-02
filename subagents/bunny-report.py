@@ -101,13 +101,22 @@ def summarize(path: Path) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log", type=Path)
-    parser.add_argument("--preview-only", action="store_true", help="Show only the bounded last 100 lines first")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--preview-only", action="store_true", help="Show only the bounded last 100 lines first")
+    mode.add_argument("--summary-only", action="store_true", help="Show only the unverified final summary and usage")
     parser.add_argument("--output", type=Path, help="Write a private JSON usage report after preview and review")
     args = parser.parse_args()
     if args.preview_only:
         print(preview(args.log))
         return
     report = summarize(args.log)
+    if args.summary_only:
+        print("Unverified agent summary:")
+        print(report["agent_summary"][-4000:] or "No final summary found.")
+        print(json.dumps({"usage": report["reported_usage"],
+                          "invalid_records": report["invalid_records"],
+                          "oversized_records": report["oversized_records"]}))
+        return
     encoded = json.dumps(report, indent=2) + "\n"
     if args.output:
         descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
