@@ -811,8 +811,11 @@ alias cfix='cldfix'
 alias cpr='cldpr'
 
 # Codex paths
-CODEX_LOCAL_SOURCE_ROOT="$HOME/code/codex"
-CODEX_LOCAL="$HOME/code/codex/codex-rs/target/release/codex"
+CODEX_LOCAL_SOURCE_ROOT="${CODEX_LOCAL_SOURCE_ROOT:-$HOME/.local/share/codex-infinity/source}"
+if [ ! -f "$CODEX_LOCAL_SOURCE_ROOT/codex-rs/Cargo.toml" ]; then
+    CODEX_LOCAL_SOURCE_ROOT="$HOME/code/codex"
+fi
+CODEX_LOCAL="$HOME/.local/share/codex-infinity/current/bin/codex"
 CODEX_BUN="$HOME/.bun/bin/codex"
 CODEX_NPM="$HOME/AppData/Roaming/npm/codex"
 
@@ -830,59 +833,18 @@ _codex_upstream() {
 }
 
 _codex_local_runtime_ready() {
-    if [ ! -x "$CODEX_LOCAL" ]; then
-        return 1
-    fi
-
     local resolved_codex
     resolved_codex="$(readlink -f -- "$CODEX_LOCAL" 2>/dev/null || printf '%s\n' "$CODEX_LOCAL")"
-    local code_mode_host="${resolved_codex%/*}/codex-code-mode-host"
-    if [ -x "$code_mode_host" ]; then
+    if [ -x "$resolved_codex" ] && [ -x "${resolved_codex%/*}/codex-code-mode-host" ]; then
         return 0
     fi
-
-    # Best effort only: codex falls back to direct tools when the host is
-    # absent (e.g. its sandbox-enabled V8 prebuilt has no published archive),
-    # so a failed rebuild must never block startup.
-    local fail_marker="${resolved_codex%/*}/.codex-code-mode-host-build-failed"
-    if [ -f "$fail_marker" ] && [ -n "$(find "$fail_marker" -mmin -1440 2>/dev/null)" ]; then
-        echo "codex-code-mode-host missing (rebuild failed recently); continuing without code mode. Run: cxbuild" >&2
-        return 0
-    fi
-
-    echo "Local codex-code-mode-host is missing; rebuilding it..." >&2
-    if ! (
-        cd "$CODEX_LOCAL_SOURCE_ROOT/codex-rs" &&
-            cargo build --release -p codex-code-mode-host
-    ) || [ ! -x "$code_mode_host" ]; then
-        echo "Failed to rebuild codex-code-mode-host; continuing without code mode. Run: cxbuild" >&2
-        touch "$fail_marker" 2>/dev/null || true
-        return 0
-    fi
-
-    rm -f "$fail_marker" 2>/dev/null || true
-    return 0
+    echo "Codex Infinity release is missing or incomplete. Run: cxbuild" >&2
+    return 1
 }
 
-_codex_local_or_upstream() {
-    if [ -x "$CODEX_LOCAL" ]; then
-        _codex_local_runtime_ready || return
-        "$CODEX_LOCAL" "$@"
-    else
-        local args=()
-        local arg
-        for arg in "$@"; do
-            case "$arg" in
-                --yolo3)
-                    args+=(--dangerously-bypass-approvals-and-sandbox)
-                    ;;
-                *)
-                    args+=("$arg")
-                    ;;
-            esac
-        done
-        _codex_upstream "${args[@]}"
-    fi
+_codex_local() {
+    _codex_local_runtime_ready || return
+    "$CODEX_LOCAL" "$@"
 }
 
 # Clear only obsolete Codex shortcut aliases before replacing them with the
@@ -903,10 +865,10 @@ ccxl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config mod
 ccxm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=medium "$@"; }
 ccxh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
 ccxf() { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=high "$@"; }
-ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"; }
-ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=low "$@"; }
-ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=medium "$@"; }
-ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol --config model_reasoning_effort=high "$@"; }
+ccxs() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol --config model_reasoning_effort=xhigh "$@"; }
+ccxsl() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol --config model_reasoning_effort=low "$@"; }
+ccxsm() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol --config model_reasoning_effort=medium "$@"; }
+ccxsh() { _codex_upstream --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol --config model_reasoning_effort=high "$@"; }
 
 # Standard codex aliases
 cdx() { _codex_upstream "$@"; }
@@ -922,64 +884,64 @@ cdxed() { _codex_upstream exec --dangerously-bypass-approvals-and-sandbox "$@"; 
 
 # Local Codex Infinity build - cx* aliases
 cx() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna "$@"
+    _codex_local --yolo3 -m gpt-6-luna "$@"
 }
 
 cxxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh "$@"
+    _codex_local --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh "$@"
 }
 
 cxxhn() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local --yolo3 -m gpt-6-luna --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxhni() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
+    _codex_local --yolo3 -m gpt-6-luna --config model_reasoning_effort=high --auto-next-idea --auto-next-steps "$@"
 }
 cxi() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna --auto-next-idea "$@"
+    _codex_local --yolo3 -m gpt-6-luna --auto-next-idea "$@"
 }
 
 cxn() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-luna --auto-next-steps "$@"
+    _codex_local --yolo3 -m gpt-6-luna --auto-next-steps "$@"
 }
 
 cxm() {
-    _codex_local_or_upstream --yolo3 --config model=gpt-6-sol "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxim() {
-    _codex_local_or_upstream --yolo3 --config model=gpt-6-sol --auto-next-idea "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=medium --auto-next-idea "$@"
 }
 
 # DeepSeek flash, direct to api.deepseek.com (provider inferred from the slug).
 # The 4.1 name is a local alias; codex sends deepseek-flash on the wire.
 cxd() {
-    _codex_local_or_upstream --yolo3 -m deepseek-v4.1-flash "$@"
+    _codex_local --yolo3 -m deepseek-v4.1-flash "$@"
 }
 
 cxl() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-astra --config model_reasoning_effort=low "$@"
+    _codex_local --yolo3 -m gpt-6-astra --config model_reasoning_effort=low "$@"
 }
 
 cxll() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=low "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=low "$@"
 }
 
 cxlm() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=medium "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxlh() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=high "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=high "$@"
 }
 
 cxlxh() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxh() {
@@ -987,52 +949,49 @@ cxh() {
     for arg in "$@"; do
         case "$arg" in
             -m|--model|--model=*)
-                _codex_local_or_upstream --yolo3 --config model_reasoning_effort=high "$@"
+                _codex_local --yolo3 --config model_reasoning_effort=high "$@"
                 return
                 ;;
         esac
     done
-    _codex_local_or_upstream --yolo3 -m gpt-6-astra --config model_reasoning_effort=high "$@"
+    _codex_local --yolo3 -m gpt-6-astra --config model_reasoning_effort=high "$@"
 }
 
 cxs() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=xhigh "$@"
 }
 
 cxsl() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-astra --config model_reasoning_effort=low "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=low "$@"
 }
 
 cxsm() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=medium "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=medium "$@"
 }
 
 cxsh() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=high "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=high "$@"
 }
 
 cxsi() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=xhigh --auto-next-idea "$@"
 }
 
 cxsn() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-steps "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=xhigh --auto-next-steps "$@"
 }
 
 cxsni() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
 }
 
 cxni() {
-    _codex_local_or_upstream --yolo3 -m gpt-6-astra --auto-next-idea --auto-next-steps "$@"
+    _codex_local --yolo3 -m gpt-6-astra --auto-next-idea --auto-next-steps "$@"
 }
 
 # Codex build helper
 cxbuild() {
-    (
-        cd "$CODEX_LOCAL_SOURCE_ROOT/codex-rs" &&
-            cargo build --release -p codex-cli -p codex-code-mode-host
-    ) && echo "Built: $CODEX_LOCAL and codex-code-mode-host"
+    "$HOME/code/dotfiles/lib/codex_release" "$CODEX_LOCAL_SOURCE_ROOT" "$@"
 }
 
 # ── Two-phase Codex pipeline: Plan (spark) → Execute (codex) → Git (spark) ──
