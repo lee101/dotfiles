@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Build and publish a complete optimized Codex Infinity package."""
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise SystemExit('Usage: codex_release /path/to/codex-source')
+    repo = Path(sys.argv[1]).resolve()
+    if not (repo / 'codex-rs/Cargo.toml').is_file():
+        raise SystemExit(f'Codex source not found: {repo}')
+    os.environ['CODEX_REPO_ROOT'] = str(repo)
+    sys.path.insert(0, str(repo / 'scripts'))
+    from codex_package.targets import TARGET_SPECS
+    from codex_package.v8 import resolve_codex_v8_cargo_env
+
+    rustc_info = subprocess.check_output(['rustc', '--version', '--verbose'], cwd=repo / 'codex-rs', text=True)
+    target = next(line.removeprefix('host: ') for line in rustc_info.splitlines() if line.startswith('host: '))
+    spec = TARGET_SPECS[target]
+    env = os.environ.copy()
+    env.update(resolve_codex_v8_cargo_env(spec))
+    target_dir = Path(env.get('CARGO_TARGET_DIR', repo / 'codex-rs/target')).resolve()
+    env['CARGO_TARGET_DIR'] = str(target_dir)
+    build = ['cargo', 'build', '--release', '--locked', '-p', 'codex-cli', '-p', 'codex-code-mode-host']
+    if spec.is_linux:
+        build += ['-p', 'codex-bwrap']
+    print('Building optimized Infinity CLI and matching helpers...', flush=True)
+    subprocess.run(build, cwd=repo / 'codex-rs', env=env, check=True)
+    binary_dir = target_dir / 'release'
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
+    dirty_patch = subprocess.check_output(['git', 'diff', 'HEAD', '--binary'], cwd=repo)
+    release_id = commit[:12] + '-' + time.strftime('%Y%m%d-%H%M%S')
+    root = Path.home() / '.local/share/codex-infinity'
+    releases = root / 'releases'
+    releases.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.build-', dir=releases) as staging:
+        package = Path(staging) / 'package'
+        command = [sys.executable, str(repo / 'scripts/build_codex_package.py'), '--target', target, '--package-dir', str(package), '--entrypoint-bin', str(binary_dir / 'codex'), '--code-mode-host-bin', str(binary_dir / 'codex-code-mode-host')]
+        if spec.is_linux:
+            command += ['--bwrap-bin', str(binary_dir / 'bwrap')]
+        subprocess.run(command, cwd=repo, env=env, check=True)
+        if spec.is_linux and shutil.which('strip'):
+            for path in package.rglob('*'):
+                if path.is_file():
+                    with path.open('rb') as stream:
+                        is_elf = stream.read(4) == b'\x7fELF'
+                    if is_elf:
+                        subprocess.run(['strip', '--strip-all', str(path)], check=True)
+        catalog = json.loads((repo / 'codex-rs/models-manager/models.json').read_text())
+        model = next(item for item in catalog['models'] if item['slug'] == 'gpt-6.1-sol')
+        (package / 'infinity-concise.md').write_text(model['model_messages']['instructions_template'])
+        version = subprocess.check_output([str(package / 'bin/codex'), '--version'], text=True).strip()
+        help_text = subprocess.check_output([str(package / 'bin/codex'), '--help'], text=True)
+        for flag in ['--auto-next-steps', '--auto-next-idea', '--auto-next-goal']:
+            if flag not in help_text:
+                raise RuntimeError(f'Infinity flag missing: {flag}')
+        manifest = {'commit': commit, 'version': version, 'target': target, 'profile': 'release', 'dirtyPatchSha256': hashlib.sha256(dirty_patch).hexdigest() if dirty_patch else None, 'sha256': {str(path.relative_to(package)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(package.rglob('*')) if path.is_file()}}
+        (package / 'infinity-build.json').write_text(json.dumps(manifest, indent=2) + '\n')
+        release = releases / release_id
+        package.rename(release)
+    for link, destination in [(root / 'current', release), (root / 'source', repo), (Path.home() / '.local/bin/codex-infinity', release / 'bin/codex'), (Path.home() / '.bun/bin/codex-infinity', release / 'bin/codex')]:
+        link.parent.mkdir(parents=True, exist_ok=True)
+        if link.exists() and not link.is_symlink():
+            raise RuntimeError(f'Refusing to replace a regular file: {link}')
+        temporary = link.with_name(link.name + '.publish-' + str(os.getpid()))
+        temporary.symlink_to(destination)
+        os.replace(temporary, link)
+    print(f'Published {version}: {release}')
+
+
+if __name__ == '__main__':
+    main()
