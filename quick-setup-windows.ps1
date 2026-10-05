@@ -63,7 +63,9 @@ if (-not $SkipTools) {
         @("MikeFarah.yq",           "yq",     "YAML processor"),
         @("tldr-pages.tlrc",        "tldr",   "simplified man pages"),
         @("ajeetdsouza.zoxide",     "zoxide", "smarter cd"),
-        @("DominikReichl.KeePass",  "keepass","password manager")
+        @("DominikReichl.KeePass",  "keepass","password manager"),
+        @("wez.wezterm",            "wezterm","GPU terminal emulator"),
+        @("zig.zig",                "zig",    "Zig toolchain (builds DictatorFlow)")
     )
 
     foreach ($tool in $wingetTools) {
@@ -158,6 +160,15 @@ if (-not $SkipTools) {
         winget install --id xhcoding.sshpass-win32 --accept-package-agreements --accept-source-agreements -h 2>$null
     } else {
         Write-Host "  sshpass already installed" -ForegroundColor DarkGray
+    }
+
+    # DictatorFlow (dictatorflow.com): Ctrl+Alt+Space dictation daemon.
+    # The official installer adds it to PATH and the Startup folder.
+    if (-not (Get-Command dictatorflow -ErrorAction SilentlyContinue)) {
+        Write-Host "  Installing DictatorFlow..." -ForegroundColor Yellow
+        Invoke-RestMethod https://dictatorflowstatic.dictatorflow.com/install.ps1 | Invoke-Expression
+    } else {
+        Write-Host "  dictatorflow already installed" -ForegroundColor DarkGray
     }
 
     Write-Host ""
