@@ -55,7 +55,7 @@ vim.api.nvim_create_autocmd("BufReadPost", {
     if vim.bo.buftype ~= "" or vim.api.nvim_eval('&filetype') == 'gitcommit' then
       return
     end
-    
+
     local last_known_line = vim.fn.line("'\"")
     if last_known_line > 1 and last_known_line <= vim.fn.line("$") then
       vim.api.nvim_win_set_cursor(0, { last_known_line, vim.fn.col("'\"") - 1 })
@@ -118,27 +118,6 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWrite", "TextChanged", "InsertLeave
   end,
 })
 
--- Override vim.notify for treesitter errors and swap file warnings
-local original_notify = vim.notify
-vim.notify = function(msg, level, opts)
-  -- Filter out treesitter highlighter errors
-  if type(msg) == "string" and (
-    msg:match("Error in decoration provider") or
-    msg:match("treesitter/highlighter") or
-    msg:match("Invalid 'end_row'") or
-    msg:match("Invalid 'end_col'") or
-    msg:match("out of range") or
-    msg:match("%.swp") or
-    msg:match("Swap file") or
-    msg:match("E325")
-  ) then
-    -- Silently ignore treesitter highlighting errors and swap file warnings
-    return
-  end
-  -- Pass through all other notifications
-  return original_notify(msg, level, opts)
-end
-
 -- Configure tags for Go and other languages
 vim.api.nvim_create_autocmd("FileType", {
   group = group,
@@ -147,11 +126,11 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     -- Look for tags in the central cache directory
     local cache_dir = vim.fn.expand("~/.cache/nvim/ctags/")
-    
+
     -- Try to find project root
     local markers = {'.git', 'go.mod', 'package.json', 'Cargo.toml', 'pyproject.toml', 'setup.py', 'Gemfile', 'pom.xml', 'build.gradle'}
     local project_root = nil
-    
+
     for _, marker in ipairs(markers) do
       local found = vim.fn.findfile(marker, ".;")
       if found == "" then
@@ -162,12 +141,12 @@ vim.api.nvim_create_autocmd("FileType", {
         break
       end
     end
-    
+
     if project_root then
       local project_name = vim.fn.fnamemodify(project_root, ":t")
       -- Look for cached tags file
       local possible_tag_files = vim.fn.glob(cache_dir .. project_name .. "-*.tags", false, true)
-      
+
       if #possible_tag_files > 0 then
         -- Use the first matching tag file
         vim.opt_local.tags = possible_tag_files[1]
@@ -176,7 +155,7 @@ vim.api.nvim_create_autocmd("FileType", {
         vim.opt_local.tags = cache_dir .. "*.tags"
       end
     end
-    
+
     -- For Go specifically, add GOPATH tags if available
     if vim.bo.filetype == "go" then
       local gopath = vim.fn.system("go env GOPATH"):gsub("\n", "")
@@ -201,13 +180,13 @@ vim.api.nvim_create_autocmd("BufWritePost", {
         local project_dir = vim.fn.fnamemodify(root, ":h")
         local project_name = vim.fn.fnamemodify(project_dir, ":t")
         local cache_dir = vim.fn.expand("~/.cache/nvim/ctags/")
-        
+
         -- Create cache directory if it doesn't exist
         vim.fn.system("mkdir -p " .. cache_dir)
-        
+
         -- Generate unique tag filename based on project path
         local tag_file = cache_dir .. project_name .. "-" .. vim.fn.sha256(project_dir) .. ".tags"
-        
+
         -- Run ctags asynchronously to central cache
         vim.fn.jobstart(
           string.format(
@@ -217,7 +196,7 @@ vim.api.nvim_create_autocmd("BufWritePost", {
           ),
           { detach = true }
         )
-        
+
         -- Set the tags option to use the cached file
         vim.opt_local.tags = tag_file
       end

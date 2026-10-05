@@ -5,7 +5,7 @@ local M = {}
 M.setup_lsp_timeout = function()
   local lsp_timeout_group = vim.api.nvim_create_augroup("LspTimeout", { clear = true })
   local idle_timers = {}
-  
+
   -- Stop idle LSP clients after 5 minutes of inactivity
   local function stop_idle_client(client_id)
     local client = vim.lsp.get_client_by_id(client_id)
@@ -14,7 +14,7 @@ M.setup_lsp_timeout = function()
       vim.notify("Stopped idle LSP: " .. client.name, vim.log.levels.INFO)
     end
   end
-  
+
   -- Reset timer on LSP activity
   local function reset_lsp_timer(client_id)
     if idle_timers[client_id] then
@@ -26,7 +26,7 @@ M.setup_lsp_timeout = function()
       idle_timers[client_id] = nil
     end)
   end
-  
+
   -- Monitor LSP requests to reset idle timer
   vim.api.nvim_create_autocmd("LspRequest", {
     group = lsp_timeout_group,
@@ -37,7 +37,7 @@ M.setup_lsp_timeout = function()
       end
     end,
   })
-  
+
   -- Start timer when LSP attaches
   vim.api.nvim_create_autocmd("LspAttach", {
     group = lsp_timeout_group,
@@ -48,7 +48,7 @@ M.setup_lsp_timeout = function()
       end
     end,
   })
-  
+
   -- Clean up timer when LSP detaches
   vim.api.nvim_create_autocmd("LspDetach", {
     group = lsp_timeout_group,
@@ -64,21 +64,29 @@ end
 
 -- Optimized TypeScript LSP configuration
 M.setup_typescript = function()
-  local lspconfig = require('lspconfig')
+  local lspconfig = vim.lsp.config and nil or require('lspconfig')
   local capabilities = require('cmp_nvim_lsp').default_capabilities()
-  
+  local setup_server = function(name, config)
+    if vim.lsp.config and vim.lsp.enable then
+      vim.lsp.config(name, config)
+      vim.lsp.enable(name)
+    elseif lspconfig and lspconfig[name] then
+      lspconfig[name].setup(config)
+    end
+  end
+
   -- Check if tsgo is available
-  local tsgo_available = vim.fn.executable("npx") == 1 and 
+  local tsgo_available = vim.fn.executable("npx") == 1 and
                          vim.fn.system("npx tsgo --version 2>/dev/null"):match("Version") ~= nil
-  
+
   if tsgo_available then
     -- Custom configuration for tsgo (Go-based TypeScript)
     -- Note: tsgo doesn't support --stdio flag, using standard ts_ls with memory optimizations instead
     vim.notify("tsgo found but using optimized ts_ls for better LSP compatibility", vim.log.levels.INFO)
   end
-  
+
   -- Use standard ts_ls with heavy optimizations
-  lspconfig.ts_ls.setup({
+  setup_server('ts_ls', {
     capabilities = capabilities,
     cmd = { "typescript-language-server", "--stdio" },
       init_options = {
@@ -120,7 +128,7 @@ M.setup_typescript = function()
         },
       },
       javascript = {
-        -- Force single tsserver process  
+        -- Force single tsserver process
         tsserver = {
           maxTsServerMemory = 2048,
           useSingleInferredProject = true,
@@ -146,7 +154,7 @@ M.setup_typescript = function()
       -- Disable document formatting (use prettier instead)
       client.server_capabilities.documentFormattingProvider = false
       client.server_capabilities.documentRangeFormattingProvider = false
-      
+
       -- Log attachment with memory limit info
       vim.notify("TypeScript LSP attached (2GB mem limit, idle timeout: 5min)", vim.log.levels.INFO)
     end,
@@ -176,12 +184,12 @@ M.show_lsp_stats = function()
     vim.notify("No LSP clients running", vim.log.levels.INFO)
     return
   end
-  
+
   local stats = {}
   for _, client in ipairs(clients) do
     table.insert(stats, string.format("%s (ID: %d)", client.name, client.id))
   end
-  
+
   vim.notify("Active LSP Clients:\n" .. table.concat(stats, "\n"), vim.log.levels.INFO)
 end
 

@@ -4,6 +4,21 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+-- nvim-treesitter main uses vim.list.unique, introduced after Neovim 0.11.3.
+-- Keep this tiny compatibility shim so the config also works on the packaged
+-- Neovim version currently available on Windows.
+vim.list = vim.list or {}
+vim.list.unique = vim.list.unique or function(values)
+  local seen, result = {}, {}
+  for _, value in ipairs(values) do
+    if not seen[value] then
+      seen[value] = true
+      table.insert(result, value)
+    end
+  end
+  return result
+end
+
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -25,7 +40,20 @@ require("user.autocommands")
 require("user.commands")
 
 -- Setup plugins
-require("lazy").setup({
+local function first_existing_path(paths)
+  for _, path in ipairs(paths) do
+    if path ~= "" and vim.fn.isdirectory(path) == 1 then return path end
+  end
+end
+
+local text_generator_dir = first_existing_path({
+  vim.env.TEXT_GENERATOR_NVIM_DIR or "",
+  vim.fn.expand("~/code/text-generator-nvim"),
+  vim.fn.expand("~/src/text-generator-nvim"),
+  "/nvme0n1-disk/code/text-generator-nvim",
+})
+
+local plugins = {
   -- Tree file browser
   {
     "nvim-tree/nvim-tree.lua",
@@ -74,8 +102,7 @@ require("lazy").setup({
   -- Telescope fuzzy finder with additional extensions
   {
     'nvim-telescope/telescope.nvim',
-    tag = '0.2.0',
-    dependencies = { 
+    dependencies = {
       'nvim-lua/plenary.nvim',
       'nvim-telescope/telescope-fzf-native.nvim',
       'nvim-telescope/telescope-live-grep-args.nvim',
@@ -86,7 +113,7 @@ require("lazy").setup({
       local telescope = require('telescope')
       local actions = require('telescope.actions')
       local builtin = require('telescope.builtin')
-      
+
       telescope.setup({
         defaults = {
           prompt_prefix = "  ",
@@ -182,9 +209,9 @@ require("lazy").setup({
           },
         }
       })
-      
+
       -- Load extensions
-      telescope.load_extension('fzf')
+      pcall(telescope.load_extension, 'fzf')
       pcall(telescope.load_extension, 'file_browser')
       pcall(telescope.load_extension, 'undo')
     end,
@@ -290,151 +317,48 @@ require("lazy").setup({
     end,
   },
 
-  -- Syntax highlighting
+  -- Syntax highlighting and parser management
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main",
+    lazy = false,
     build = ":TSUpdate",
-    event = { "BufReadPost", "BufNewFile" },
-    dependencies = {
-      "nvim-treesitter/nvim-treesitter-textobjects",
-    },
     config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = { 
-          "c", "lua", "vim", "vimdoc", "query", "python", "javascript", 
-          "typescript", "html", "css", "json", "yaml", "toml", "bash",
-          "go", "rust", "cpp", "java", "php", "ruby", "dockerfile",
-          "markdown", "sql", "regex", "tsx"
-        },
-        sync_install = false,
-        auto_install = true,
-        highlight = {
-          enable = true,
-          additional_vim_regex_highlighting = false,
-          use_languagetree = true,
-          disable = function(lang, buf)
-            local max_filesize = 100 * 1024 -- 100 KB
-            local ok, stats = pcall((vim.uv or vim.loop).fs_stat, vim.api.nvim_buf_get_name(buf))
-            if ok and stats and stats.size > max_filesize then
-              return true
-            end
-          end,
-        },
-        incremental_selection = {
-          enable = true,
-          keymaps = {
-            init_selection = "gnn",
-            node_incremental = "grn",
-            scope_incremental = "grc",
-            node_decremental = "grm",
-          },
-        },
-        indent = {
-          enable = true
-        },
-        textobjects = {
-          select = {
+      local parsers = {
+        "bash", "c", "cpp", "css", "dockerfile", "go", "html", "java",
+        "javascript", "json", "lua", "markdown", "php", "python", "query",
+        "regex", "ruby", "rust", "sql", "toml", "tsx", "typescript", "vim",
+        "vimdoc", "yaml",
+      }
+      local legacy_ok, legacy = pcall(require, "nvim-treesitter.configs")
+      if legacy_ok then
+        legacy.setup({
+          ensure_installed = parsers,
+          sync_install = false,
+          auto_install = true,
+          highlight = { enable = true, additional_vim_regex_highlighting = false },
+          indent = { enable = true },
+          incremental_selection = {
             enable = true,
-            lookahead = true,
             keymaps = {
-              ["af"] = "@function.outer",
-              ["if"] = "@function.inner",
-              ["ac"] = "@class.outer",
-              ["ic"] = "@class.inner",
+              init_selection = "gnn",
+              node_incremental = "grn",
+              scope_incremental = "grc",
+              node_decremental = "grm",
             },
           },
-        },
-      })
-      
-      -- Handle TreeSitter highlighting errors - comprehensive error suppression
-      local ts_error_group = vim.api.nvim_create_augroup("TreesitterErrorRecovery", { clear = true })
-      
-      -- Suppress treesitter extmark errors by overriding error output
-      local function suppress_ts_errors()
-        local orig_notify = vim.notify
-        vim.notify = function(msg, level, opts)
-          if type(msg) == "string" and 
-             (msg:match("Invalid 'end_row': out of range") or 
-              msg:match("treesitter") or 
-              msg:match("highlighter.lua")) then
-            return -- Suppress treesitter errors
-          end
-          return orig_notify(msg, level, opts)
-        end
+        })
+        return
       end
-      
-      -- Recovery on buffer events
-      vim.api.nvim_create_autocmd({"BufWritePost", "BufEnter", "TextChanged"}, {
-        group = ts_error_group,
-        callback = function(args)
-          local buf = args.buf
-          if vim.treesitter.highlighter and vim.treesitter.highlighter.active[buf] then
-            local ok, _ = pcall(vim.treesitter.get_parser, buf)
-            if not ok then
-              vim.schedule(function()
-                pcall(vim.treesitter.stop, buf)
-                pcall(vim.treesitter.start, buf)
-              end)
-            end
-          end
-        end,
-      })
-      
-      -- Apply error suppression
-      suppress_ts_errors()
-    end,
-  },
 
-  -- Git integration
-  {
-    "lewis6991/gitsigns.nvim",
-    event = { "BufReadPre", "BufNewFile" },
-    config = function()
-      require('gitsigns').setup({
-        signs = {
-          add          = { text = '+' },
-          change       = { text = '~' },
-          delete       = { text = '_' },
-          topdelete    = { text = '‾' },
-          changedelete = { text = '~' },
-          untracked    = { text = '┆' },
-        },
-        current_line_blame = true,
-        current_line_blame_opts = {
-          delay = 300,
-        },
-        on_attach = function(bufnr)
-          local gs = package.loaded.gitsigns
-          
-          local function map(mode, l, r, opts)
-            opts = opts or {}
-            opts.buffer = bufnr
-            vim.keymap.set(mode, l, r, opts)
-          end
-          
-          -- Navigation
-          map('n', ']c', function()
-            if vim.wo.diff then return ']c' end
-            vim.schedule(function() gs.next_hunk() end)
-            return '<Ignore>'
-          end, {expr=true})
-          
-          map('n', '[c', function()
-            if vim.wo.diff then return '[c' end
-            vim.schedule(function() gs.prev_hunk() end)
-            return '<Ignore>'
-          end, {expr=true})
-          
-          -- Actions
-          map('n', '<leader>hs', gs.stage_hunk)
-          map('n', '<leader>hr', gs.reset_hunk)
-          map('n', '<leader>hS', gs.stage_buffer)
-          map('n', '<leader>hu', gs.undo_stage_hunk)
-          map('n', '<leader>hR', gs.reset_buffer)
-          map('n', '<leader>hp', gs.preview_hunk)
-          map('n', '<leader>hb', function() gs.blame_line{full=true} end)
-          map('n', '<leader>hd', gs.diffthis)
-        end
+      local ts = require("nvim-treesitter")
+      ts.setup({ install_dir = vim.fn.stdpath("data") .. "/site" })
+      -- Parser installation is handled by setup-nvim.ps1/setup-nvim.sh so a
+      -- normal editor launch never starts long background compiles.
+      local group = vim.api.nvim_create_augroup("UserTreesitter", { clear = true })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = group,
+        callback = function(args) pcall(vim.treesitter.start, args.buf) end,
       })
     end,
   },
@@ -454,12 +378,12 @@ require("lazy").setup({
           border = 'rounded'
         }
       })
-      
+
       require('mason-lspconfig').setup({
         ensure_installed = {
           'lua_ls',
           'pyright',
-          'ts_ls', 
+          'ts_ls',
           'html',
           'cssls',
           'jsonls',
@@ -470,16 +394,24 @@ require("lazy").setup({
         },
         automatic_installation = true,
       })
-      
+
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      local lspconfig = require('lspconfig')
-      
+      local lspconfig = vim.lsp.config and nil or require('lspconfig')
+      local setup_server = function(name, config)
+        if vim.lsp.config and vim.lsp.enable then
+          vim.lsp.config(name, config)
+          vim.lsp.enable(name)
+        elseif lspconfig and lspconfig[name] then
+          lspconfig[name].setup(config)
+        end
+      end
+
       -- Load optimized LSP configuration
       local lsp_optimized = require('user.lsp-optimized')
-      
+
       -- Setup auto-shutdown for idle LSP servers
       lsp_optimized.setup_lsp_timeout()
-      
+
       -- Configure each LSP server
       local servers = {
         lua_ls = {
@@ -505,21 +437,21 @@ require("lazy").setup({
         gopls = {},
         rust_analyzer = {},
       }
-      
+
       for server, config in pairs(servers) do
         config.capabilities = capabilities
-        lspconfig[server].setup(config)
+        setup_server(server, config)
       end
-      
+
       -- Setup optimized TypeScript LSP
       lsp_optimized.setup_typescript()
-      
+
       -- Global mappings
       vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float)
       vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)
       vim.keymap.set('n', ']d', vim.diagnostic.goto_next)
       vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist)
-      
+
       -- LSP attach keymaps
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('UserLspConfig', {}),
@@ -596,9 +528,9 @@ require("lazy").setup({
     config = function()
       local cmp = require('cmp')
       local luasnip = require('luasnip')
-      
+
       require('luasnip.loaders.from_vscode').lazy_load()
-      
+
       cmp.setup({
         snippet = {
           expand = function(args)
@@ -655,7 +587,7 @@ require("lazy").setup({
           end,
         },
       })
-      
+
       -- Command line completion
       cmp.setup.cmdline({ '/', '?' }, {
         mapping = cmp.mapping.preset.cmdline(),
@@ -663,7 +595,7 @@ require("lazy").setup({
           { name = 'buffer' }
         }
       })
-      
+
       cmp.setup.cmdline(':', {
         mapping = cmp.mapping.preset.cmdline(),
         sources = cmp.config.sources({
@@ -697,7 +629,7 @@ require("lazy").setup({
           java = false,
         }
       })
-      
+
       local cmp_autopairs = require('nvim-autopairs.completion.cmp')
       local cmp = require('cmp')
       cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
@@ -774,7 +706,7 @@ require("lazy").setup({
           },
         },
       })
-      
+
       -- Register key mappings using new spec format (v3 compatible)
       wk.add({
         { "<leader>f", group = "file/find" },
@@ -890,7 +822,23 @@ require("lazy").setup({
       }
     end,
   },
-})
+}
+
+if text_generator_dir then
+  table.insert(plugins, {
+    dir = text_generator_dir,
+    name = "text-generator-nvim",
+    event = "InsertEnter",
+    config = function()
+      local ok, generator = pcall(require, "text-generator")
+      if ok and generator.setup then
+        generator.setup({ min_probability = 0.4, max_tokens = 48 })
+      end
+    end,
+  })
+end
+
+require("lazy").setup(plugins)
 
 -- Enhanced Key mappings
 vim.api.nvim_set_keymap('n', '<C-n>', '<cmd>NvimTreeToggle<CR>', { noremap = true, silent = true })
