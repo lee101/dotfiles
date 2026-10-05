@@ -25,8 +25,14 @@ Commands:
 
 # di subagents
 
-Model-pinned launchers for `di` (`/nvme0n1-disk/code/di/zig-out/bin/di`, the
-`lee101/di` fork of fx). Set `OPENPATHS_API_KEY` first; `FX_MODEL` picks the
+Model-pinned launchers for `di` (the `lee101/di` fork of fx). `di-locate.sh`
+finds the built binary at `<code>/di/zig-out/bin/di` under `$CODE_DIR`,
+`~/code`, `/d/code`, `/vfast/data/code`, `/media/pcd/code` or
+`/nvme0n1-disk/code`, first match wins; set `DI` to pin one. `di-bunny.sh` uses
+`<code>/monitoring/run_agent.py` when present and the plain hard timeout
+otherwise. `di-bunny-file.sh NAME PROMPT_FILE` keeps the full transcript in
+`<code>/visualbench/gamefleet/runs` (or `~/.local/state/di-runs`) and prints
+only the last 100 lines, so read the tail first and open the log only when needed. Set `OPENPATHS_API_KEY` first; `FX_MODEL` picks the
 OpenPaths model and di selects the matching credential and route itself.
 
 ```bash

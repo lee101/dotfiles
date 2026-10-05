@@ -2,7 +2,8 @@
 # di subagent pinned to Meta Muse Spark 1.3 (contributor alias) via OpenPaths.
 # Falls back to muse-spark-1.3 while the contributor alias is not yet deployed.
 set -euo pipefail
-DI=${DI:-/nvme0n1-disk/code/di/zig-out/bin/di}
+. "$(dirname "$0")/di-locate.sh"
+DI=${DI:-$(di_bin di)}
 model=${DI_MUSE_MODEL:-muse-spark-1.3-contributor}
 if [ -n "${OPENPATHS_API_KEY:-}" ]; then
   ids=$(curl -sf -m 10 "${OPENPATHS_BASE_URL:-https://openpaths.io}/v1/models" \
