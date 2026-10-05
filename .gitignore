@@ -41,3 +41,4 @@ tools/netwrck-route-prof
 /tools/golang/go-line-profiler/go-line-profiler
 /tools/golang/go-line-profiler/go-line-profiler.exe
 browserautomation/
+*.log
