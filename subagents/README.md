@@ -62,7 +62,7 @@ Keys are read from `~/.secretbashrc` / project `.env`, never from unit files.
 Only when every tier fails does the monitor fall through to emailing a human.
 Force one tier for testing with `CODEX_SHIM_FORCE=deepseek|muse|local|stock`.
 
-Both codex tiers run `gpt-6-sol` with reasoning effort `high` by default
+Both codex tiers run `gpt-6.1-sol` with reasoning effort `high` by default
 (`MONITOR_MODEL` / `MONITOR_EFFORT` override it); a monitor that passes its own
 `-m`/`--model` or `model_reasoning_effort` still wins. The op/omp fallback tiers
 keep their own independent models.

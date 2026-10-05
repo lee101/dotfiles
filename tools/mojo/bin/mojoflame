@@ -56,6 +56,10 @@ def parse_bt(text):
     stacks, cur = [], []
     for line in text.splitlines():
         s = line.strip()
+        # interactive gdb prefixes every echoed frame with its prompt, so
+        # `#0  0x.. in main ()` arrives as `(gdb) #0  0x.. in main ()`
+        if s.startswith("(gdb) "):
+            s = s[len("(gdb) "):].strip()
         if s.startswith("Thread ") or s.startswith("#0 "):
             if cur:
                 stacks.append(cur)
