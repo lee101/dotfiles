@@ -1,67 +1,55 @@
-#!/bin/bash
+﻿#!/usr/bin/env bash
+set -Eeuo pipefail
 
-# Neovim setup script for dotfiles
-# This script creates symlinks from ~/.config/nvim to the dotfiles nvim configuration
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source_dir="$repo_dir/nvim"
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+skip_sync="${NVIM_SETUP_SKIP_SYNC:-0}"
 
-set -e
+info() { printf '[nvim-setup] %s\n' "$*"; }
+warn() { printf '[nvim-setup] warning: %s\n' "$*" >&2; }
+command -v nvim >/dev/null || { echo 'Install Neovim first (apt/pacman/brew).' >&2; exit 1; }
+command -v git >/dev/null || { echo 'Install Git first.' >&2; exit 1; }
+if ! command -v tree-sitter >/dev/null 2>&1; then
+  if command -v cargo >/dev/null 2>&1; then
+    info 'Installing tree-sitter CLI with Cargo'
+    cargo install tree-sitter-cli --locked
+  elif command -v npm >/dev/null 2>&1; then
+    warn 'Cargo is unavailable; installing tree-sitter CLI from npm as a fallback'
+    npm install --global tree-sitter-cli
+  else
+    warn 'tree-sitter CLI is missing. Install Cargo or Node/npm before parser installation.'
+  fi
+fi
+[[ -f "$source_dir/init.lua" ]] || { echo "Missing canonical config: $source_dir" >&2; exit 1; }
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NVIM_CONFIG_DIR="$HOME/.config/nvim"
+for tool in rg fd fzf node npm python3 go rustc; do
+  command -v "$tool" >/dev/null 2>&1 || warn "optional tool missing: $tool"
+done
 
-echo "🚀 Setting up Neovim configuration..."
+mkdir -p "$(dirname "$config_dir")"
+if [[ -e "$config_dir" || -L "$config_dir" ]]; then
+  backup="${config_dir}.backup-$(date +%Y%m%d-%H%M%S)"
+  info "Backing up existing config to $backup"
+  mv -- "$config_dir" "$backup"
+fi
+ln -s "$source_dir" "$config_dir"
+info "Linked $config_dir -> $source_dir"
 
-install_hint() {
-    echo "⚠️  Missing $1. Install it with one of:"
-    echo "   Ubuntu/Debian: sudo apt install $2"
-    echo "   macOS: brew install $3"
-}
-
-if ! command -v fzf >/dev/null 2>&1; then
-    install_hint "fzf" "fzf" "fzf"
+if [[ -n "${TEXT_GENERATOR_NVIM_REPO:-}" && ! -d "${TEXT_GENERATOR_NVIM_DIR:-$HOME/code/text-generator-nvim}" ]]; then
+  text_dir="${TEXT_GENERATOR_NVIM_DIR:-$HOME/code/text-generator-nvim}"
+  mkdir -p "$(dirname "$text_dir")"
+  info "Cloning text-generator-nvim from $TEXT_GENERATOR_NVIM_REPO"
+  git clone "$TEXT_GENERATOR_NVIM_REPO" "$text_dir"
 fi
 
-if ! command -v rg >/dev/null 2>&1; then
-    install_hint "ripgrep (rg)" "ripgrep" "ripgrep"
+if [[ "$skip_sync" != 1 ]]; then
+  info 'Installing/updating Lazy plugins'
+  nvim --headless '+Lazy! sync' '+qa'
+  info 'Installing Tree-sitter parsers'
+  nvim --headless '+Lazy! load nvim-treesitter' '+lua require("nvim-treesitter").install({ "bash", "c", "cpp", "css", "dockerfile", "go", "html", "java", "javascript", "json", "lua", "markdown", "php", "python", "query", "regex", "ruby", "rust", "sql", "toml", "tsx", "typescript", "vim", "vimdoc", "yaml" }):wait(300000)' '+qa' || warn 'Tree-sitter parser installation failed; run :TSInstall later.'
 fi
 
-if ! command -v fd >/dev/null 2>&1; then
-    install_hint "fd" "fd-find" "fd"
-fi
-
-if ! command -v bat >/dev/null 2>&1; then
-    install_hint "bat" "bat" "bat"
-fi
-
-# Remove existing nvim config if it exists
-if [ -L "$NVIM_CONFIG_DIR" ] || [ -d "$NVIM_CONFIG_DIR" ]; then
-    echo "📁 Removing existing Neovim configuration..."
-    rm -rf "$NVIM_CONFIG_DIR"
-fi
-
-# Create .config directory if it doesn't exist
-mkdir -p "$HOME/.config"
-
-# Create symlink to dotfiles nvim directory
-echo "🔗 Creating symlink from $NVIM_CONFIG_DIR to $DOTFILES_DIR/nvim"
-ln -sf "$DOTFILES_DIR/nvim" "$NVIM_CONFIG_DIR"
-
-# Create symlink for lua user modules
-echo "🔗 Creating symlink for lua user modules..."
-ln -sf "$DOTFILES_DIR/lua/user" "$DOTFILES_DIR/nvim/lua/user"
-
-echo "✅ Neovim setup complete!"
-echo ""
-echo "📋 What was set up:"
-echo "  - Symlinked ~/.config/nvim to $DOTFILES_DIR/nvim"
-echo "  - Symlinked user lua modules from $DOTFILES_DIR/lua"
-echo "  - Lazy.nvim package manager configured"
-echo "  - Essential plugins configured (LSP, Treesitter, Telescope, etc.)"
-echo ""
-echo "🎯 Next steps:"
-echo "  1. Run 'nvim' to automatically install Lazy.nvim and plugins"
-echo "  2. Use ':Lazy' to manage plugins"
-echo "  3. Use ':Mason' to manage LSP servers"
-echo "  4. Run './test_nvim_config.sh' to verify key mappings and dependencies"
-echo ""
-echo "🔍 Finding lua files in dotfiles:"
-find "$DOTFILES_DIR" -name "*.lua" -type f | sort
+info 'Running headless startup check'
+nvim --headless '+checkhealth' '+qa' 2>&1 | tail -80
+info 'Neovim setup complete. Start with: vi (or nvim)'
