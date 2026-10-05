@@ -32,7 +32,12 @@ finds the built binary at `<code>/di/zig-out/bin/di` under `$CODE_DIR`,
 `<code>/monitoring/run_agent.py` when present and the plain hard timeout
 otherwise. `di-bunny-file.sh NAME PROMPT_FILE` keeps the full transcript in
 `<code>/visualbench/gamefleet/runs` (or `~/.local/state/di-runs`) and prints
-only the last 100 lines, so read the tail first and open the log only when needed. Set `OPENPATHS_API_KEY` first; `FX_MODEL` picks the
+only the last 100 lines, so read the tail first and open the log only when needed.
+
+On Windows, build di natively with Zig 0.16 (`~/.zvm/bin/zig build -Doptimize=ReleaseSafe`)
+and the launchers pick up `zig-out/bin/di.exe`. di runs its shell tool through
+Git for Windows' `bash.exe`; set `DI_SHELL` to use a different one. The tests
+run under Git Bash and need no WSL. Set `OPENPATHS_API_KEY` first; `FX_MODEL` picks the
 OpenPaths model and di selects the matching credential and route itself.
 
 ```bash

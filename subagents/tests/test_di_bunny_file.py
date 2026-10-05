@@ -4,6 +4,8 @@ import subprocess
 import tempfile
 import unittest
 
+from _platform import launcher_command, write_runner, write_script
+
 WRAPPER = Path(__file__).resolve().parents[1] / "di-bunny-file.sh"
 
 
@@ -12,23 +14,22 @@ class FileLauncherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             runner = path / "runner.py"
-            runner.write_text("import os,sys\nos.execvp(sys.argv[1], sys.argv[1:])\n")
+            write_runner(runner)
             binary = path / "fx"
-            binary.write_text("#!/usr/bin/env python3\nimport sys\nassert sys.stdin.read() == 'literal $(false)\\n'\nassert sys.argv[1:] == ['ask','--full-access','--json','--no-save'], sys.argv[1:]\nprint('secret early line')\nfor i in range(300): print('line'+str(i))\nsys.exit(7)\n")
-            binary.chmod(0o700)
+            write_script(binary, "#!/usr/bin/env python3\nimport sys\nassert sys.stdin.read() == 'literal $(false)\\n'\nassert sys.argv[1:] == ['ask','--full-access','--json','--no-save'], sys.argv[1:]\nprint('secret early line')\nfor i in range(300): print('line'+str(i))\nsys.exit(7)\n")
             prompt = path / "input.txt"
             prompt.write_text("literal $(false)\n")
             env = {**os.environ, "DI": str(binary), "DI_AGENT_RUNNER": str(runner),
                    "OPENROUTER_API_KEY": "fixture", "DI_RUN_DIR": str(path / "runs")}
-            result = subprocess.run([str(WRAPPER), "pilot", str(prompt)], env=env, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(launcher_command(WRAPPER, "pilot", str(prompt)), env=env, capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 7, result.stderr)
             self.assertNotIn("secret early line", result.stdout)
             self.assertIn("line299", result.stdout)
             self.assertEqual((path / "runs/pilot.prompt.txt").read_text(), prompt.read_text())
             self.assertIn("secret early line", (path / "runs/pilot.log").read_text())
-            again = subprocess.run([str(WRAPPER), "pilot", str(prompt)], env=env, capture_output=True, text=True)
+            again = subprocess.run(launcher_command(WRAPPER, "pilot", str(prompt)), env=env, capture_output=True, text=True)
             self.assertNotEqual(again.returncode, 0)
-            bad = subprocess.run([str(WRAPPER), "../escape", str(prompt)], env=env, capture_output=True)
+            bad = subprocess.run(launcher_command(WRAPPER, "../escape", str(prompt)), env=env, capture_output=True)
             self.assertEqual(bad.returncode, 2)
 
 
@@ -36,35 +37,33 @@ class FileLauncherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             runner = path / "runner.py"
-            runner.write_text("import os,sys\nos.execvp(sys.argv[1], sys.argv[1:])\n")
+            write_runner(runner)
             binary = path / "fx"
-            binary.write_text(
+            write_script(binary, 
                 "#!/usr/bin/env python3\nimport sys\n"
                 "sys.stdin.read()\n"
                 "assert sys.argv[1:] == ['ask','--auto','--json','--no-save'], sys.argv[1:]\n"
                 "print('ok')\n"
             )
-            binary.chmod(0o700)
             prompt = path / "input.txt"
             prompt.write_text("go\n")
             env = {**os.environ, "DI": str(binary), "DI_AGENT_RUNNER": str(runner),
                    "OPENROUTER_API_KEY": "fixture", "DI_RUN_DIR": str(path / "runs"),
                    "DI_BUNNY_ACCESS": "--auto"}
-            result = subprocess.run([str(WRAPPER), "pilot2", str(prompt)], env=env, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(launcher_command(WRAPPER, "pilot2", str(prompt)), env=env, capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stderr)
 
     def _run_with_binary(self, path, body, **overrides):
         runner = path / "runner.py"
-        runner.write_text("import os,sys\nos.execvp(sys.argv[1], sys.argv[1:])\n")
+        write_runner(runner)
         binary = path / "fx"
-        binary.write_text(body)
-        binary.chmod(0o700)
+        write_script(binary, body)
         prompt = path / "input.txt"
         prompt.write_text("go\n")
         env = {**os.environ, "DI": str(binary), "DI_AGENT_RUNNER": str(runner),
                "OPENROUTER_API_KEY": "fixture", "DI_RUN_DIR": str(path / "runs"),
                "DI_BUNNY_ATTEMPTS": "3", **overrides}
-        return subprocess.run([str(WRAPPER), "pilot3", str(prompt)], env=env,
+        return subprocess.run(launcher_command(WRAPPER, "pilot3", str(prompt)), env=env,
                               capture_output=True, text=True, timeout=20)
 
     def test_provider_stream_failure_is_retried(self):

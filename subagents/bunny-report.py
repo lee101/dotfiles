@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 from typing import Any
 
 
@@ -99,6 +100,9 @@ def summarize(path: Path) -> dict[str, Any]:
 
 
 def main() -> None:
+    # Agent logs carry symbols such as "●" that a Windows cp1252 console
+    # cannot encode.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log", type=Path)
     mode = parser.add_mutually_exclusive_group()
