@@ -7,7 +7,8 @@ if (( $# != 2 )) || [[ ! $1 =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$ ]] || [[ ! -r $
   exit 2
 fi
 name=$1; pf=$2
-dir=${DI_RUN_DIR:-/nvme0n1-disk/code/visualbench/gamefleet/runs}; mkdir -p "$dir"
+. "$(dirname "$0")/di-locate.sh"
+dir=${DI_RUN_DIR:-$(di_find visualbench/gamefleet/runs || printf '%s' "${XDG_STATE_HOME:-$HOME/.local/state}/di-runs")}; mkdir -p "$dir"
 log=$dir/$name.log
 prompt=$dir/$name.prompt.txt
 set -o noclobber
@@ -48,6 +49,6 @@ while (( attempt < 10#$attempts )); do
 done
 
 printf 'exit=%s attempt=%s/%s log=%s bytes=%s\n' \
-  "$code" "$attempt" "$attempts" "$log" "$(stat -c%s "$log")"
-python3 "$(dirname "$0")/bunny-report.py" "$log" --preview-only
+  "$code" "$attempt" "$attempts" "$log" "$(wc -c < "$log" | tr -d ' ')"
+"$(di_python)" "$(dirname "$0")/bunny-report.py" "$log" --preview-only
 exit "$code"

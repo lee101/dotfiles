@@ -182,7 +182,10 @@ fi
 # di (lee101/di, a fork of vercel-labs/fx). The runnable binary is whatever
 # `zig build` last produced in the checkout, so point at that path directly.
 # Model-pinned launchers live in ~/code/dotfiles/subagents/di-*.sh.
-alias di='/nvme0n1-disk/code/di/zig-out/bin/di'
+# di-locate.sh finds the checkout under ~/code, /d/code, /vfast/data/code,
+# /media/pcd/code or /nvme0n1-disk/code (or CODE_DIR).
+unalias di 2>/dev/null || true
+di() { "$(. "$HOME/code/dotfiles/subagents/di-locate.sh" && di_bin di)" "$@"; }
 # dib is di. With only OPENROUTER_API_KEY set, di already defaults to
 # stealth/space-bunny-alpha, so dib needs no extra flags.
 alias dib='di'
