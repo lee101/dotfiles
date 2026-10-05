@@ -10,7 +10,9 @@ class TestLauncher(unittest.TestCase):
  def run_launcher(self,**overrides):
   return subprocess.run([str(LAUNCHER),'ask','--json','--','spaces; $(false)'],env={**self.env,**overrides},capture_output=True,text=True,timeout=5)
  def test_happy_path(self):
-  r=self.run_launcher();self.assertEqual(r.returncode,0,r.stderr); d=json.loads(r.stdout);self.assertEqual(d,{'args':['ask','--json','--','spaces; $(false)'],'model':'stealth/space-bunny-alpha','provider':'openrouter','steps':'80','openpaths':False})
+  r=self.run_launcher();self.assertEqual(r.returncode,0,r.stderr); d=json.loads(r.stdout);self.assertEqual(d,{'args':['ask','--json','--','spaces; $(false)'],'model':'stealth/space-bunny-alpha','provider':'openpaths','steps':'80','openpaths':False})
+ def test_explicit_configured_provider(self):
+  r=self.run_launcher(DI_BUNNY_PROVIDER='openrouter');self.assertEqual(r.returncode,0,r.stderr);self.assertEqual(json.loads(r.stdout)['provider'],'openrouter')
  def test_leading_zero(self):
   r=self.run_launcher(FX_MAX_AGENT_STEPS='0080',DI_BUNNY_TIMEOUT_SECONDS='00008');self.assertEqual(r.returncode,0,r.stderr);self.assertEqual(json.loads(r.stdout)['steps'],'80')
  def test_bad_bounds(self):

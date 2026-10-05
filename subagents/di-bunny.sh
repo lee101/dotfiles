@@ -24,7 +24,7 @@ if [[ -z ${OPENROUTER_API_KEY:-} ]]; then
   exit 2
 fi
 
-# OpenPaths otherwise wins when both API keys are present.
-exec env -u OPENPATHS_API_KEY FX_PROVIDER=openrouter \
+# The built-in transport uses OpenRouter when only its key is present.
+exec env -u OPENPATHS_API_KEY FX_PROVIDER="${DI_BUNNY_PROVIDER:-openpaths}" \
   FX_MODEL=stealth/space-bunny-alpha FX_PROVIDER_STRICT=1 FX_MAX_AGENT_STEPS="$steps" \
   python3 "$runner" timeout --signal=TERM --kill-after=30s "${seconds}s" "$DI" "$@"

@@ -482,10 +482,10 @@ function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox"
 foreach ($terra in 'cxt', 'cxtl', 'cxtm', 'cxth', 'ccxt', 'ccxtl', 'ccxtm', 'ccxth') {
     if (Test-Path "Function:\$terra") { Remove-Item "Function:\$terra" -Force }
 }
-function cxll { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "low" -CodexArgs $args }
-function cxlm { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "medium" -CodexArgs $args }
-function cxlh { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "high" -CodexArgs $args }
-function cxlxh { Invoke-CodexModel -Model "gpt-6-sol" -ReasoningEffort "xhigh" -CodexArgs $args }
+function cxll { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "low" -CodexArgs $args }
+function cxlm { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "medium" -CodexArgs $args }
+function cxlh { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "high" -CodexArgs $args }
+function cxlxh { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxsl { Invoke-CodexModel -Model "gpt-6-astra" -ReasoningEffort "low" -CodexArgs $args }
 function cxbuild {
     $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs") { "$HOME\code\codex" } else { $null }

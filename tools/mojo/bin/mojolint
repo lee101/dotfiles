@@ -29,7 +29,11 @@ RULES = [
     ("simd-minmax", "dialect", "err", r"\)\s*\.\s*(?:min|max)\s*\(", "SIMD has no .min()/.max()", "free `min(a,b)` / `max(a,b)`"),
     ("mut-origin", "dialect", "err", r"\b(MutableAnyOrigin|MutableStaticOrigin|StaticMutableOrigin)\b",
      "does not exist", "`AnyOrigin[mut=True]`"),
-    ("out-name", "dialect", "err", r"^\s*var\s+out\b|\bout\s*:\s*\w", "`out` is reserved", "rename the binding"),
+    # `out` is NOT a reserved word in Mojo 1.0 — `var out = ...` is an ordinary local
+    # and `def f(out: Int)` is an ordinary parameter, both verified to compile on
+    # 1.0.0b3.dev2026072406. Only an *exported* @parameter-style binding needs
+    # renaming, so that is the only shape this rule fires on.
+    ("out-name", "dialect", "err", r"^\s*(?:@parameter\s+)?out\s*:", "`out` cannot be a parameterised argument", "rename the argument"),
     ("fn-name", "dialect", "err", r"^\s*var\s+fn\b|\bfn\s*:\s*\w", "`fn` is reserved (removed keyword, still reserved)", "rename the binding"),
     ("simd-eq", "dialect", "err", r"(?<![<>=!])==\s*SIMD\[|\bSIMD\[[^\]]*\]\([^)]*\)\s*==",
      "`==` on SIMD returns a scalar Bool, not an elementwise mask", "use `.eq()` / `.ne()` / `.lt()` / `.ge()`"),
