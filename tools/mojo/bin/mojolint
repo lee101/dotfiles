@@ -29,11 +29,13 @@ RULES = [
     ("simd-minmax", "dialect", "err", r"\)\s*\.\s*(?:min|max)\s*\(", "SIMD has no .min()/.max()", "free `min(a,b)` / `max(a,b)`"),
     ("mut-origin", "dialect", "err", r"\b(MutableAnyOrigin|MutableStaticOrigin|StaticMutableOrigin)\b",
      "does not exist", "`AnyOrigin[mut=True]`"),
-    # `out` is NOT a reserved word in Mojo 1.0 — `var out = ...` is an ordinary local
-    # and `def f(out: Int)` is an ordinary parameter, both verified to compile on
-    # 1.0.0b3.dev2026072406. Only an *exported* @parameter-style binding needs
-    # renaming, so that is the only shape this rule fires on.
-    ("out-name", "dialect", "err", r"^\s*(?:@parameter\s+)?out\s*:", "`out` cannot be a parameterised argument", "rename the argument"),
+    # `out` is reserved as an *argument* name — `def f(out: Int)` fails to parse with
+    # "expected argument name", both plain and under `@parameter`. It is NOT reserved
+    # as a local: `var out = ...` inside a function body compiles fine, and
+    # profiling/mojo/profile_md.mojo (verified on 1.0.0b3.dev2026072406) does exactly
+    # that. This fires on argument position only; the `var out` alternative that used
+    # to be here was a false positive on every ordinary string accumulator.
+    ("out-name", "dialect", "err", r"(?:^|[(,])\s*(?:@\w+\s+)*out\s*:\s*\w", "`out` is reserved as an argument name", "rename the argument"),
     ("fn-name", "dialect", "err", r"^\s*var\s+fn\b|\bfn\s*:\s*\w", "`fn` is reserved (removed keyword, still reserved)", "rename the binding"),
     ("simd-eq", "dialect", "err", r"(?<![<>=!])==\s*SIMD\[|\bSIMD\[[^\]]*\]\([^)]*\)\s*==",
      "`==` on SIMD returns a scalar Bool, not an elementwise mask", "use `.eq()` / `.ne()` / `.lt()` / `.ge()`"),
