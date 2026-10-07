@@ -52,6 +52,7 @@ Aliases (bashrc) and scripts:
 - `digpt` / `di-gpt.sh` — GPT 5.6
 - `diglm` / `di-glm.sh` — GLM 5.3
 - `dideep` / `di-deep.sh` — DeepSeek V4 Flash (vision, experimental); also di's automatic fallback model
+- `di-deepseek.sh` — DeepSeek V4 Flash with di-bunny's bounded steps and hard timeout (`DI_DEEPSEEK_TIMEOUT_SECONDS`); `di-deepseek-file.sh NAME PROMPT_FILE` keeps the transcript in a log and prints only the tail
 - `di`, `din`, `dini` — plain di, autonomous next steps, autonomous next steps + ideas
 - `diself` — `scripts/self-improve.sh`: one autonomous di turn on di's own tree, gated by build + tests, then commit and push
 - `diup` — `scripts/self-improve.sh --merge-upstream`: merge `vercel-labs/fx` main into di, let di resolve conflicts, gate, push
