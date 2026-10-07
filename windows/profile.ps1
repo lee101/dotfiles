@@ -916,3 +916,42 @@ if (Get-Command zoxide -ErrorAction SilentlyContinue) {
 
 # Better tab completion
 Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete 
+
+# SSH agent: start service, unlock keys non-interactively from SSH_KEY_PW (env or ~/.secretbashrc)
+$env:GIT_SSH_COMMAND = "$env:SystemRoot/System32/OpenSSH/ssh.exe"
+function Initialize-SshKeys {
+    $svc = Get-Service ssh-agent -ErrorAction SilentlyContinue
+    if ($svc -and $svc.Status -ne 'Running') {
+        try { Set-Service ssh-agent -StartupType Automatic -ErrorAction Stop; Start-Service ssh-agent -ErrorAction Stop } catch { return }
+    }
+    $pw = $env:SSH_KEY_PW
+    if (-not $pw) {
+        $f = Join-Path $HOME '.secretbashrc'
+        if (Test-Path $f) {
+            $m = Select-String -Path $f -Pattern '^\s*(?:export\s+)?SSH_KEY_PW=[''"]?([^''"\r\n]+)' | Select-Object -First 1
+            if ($m) { $pw = $m.Matches[0].Groups[1].Value }
+        }
+    }
+    if (-not $pw) { return }
+    $loaded = (& "$env:SystemRoot\System32\OpenSSH\ssh-add.exe" -l 2>&1) -join "`n"
+    $askpass = Join-Path $env:TEMP "askpass-$PID.cmd"
+    $saved = @{}
+    foreach ($k in 'id_ed25519', 'id_rsa') {
+        $key = Join-Path $HOME ".ssh\$k"
+        if (-not (Test-Path $key)) { continue }
+        $fp = ((& "$env:SystemRoot\System32\OpenSSH\ssh-keygen.exe" -lf "$key.pub" 2>$null) -split '\s+')[1]
+        if ($fp -and $loaded.Contains($fp)) { continue }
+        if (-not $saved.Count) {
+            Set-Content -Path $askpass -Value '@echo %SSH_KEY_PW%' -Encoding ascii
+            foreach ($n in 'SSH_KEY_PW', 'SSH_ASKPASS', 'SSH_ASKPASS_REQUIRE', 'DISPLAY') { $saved[$n] = [Environment]::GetEnvironmentVariable($n) }
+            $env:SSH_KEY_PW = $pw; $env:SSH_ASKPASS = $askpass; $env:SSH_ASKPASS_REQUIRE = 'force'; $env:DISPLAY = 'x'
+        }
+        & "$env:SystemRoot\System32\OpenSSH\ssh-add.exe" $key *>$null
+    }
+    if ($saved.Count) {
+        foreach ($n in $saved.Keys) { [Environment]::SetEnvironmentVariable($n, $saved[$n]) }
+        Remove-Item $askpass -Force -ErrorAction SilentlyContinue
+    }
+}
+Initialize-SshKeys
+function ssh-reload { Initialize-SshKeys; ssh-add -l }

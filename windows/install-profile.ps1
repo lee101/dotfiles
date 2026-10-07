@@ -45,7 +45,7 @@ if ((Test-Path $profilePath) -and -not $Force) {
 
 # Copy the profile
 Write-Host "Installing PowerShell profile ($ProfileType): $sourceFile -> $profilePath" -ForegroundColor Green
-Copy-Item $sourceFile $profilePath -Force
+Set-Content -Path $profilePath -Value ". `"$sourceFile`"" -Encoding utf8
 
 # Reload profile
 Write-Host "Reloading profile..." -ForegroundColor Cyan
