@@ -918,7 +918,7 @@ if (Get-Command zoxide -ErrorAction SilentlyContinue) {
 Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete 
 
 # SSH agent: start service, unlock keys non-interactively from SSH_KEY_PW (env or ~/.secretbashrc)
-$env:GIT_SSH_COMMAND = "$env:SystemRoot/System32/OpenSSH/ssh.exe"
+$env:GIT_SSH_COMMAND = ($env:SystemRoot -replace '\\', '/') + '/System32/OpenSSH/ssh.exe'
 function Initialize-SshKeys {
     $svc = Get-Service ssh-agent -ErrorAction SilentlyContinue
     if ($svc -and $svc.Status -ne 'Running') {
