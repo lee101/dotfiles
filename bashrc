@@ -151,6 +151,7 @@ alias dimuse="$HOME/code/dotfiles/subagents/di-muse.sh"
 alias digpt="$HOME/code/dotfiles/subagents/di-gpt.sh"
 alias diglm="$HOME/code/dotfiles/subagents/di-glm.sh"
 alias dideep="$HOME/code/dotfiles/subagents/di-deep.sh"
+alias dideepseek="$HOME/code/dotfiles/subagents/di-deepseek.sh"
 alias diself='/vfast/data/code/fx/scripts/self-improve.sh'
 alias diup='/vfast/data/code/fx/scripts/self-improve.sh --merge-upstream'
 alias fx='di'
@@ -240,3 +241,5 @@ function reload {
 
 # user-local builds (ffmpeg n9 + NVENC)
 export PATH="$HOME/.local/bin:$PATH"
+
+alias sscp='ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
