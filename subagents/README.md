@@ -33,6 +33,11 @@ finds the built binary at `<code>/di/zig-out/bin/di` under `$CODE_DIR`,
 otherwise. `di-bunny-file.sh NAME PROMPT_FILE` keeps the full transcript in
 `<code>/visualbench/gamefleet/runs` (or `~/.local/state/di-runs`) and prints
 only the last 100 lines, so read the tail first and open the log only when needed.
+`di-deepseek.sh` is the exception to the OpenPaths routing below: it talks to
+`api.deepseek.com` directly through a `deepseek` connection in
+`~/.fx/settings.json` (bearer `DEEPSEEK_API_KEY`), so it needs that connection
+and refuses to run without it — di silently falls back to the default route
+when a named connection cannot bind.
 
 On Windows, build di natively with Zig 0.16 (`~/.zvm/bin/zig build -Doptimize=ReleaseSafe`)
 and the launchers pick up `zig-out/bin/di.exe`. di runs its shell tool through
@@ -42,17 +47,19 @@ OpenPaths model and di selects the matching credential and route itself.
 
 ```bash
 export OPENPATHS_API_KEY=...
-dimuse "fix the /model picker so it lists every catalog"
+dimuse ask --yolo -- "fix the /model picker so it lists every catalog"
 dideep ask --yolo -- "review this diff"
+dideepseek ask --yolo -- "commit and push the current branch"
 ```
 
 Aliases (bashrc) and scripts:
 
+- `dibunny` / `di-bunny.sh` — Space Bunny Alpha via OpenRouter (unsets OPENPATHS_API_KEY so di routes to OpenRouter); logs to /tmp/di-bunny/*, prints a short digest, `-R` adds a self-review turn
 - `dimuse` / `di-muse.sh` — Meta Muse Spark 1.3 (`muse-spark-1.3-contributor`), the default for di's self-improvement loop
 - `digpt` / `di-gpt.sh` — GPT 5.6
 - `diglm` / `di-glm.sh` — GLM 5.3
 - `dideep` / `di-deep.sh` — DeepSeek V4 Flash (vision, experimental); also di's automatic fallback model
-- `di-deepseek.sh` — DeepSeek V4 Flash with di-bunny's bounded steps and hard timeout (`DI_DEEPSEEK_TIMEOUT_SECONDS`); `di-deepseek-file.sh NAME PROMPT_FILE` keeps the transcript in a log and prints only the tail
+- `dideepseek` / `di-deepseek.sh` — DeepSeek V4 Flash direct to `api.deepseek.com` (`DEEPSEEK_API_KEY`) via the `deepseek` connection in `~/.fx/settings.json`, not via OpenPaths/OpenRouter, with di-bunny's bounded steps and hard timeout (`DI_DEEPSEEK_TIMEOUT_SECONDS`); `DI_DEEPSEEK_MODEL` swaps the model; `di-deepseek-file.sh NAME PROMPT_FILE` keeps the transcript in a log and prints only the tail
 - `di`, `din`, `dini` — plain di, autonomous next steps, autonomous next steps + ideas
 - `diself` — `scripts/self-improve.sh`: one autonomous di turn on di's own tree, gated by build + tests, then commit and push
 - `diup` — `scripts/self-improve.sh --merge-upstream`: merge `vercel-labs/fx` main into di, let di resolve conflicts, gate, push
