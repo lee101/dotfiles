@@ -19,6 +19,15 @@
     "dock": "left"
   },
   "agent": {
+    "sandbox_permissions": {
+      "allow_unsandboxed": true
+    },
+    "default_model": {
+      "provider": "openrouter",
+      "model": "stealth/space-bunny-alpha",
+      "enable_thinking": true,
+      "effort": "max"
+    },
     "dock": "right",
     "tool_permissions": {
       "default": "allow"
