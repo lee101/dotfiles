@@ -353,9 +353,13 @@ function cld { claude --dangerously-skip-permissions @args }
 function cldd { claude --dangerously-skip-permissions @args }
 function cla { claude @args }
 function cldc { cld --continue @args }
-function cldf { cld --continue --fork-session @args }
+function cldcf { cld --continue --fork-session @args }
 function cldr { cld --resume @args }
 function cldp { cld --print @args }
+function cldo { cld --model opus @args }
+function cldf { cld --model fable @args }
+function clds { cld --model sonnet @args }
+function cldh { cld --model haiku @args }
 
 # Claude review aliases
 function cr { claude-review @args }

@@ -41,32 +41,36 @@ def check():
     smi = shutil.which("nvidia-smi")
     if not smi:
         print("- nvidia-smi: **missing** — no NVIDIA driver visible")
-        return
-    q = subprocess.run([smi, "--query-gpu=name,memory.used,memory.total,utilization.gpu",
-                        "--format=csv,noheader"], capture_output=True, text=True)
-    print("| gpu | mem used | mem total | util |")
-    print("|---|---|---|---|")
-    tight = False
-    for line in q.stdout.strip().splitlines():
-        parts = [x.strip() for x in line.split(",")]
-        print("| " + " | ".join(parts) + " |")
-        try:
-            used = float(parts[1].split()[0])
-            total = float(parts[2].split()[0])
-            if used > 0.9 * total:
-                tight = True
-        except (ValueError, IndexError):
-            pass
-    procs = subprocess.run([smi, "--query-compute-apps=pid,used_memory,process_name",
+    else:
+        q = subprocess.run([smi, "--query-gpu=name,memory.used,memory.total,utilization.gpu",
                             "--format=csv,noheader"], capture_output=True, text=True)
-    if procs.stdout.strip():
-        print("\n**other processes hold GPU memory:**\n")
-        for line in procs.stdout.strip().splitlines():
-            print(f"- `{line.strip()}`")
-    if tight:
-        print("\n**GPU memory is nearly full.** `DeviceContext()` will raise "
-              "`CUDA_ERROR_OUT_OF_MEMORY` — that is an environment problem, not a "
-              "bug in your kernel. Free memory or profile elsewhere.")
+        print("| gpu | mem used | mem total | util |")
+        print("|---|---|---|---|")
+        tight = False
+        for line in q.stdout.strip().splitlines():
+            parts = [x.strip() for x in line.split(",")]
+            print("| " + " | ".join(parts) + " |")
+            try:
+                used = float(parts[1].split()[0])
+                total = float(parts[2].split()[0])
+                if used > 0.9 * total:
+                    tight = True
+            except (ValueError, IndexError):
+                pass
+        procs = subprocess.run([smi, "--query-compute-apps=pid,used_memory,process_name",
+                                "--format=csv,noheader"], capture_output=True, text=True)
+        if procs.stdout.strip():
+            print("\n**other processes hold GPU memory:**\n")
+            for line in procs.stdout.strip().splitlines():
+                print(f"- `{line.strip()}`")
+        if tight:
+            print("\n**GPU memory is nearly full.** `DeviceContext()` will raise "
+                  "`CUDA_ERROR_OUT_OF_MEMORY` — that is an environment problem, not a "
+                  "bug in your kernel. Free memory or profile elsewhere.")
+    # Every probe is reported, always: the question is "can I profile here?", and a
+    # reader whose driver is missing cannot tell from one missing line whether ncu
+    # and nsys are there too. Each line names its own fix (driver vs CUDA toolkit),
+    # so returning early on the first miss hides the answer.
     print(f"\n- ncu: {'ok ' + NCU if have(NCU) else '**missing**'}")
     print(f"- nsys: {'ok ' + NSYS if have(NSYS) else '**missing**'}")
     print("- mojo GPU also needs the `max` conda package (libmax.so) next to `mojo`.")

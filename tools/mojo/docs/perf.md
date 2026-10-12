@@ -15,9 +15,11 @@
 
 ## Build
 
-* `mojo build` costs ~2-5s and that cost is essentially **fixed**: 1 fn 5.17s, 5 fns 4.98s,
-  20 fns 4.96s. Optimisation level barely moves it. Batch many functions into ONE
-  compilation unit rather than compiling files separately.
+* `mojo build` costs ~1-2s once the compiler is warm, and that cost is essentially
+  **fixed**: 2-line file 1.1-1.2s, 1600-line file 1.3-1.4s. The *first* build of a
+  session is ~5s (compiler warm-up) — time a warm build. Optimisation level barely
+  moves it. Batch many functions into ONE compilation unit rather than compiling
+  files separately.
 * `mojo run` JITs in ~1.2s per invocation. A built shared lib called via ctypes is ~0.9us
   per call. Anything measured with `mojo run` includes JIT — build first, then benchmark.
 * `mojo build --emit shared-lib` errors if the file defines `main`, and errors if the `-o`
@@ -34,7 +36,8 @@
   An append loop without reserve is O(n) reallocs+copies; mojomem shows it as a
   doubling size histogram (4B, 8B, 16B ... one bucket per growth step).
 * `InlineArray[T, N]` and `stack_allocation[N, T]()` for small fixed buffers — zero heap.
-* `Span[T](unsafe_ptr=p, length=n)` for a non-owning view. Pass `Span`, not `List`, to
+* `Span(unsafe_ptr=p, length=n)` for a non-owning view (`Span` takes no `[T]`
+  parameter, and `ptr=` is not a keyword). Pass `Span`, not `List`, to
   helpers: passing an owned collection by value copies it.
 * Allocate outside the hot loop, reuse the buffer across iterations. The single biggest
   real-world Mojo perf bug is a per-iteration `List` or `String` build.
@@ -79,7 +82,7 @@ Chunk so each work item is >= ~50us, or scheduling overhead dominates.
 | L3 hit | ~15ns |
 | DRAM | ~80ns |
 | `mojo run` JIT | ~1.2s |
-| `mojo build` | ~5s fixed |
+| `mojo build` (warm) | ~1-2s, ~flat in file size |
 | ctypes call into built .so | ~0.9us |
 | scalar f32 accumulate, 1M elems | ~2.2ms |
 | same loop with `fma` over `simd_width_of` chunks | ~0.44ms (**4.95x**, measured) |

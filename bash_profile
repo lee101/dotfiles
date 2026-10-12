@@ -61,3 +61,5 @@ fi
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+export BASH_ENV=$HOME/.bash_env

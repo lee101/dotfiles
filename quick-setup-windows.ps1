@@ -16,7 +16,9 @@
 #   htop/top     - Familiar process monitor commands in Git Bash
 #   cld/cldd     - Claude Code (skip permissions)
 #   cldc/cldr    - Claude --continue / --resume
+#   cldcf        - Claude --continue --fork-session
 #   cldp         - Claude --print
+#   cldo/cldf/clds/cldh - Claude with opus/fable/sonnet/haiku (latest of each)
 #   cr/crc       - Claude review (all / staged)
 #   ccmt/cgcmep  - Claude commit / add+commit+push
 #   cx/cxm/cxf   - Local Codex low/medium/high/full-auto helpers
@@ -376,7 +378,9 @@ Write-Host "Key aliases (PowerShell + Git Bash):" -ForegroundColor Yellow
 Write-Host "  htop/top     Familiar process monitor commands in Git Bash" -ForegroundColor White
 Write-Host "  cld/cldd     Claude Code (skip permissions)" -ForegroundColor White
 Write-Host "  cldc/cldr    Claude --continue / --resume" -ForegroundColor White
+Write-Host "  cldcf        Claude --continue --fork-session" -ForegroundColor White
 Write-Host "  cldp         Claude --print" -ForegroundColor White
+Write-Host "  cldo/cldf/clds/cldh Claude opus/fable/sonnet/haiku (latest of each)" -ForegroundColor White
 Write-Host "  cr/crc       Claude review (all / staged)" -ForegroundColor White
 Write-Host "  ccmt/cgcmep  Claude commit / add+commit+push" -ForegroundColor White
 Write-Host "  cx/cxm/cxf   Local Codex helpers (default / medium / full-auto)" -ForegroundColor White

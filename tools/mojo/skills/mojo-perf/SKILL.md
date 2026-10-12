@@ -25,7 +25,9 @@ Step 6 is not optional: roughly half of "obvious" Mojo optimizations measure as 
 ## Rules that decide most cases
 
 - **Build first.** `mojo run` JITs for ~1.2s; timing it measures the compiler.
-  Profile `mojo build -g` output. `mojo build` costs ~5s flat regardless of file size.
+  Profile `mojo build -g` output. Measured here: 1.1-1.2s for a 2-line file, 1.3-1.4s
+  for 1600 lines — near-flat, but the first cold build of a session costs ~5s (compiler
+  warm-up), so time the second build, not the first.
 - **Allocation churn beats byte totals.** 2000 small allocations from one loop hurts
   more than one 100MB buffer. Read mojomem's "by call count" table first.
 - **Check the loop, not the function.** Mojo inlines everything into `main`; mojoasm's
