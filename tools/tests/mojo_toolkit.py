@@ -18,7 +18,9 @@ Kept free of pytest-only features: ``tools/test-all.sh`` falls back to
 from __future__ import annotations
 
 import os
+import re
 import shutil
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -72,6 +74,10 @@ def have(binary: str) -> bool:
     return shutil.which(binary) is not None
 
 
+def tool_exists(name: str) -> bool:
+    return (BIN_DIR / name).is_file()
+
+
 def have_module(mod: str) -> bool:
     try:
         __import__(mod)
@@ -80,13 +86,78 @@ def have_module(mod: str) -> bool:
     return True
 
 
+def _cpu_affinity() -> str | None:
+    """This process's allowed CPU set as a GOMP_CPU_AFFINITY value, or None.
+
+    Linux ``sched_getaffinity(2)`` already knows the answer; Python only exposes it
+    through ``os.sched_getaffinity`` (Linux-only, 3.3+). The empty set is legal and
+    means "no allowed CPU", which is not worth pinning anything to.
+    """
+    get = getattr(os, "sched_getaffinity", None)
+    if get is None:
+        return None
+    try:
+        cpus = sorted(get(0))
+    except OSError:
+        return None
+    return ",".join(str(c) for c in cpus) if cpus else None
+
+
+_CPU_AFFINITY = _cpu_affinity()
+
+
 def clean_env(extra: dict | None = None) -> dict:
     """os.environ minus the toolchain hooks, plus whatever the test asked for."""
     env = {k: v for k, v in os.environ.items() if k not in _SCRUB}
     env.setdefault("HOME", str(Path.home()))
+    # CPU-bound children must not inherit the runner's own CPU mask. mojobench
+    # times /bin/sh targets whose median is a fraction of a millisecond; a sibling
+    # test's load, a thermal stop or a scheduler migration inside that window moves
+    # the number enough to flip a verdict, and the failure is about this harness's
+    # environment, not about the tool being tested. Pinning to the CPU set that is
+    # already allowed keeps the suite's timing assertions meaningful.
+    if _CPU_AFFINITY is not None:
+        env["GOMP_CPU_AFFINITY"] = _CPU_AFFINITY
     if extra:
         env.update({k: str(v) for k, v in extra.items()})
     return env
+
+
+_TIME_RE = re.compile(r"^(?P<n>\d+(?:\.\d+)?)(?P<unit>us|ms|s)$")
+_UNIT_US = {"s": 1e9, "ms": 1e3, "us": 1.0}
+
+
+def parse_duration(s: str) -> float:
+    """A `123us` / `1.20ms` / `0.003s` cell in microseconds.
+
+    Every timing test in the suite hand-rolled its own converter, and every copy of
+    it assumed that a string ending in ``us`` has no decimal point. mojobench rounds
+    to whole microseconds, so the unit is decided by the suffix alone and that
+    happens to hold — but `float(s[:-2])` on ``979us`` yields 979.0 while
+    `float(s[:-1])` on the same string's digit soup yields whatever the number is,
+    and the two branches disagree the moment the format gains a decimal. One
+    converter, matched on the suffix, so no test can quietly measure the wrong unit.
+    """
+    m = _TIME_RE.match(s.strip())
+    if not m:
+        raise ValueError(f"not a duration this suite understands: {s!r}")
+    return float(m.group("n")) * _UNIT_US[m.group("unit")]
+
+
+def duration_quantum(s: str) -> float:
+    """The rounding error of a rendered duration cell, in microseconds.
+
+    mojobench gates its verdict on the full-precision float but prints microseconds
+    rounded to whole ones, so a comparison the report shows as "8.0ms vs 8.4ms" was
+    decided on numbers the reader cannot see. Anything within this much of the gate
+    is a question the rendered report cannot answer, and a test that insists on an
+    answer there is testing rounding, not the tool.
+    """
+    m = _TIME_RE.match(s.strip())
+    if not m:
+        raise ValueError(f"not a duration this suite understands: {s!r}")
+    unit, digits = m.group("unit"), len(m.group("n").split(".")[1])
+    return 10.0 ** -digits * _UNIT_US[unit]
 
 
 class Result(tuple):
@@ -116,13 +187,19 @@ class Result(tuple):
 
 def run(argv, cwd=None, timeout: int = 120, env: dict | None = None,
         stdin: str | None = None) -> Result:
-    """Run argv to completion. Never raises on a non-zero exit; times out loudly."""
+    """Run argv to completion. Never raises on a non-zero exit; times out loudly.
+
+    stdin is always a pipe, never inherited. A tool that spawns a child which reads
+    stdin — mojobench runs its targets that way — otherwise has the test runner's
+    own stdin behind it, and a /bin/sh that finds readable input there consumes it
+    as script text. That looks exactly like a target that never ran.
+    """
     try:
         p = subprocess.run(
             [str(a) for a in argv],
             cwd=None if cwd is None else str(cwd),
             env=clean_env(env),
-            input=stdin,
+            input="" if stdin is None else stdin,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -204,18 +281,32 @@ class ToolContractMixin:
 
     # ---- argv-shape contract, shared by every tool in the toolkit -------------
 
+    # A checkout may ship some of the eight tools and not others. These shared
+    # argv-shape tests cannot say anything useful about a tool that is not here,
+    # and without this they fail with FileNotFoundError in whatever submodule
+    # happens to be under test. Checked per test, not by decorator: `tool` is set
+    # by the subclass, which does not exist when this mixin's body runs.
+    def require_tool(self) -> None:
+        if not self.tool:
+            self.skipTest("test case does not name a tool")
+        if not tool_exists(self.tool):
+            self.skipTest(f"tools/mojo/bin/{self.tool} is not in this checkout")
+
     def test_help_exits_zero_and_names_the_program(self) -> None:
+        self.require_tool()
         r = self.run_tool("--help")
         self.assertEqual(r.rc, 0, f"--help failed: {r.text}")
         self.assertIn(self.usage_token or self.tool, r.text)
 
     def test_no_arguments_is_a_usage_error_not_a_traceback(self) -> None:
+        self.require_tool()
         r = self.run_tool()
         self.assertNotEqual(r.rc, 0, f"no-arg invocation should fail: {r.text}")
         self.assertNotIn("Traceback", r.text)
         self.assertIn("usage", r.text.lower())
 
     def test_unknown_flag_is_rejected(self) -> None:
+        self.require_tool()
         r = self.run_tool("--definitely-not-a-flag")
         self.assertNotEqual(r.rc, 0)
         self.assertNotIn("Traceback", r.text)
@@ -227,4 +318,8 @@ class ToolTestCase(ToolContractMixin, unittest.TestCase):
     Subclasses set ``tool`` and ``usage_token``. Anything a test needs on disk goes
     under ``self.tmp``; nothing may depend on the directory the runner was invoked
     from, because the suite is run both from the repo root and from ``tools/``.
+
+    Note the MRO: the mixin comes first, so a subclass that overrides ``setUp``
+    and forgets to chain leaves the mixin's tests without a temp dir. Subclasses
+    must call ``super().setUp()``.
     """

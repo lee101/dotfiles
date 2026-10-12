@@ -126,26 +126,43 @@ def split_funcs(text, from_objdump):
     return funcs
 
 
-LOOP_LABEL = re.compile(r"^([.\w$@][\w.$@]*):")
+LOOP_LABEL = re.compile(r"^\s*([.\w$@][\w.$@]*):")
 JMP = re.compile(r"^\s*j\w+\s+([.\w$@][\w.$@]*)")
+# objdump interleaves `addr:\tmnemonic` and writes branch targets as `1185 <sum+0x45>`;
+# both have to be peeled off before the label/jump patterns can see anything.
+OBJDUMP_ADDR = re.compile(r"^\s*[0-9a-f]+:\s*")
+OBJDUMP_TGT = re.compile(r"\s*<[^>]*>\s*$")
+
+
+def strip_objdump(line):
+    """objdump -> a bare `mnemonic operands` line, with symbolic targets removed."""
+    return OBJDUMP_ADDR.sub("", OBJDUMP_TGT.sub("", line))
 
 
 def find_loops(lines):
-    """Backward branches delimit loops. -> [(label, body_lines)] innermost-first."""
-    pos = {}
-    for i, line in enumerate(lines):
+    """Backward branches delimit loops. -> [(label, body_lines)] innermost-first.
+
+    Targets are resolved by name for Mojo's `--emit asm` (`.LBB2_2`) and by
+    address for objdump, whose branches name addresses rather than labels.
+    """
+    stripped = [strip_objdump(l) for l in lines]
+    pos, addr = {}, {}
+    for i, line in enumerate(stripped):
         m = LOOP_LABEL.match(line)
         if m:
             pos.setdefault(m.group(1), i)
+        a = OBJDUMP_ADDR.match(lines[i])
+        if a:
+            addr.setdefault(a.group(0).strip().rstrip(":"), i)
     loops = []
-    for i, line in enumerate(lines):
+    for i, line in enumerate(stripped):
         m = JMP.match(line)
         if not m:
             continue
         tgt = m.group(1)
-        j = pos.get(tgt)
+        j = pos.get(tgt, addr.get(tgt))
         if j is not None and j < i:
-            loops.append((tgt, lines[j:i + 1], i - j))
+            loops.append((tgt, stripped[j:i + 1], i - j))
     loops.sort(key=lambda x: x[2])            # innermost (smallest span) first
     return loops
 

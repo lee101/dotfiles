@@ -113,6 +113,9 @@ def main():
         items.append((os.path.basename(t), t))
     if len(items) < 1:
         ap.error("give at least one target")
+    if a.reps < 1:
+        # otherwise every target reports "no median for empty data" as a traceback
+        ap.error(f"--reps must be at least 1, got {a.reps}")
 
     extra = a.args.split() if a.args else []
     results = []

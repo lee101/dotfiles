@@ -26,12 +26,12 @@ if [[ -n $runner && ! -f $runner ]]; then
   printf 'DI_AGENT_RUNNER does not exist: %s\n' "$runner" >&2
   exit 2
 fi
-if [[ -z ${OPENROUTER_API_KEY:-} ]]; then
+if [[ ${DI_BUNNY_PROVIDER:-openpaths} != deepseek && -z ${OPENROUTER_API_KEY:-} ]]; then
   printf '%s\n' 'OPENROUTER_API_KEY is required for di-bunny.' >&2
   exit 2
 fi
 
 # The built-in transport uses OpenRouter when only its key is present.
 exec env -u OPENPATHS_API_KEY FX_PROVIDER="${DI_BUNNY_PROVIDER:-openpaths}" \
-  FX_MODEL=stealth/space-bunny-alpha FX_PROVIDER_STRICT=1 FX_MAX_AGENT_STEPS="$steps" \
+  FX_MODEL="${DI_BUNNY_MODEL:-stealth/space-bunny-alpha}" FX_PROVIDER_STRICT=1 FX_MAX_AGENT_STEPS="$steps" \
   ${runner:+"$(di_python)" "$runner"} timeout --signal=TERM --kill-after=30s "${seconds}s" "$DI" "$@"

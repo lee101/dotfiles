@@ -132,8 +132,10 @@ def slice_after(line: String, marker: String) -> String:
 
 
 def has_digit(value: String) -> Bool:
-    for i in range(value.byte_length()):
-        var char = value[byte=i]
+    # Iterate codepoints. Indexing by byte walks into the middle of a UTF-8
+    # sequence and trips Mojo's "slice index does not lie on a codepoint
+    # boundary" assertion, which aborts the process on any non-ASCII input.
+    for char in value:
         if char >= "0" and char <= "9":
             return True
     return False
@@ -175,7 +177,17 @@ def clean_label(value: String, limit: Int = 100) -> String:
     label = label.replace("`", "'")
     if label.byte_length() <= limit:
         return label
-    return String(label[byte = 0 : limit - 3]) + "..."
+    # Truncate on a codepoint boundary; cutting at a raw byte offset can split
+    # a UTF-8 sequence and abort.
+    var kept = String("")
+    var used = 0
+    for char in label:
+        var width = char.byte_length()
+        if used + width > limit - 3:
+            break
+        kept += char
+        used += width
+    return kept + "..."
 
 
 def layer_from_line(line: String) raises -> Layer:
@@ -225,21 +237,53 @@ def insert_ranked(mut layers: List[Layer], layer: Layer, limit: Int):
         position -= 1
 
 
+def count_lines(text: String) -> Int:
+    # split("\n") yields a trailing empty element when the file ends with a
+    # newline, so counting loop iterations reports one line more than the file
+    # has. Count the separators directly instead.
+    var length = text.byte_length()
+    if length == 0:
+        return 0
+    # Fast path: counting "\n" has nothing to do with character boundaries, so
+    # iterate the raw bytes. t.bytes() yields UInt8 one byte at a time and never
+    # checks that an index lies on a codepoint boundary, unlike text[byte=i],
+    # which aborts mid-sequence on any multi-byte character. The grapheme
+    # iteration this replaces was only needed to see whether a trailing "\r" is
+    # the same element as the "\n"; "\n" is always its own grapheme cluster, so
+    # "the last byte is \n" decides that on its own.
+    var newlines = 0
+    var last = Byte(0x0A)
+    for byte in text.bytes():
+        if byte == 0x0A:
+            newlines += 1
+        last = byte
+    if last == 0x0A:
+        return newlines
+    return newlines + 1
+
+
 def parse(
     text: String, top: Int
 ) raises -> Tuple[Summary, List[Layer], Int, Int]:
     var summary = Summary(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
     var layers = List[Layer]()
     var warning_count = 0
-    var line_count = 0
+    var line_count = count_lines(text)
     for raw in text.split("\n"):
-        line_count += 1
         var line = String(String(raw).strip())
         if line.byte_length() == 0:
             continue
         if line.find("[TRT]") >= 0:
+            # Order matters: "H2D Latency:" and "D2H Latency:" both contain
+            # "Latency:", so testing the generic case first makes every
+            # transfer line overwrite the overall latency mean and the
+            # transfer metrics are never emitted at all.
             if line.find("Throughput:") >= 0:
                 summary.throughput = value_after(line, "Throughput:")
+            elif line.find("H2D Latency:") >= 0:
+                summary.h2d_mean = metric_mean(line)
+            elif line.find("D2H Latency:") >= 0:
+                summary.d2h_mean = metric_mean(line)
             elif line.find("Latency:") >= 0:
                 summary.latency_mean = metric_mean(line)
                 summary.latency_p90 = metric_p90(line)
@@ -247,10 +291,6 @@ def parse(
                 summary.enqueue_mean = metric_mean(line)
             elif line.find("GPU Compute Time:") >= 0:
                 summary.gpu_mean = metric_mean(line)
-            elif line.find("H2D Latency:") >= 0:
-                summary.h2d_mean = metric_mean(line)
-            elif line.find("D2H Latency:") >= 0:
-                summary.d2h_mean = metric_mean(line)
             var lowered = line.lower()
             if (
                 lowered.find("warning") >= 0

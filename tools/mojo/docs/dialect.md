@@ -9,13 +9,13 @@ wrong on most of these.
 | old (0.x, and what an LLM will write) | 1.0 |
 |---|---|
 | `fn foo():` | **`fn` is removed entirely** — use `def` |
-| `alias X = ...` | `comptime X = ...` |
+| `alias X = ...` | `comptime X = ...` (`alias` still compiles, deprecated with a warning) |
 | `from sys.info import ...` | `from std.sys.info import ...` (all stdlib under `std.`) |
 | `simdwidthof` / `sizeof` / `alignof` | `simd_width_of` / `size_of` / `align_of` |
 | `has_avx512f()` | `CompilationTarget.has_avx512f()` |
 | `UnsafePointer[T].alloc(n)` | `from std.memory import alloc` -> `alloc[T](n)` |
-| `memset_zero` | `unsafe_memset_zero` (old name warns) |
-| `Span[T](ptr=p, length=n)` | `Span[T](unsafe_ptr=p, length=n)` |
+| `memset_zero` | `unsafe_memset_zero` (both in `std.memory`; the old name warns) |
+| `Span[T](ptr=p, length=n)` | `Span(unsafe_ptr=p, length=n)` — no `[T]`, and `ptr=` is not a keyword |
 | `l.capacity` | `l.capacity()` — it is a method |
 | `vec.min(other)` | free `min(a, b)` — SIMD has no `.min()`/`.max()` |
 
@@ -47,7 +47,9 @@ wrong on most of these.
 * Pointers are **non-nullable**: constructing from address 0 fails a compile-time
   constraint. Pass the address as `Int`, construct only inside the branch that uses it.
 * An `@export ... abi("C")` function cannot be `raises` — wrap fallible work in `try:`/`except:`.
-* `out` is reserved — not usable as a parameter name *or* a local variable name.
+* `out` is reserved as a parameter name — `def k(out: Int)` fails with
+  `expected argument name`. As a *local* variable name it still compiles, including
+  inside an `@export abi("C")` body.
 
 ## SIMD comparisons reduce — this one silently changes results
 

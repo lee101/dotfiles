@@ -3,11 +3,7 @@
 # Source this from both ~/.bashrc and ~/.zshrc
 # Keep shell-specific features in their respective files
 
-# If not running interactively, don't do anything
-case $- in
-    *i*) ;;
-      *) return;;
-esac
+case $- in *i*) _CS_INTERACTIVE=1 ;; *) _CS_INTERACTIVE= ;; esac
 export CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=99999
 export DOCKER_BUILDKIT=1
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -752,11 +748,15 @@ alias ntop='nvtop'
 
 alias cla='ANTHROPIC_API_KEY="" claude'
 alias cldc='cld --continue'
-alias cldf='cld --continue --fork-session'
+alias cldcf='cld --continue --fork-session'
 alias cldr='cld --resume'
 alias cldp='cld --print'
-alias cldd='claude --dangerously-skip-permissions'
-alias clds='claude --dangerously-skip-permissions --model sonnet'
+alias cldd='cld'
+# Bare family names so Claude Code picks the latest of each series, no pinned versions
+alias cldo='cld --model opus'
+alias cldf='cld --model fable'
+alias clds='cld --model sonnet'
+alias cldh='cld --model haiku'
 
 alias cr='claude-review'
 alias creview='claude-review'

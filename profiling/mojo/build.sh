@@ -48,12 +48,21 @@ Reinstall the pinned toolchain with:
 
 # MODULAR_HOME is $env_dir/share/max, NOT $env_dir: the compiler reads
 # lib/mojo/std.mojoc from the environment root while the module path comes
-# from MODULAR_HOME. Setting it to the environment root resolves to the same
-# directory that has no share/max and still fails to locate the stdlib.
-if [ -z "${MODULAR_HOME:-}" ]; then
+# from MODULAR_HOME. Setting it to the environment root still fails to locate
+# the stdlib.
+#
+# This script resolves the compiler, so it owns MODULAR_HOME for it. An
+# inherited value is NOT trusted: a workstation commonly exports the
+# MODULAR_HOME of a different Modular installation, and honouring it makes
+# every build fail with "unable to locate module 'std'" and a cascade of bogus
+# "unknown declaration" errors. Callers who really want a non-default value
+# set MOJO_MODULAR_HOME explicitly.
+if [ -n "${MOJO_MODULAR_HOME:-}" ]; then
+  MODULAR_HOME="$MOJO_MODULAR_HOME"
+else
   MODULAR_HOME="$env_dir/share/max"
-  export MODULAR_HOME
 fi
+export MODULAR_HOME
 PATH="$env_dir/bin:$PATH"
 export PATH
 
