@@ -2,6 +2,17 @@
 
 ## Getting Started
 
+### Shell Startup
+
+The repository config uses `$SHELL` for interactive login shells, falling back
+to Bash when it is unset, unavailable, or a minimal sh/dash shell. New panes
+load the shell's normal startup files, including aliases from `.bashrc` or
+`.zshrc`. Bash login profiles must source `.bashrc` (our `bash_profile` does).
+
+Reload an existing server with `tmux source-file ~/code/dotfiles/tmux.conf`.
+This fixes new windows and splits; existing panes keep their running shell.
+Run `exec bash -l` in an existing sh pane to switch it without killing sessions.
+
 ### Basic Commands
 - **Start tmux**: `tmux` or `tmux new -s session-name`
 - **Attach to session**: `tmux attach` or `tmux a -t session-name`

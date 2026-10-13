@@ -16,6 +16,7 @@ else
 fi
 
 "$repo_dir/tools/test-shell-config.sh"
+"$repo_dir/tools/test-tmux.sh"
 
 if python3 -m pytest --version >/dev/null 2>&1; then
 	python3 -m pytest -q "$repo_dir/tools/tests" "$repo_dir/profiling/tests"
