@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec op --model 'openrouter/stealth/space-bunny-alpha' "$@"
+model=${OP_OPENPATHSFREE_MODEL:-openpaths/free}
+exec op --model "$model" "$@"
