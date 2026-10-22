@@ -44,7 +44,8 @@ def main():
     releases.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.build-', dir=releases) as staging:
         package = Path(staging) / 'package'
-        command = [sys.executable, str(repo / 'scripts/build_codex_package.py'), '--target', target, '--package-dir', str(package), '--entrypoint-bin', str(binary_dir / 'codex'), '--code-mode-host-bin', str(binary_dir / 'codex-code-mode-host')]
+        exe = '.exe' if spec.is_windows else ''
+        command = [sys.executable, str(repo / 'scripts/build_codex_package.py'), '--target', target, '--package-dir', str(package), '--entrypoint-bin', str(binary_dir / f'codex{exe}'), '--code-mode-host-bin', str(binary_dir / f'codex-code-mode-host{exe}')]
         if spec.is_linux:
             command += ['--bwrap-bin', str(binary_dir / 'bwrap')]
         subprocess.run(command, cwd=repo, env=env, check=True)
@@ -55,20 +56,35 @@ def main():
                         is_elf = stream.read(4) == b'\x7fELF'
                     if is_elf:
                         subprocess.run(['strip', '--strip-all', str(path)], check=True)
-        catalog = json.loads((repo / 'codex-rs/models-manager/models.json').read_text())
+        catalog = json.loads((repo / 'codex-rs/models-manager/models.json').read_text(encoding='utf-8'))
         model = next(item for item in catalog['models'] if item['slug'] == 'gpt-6.1-sol')
-        (package / 'infinity-concise.md').write_text(model['model_messages']['instructions_template'])
-        version = subprocess.check_output([str(package / 'bin/codex'), '--version'], text=True).strip()
-        help_text = subprocess.check_output([str(package / 'bin/codex'), '--help'], text=True)
+        (package / 'infinity-concise.md').write_text(model['model_messages']['instructions_template'], encoding='utf-8')
+        version = subprocess.check_output([str(package / f'bin/codex{exe}'), '--version'], text=True).strip()
+        help_text = subprocess.check_output([str(package / f'bin/codex{exe}'), '--help'], text=True)
         for flag in ['--auto-next-steps', '--auto-next-idea', '--auto-next-goal']:
             if flag not in help_text:
                 raise RuntimeError(f'Infinity flag missing: {flag}')
         manifest = {'commit': commit, 'version': version, 'target': target, 'profile': 'release', 'dirtyPatchSha256': hashlib.sha256(dirty_patch).hexdigest() if dirty_patch else None, 'sha256': {str(path.relative_to(package)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(package.rglob('*')) if path.is_file()}}
-        (package / 'infinity-build.json').write_text(json.dumps(manifest, indent=2) + '\n')
+        (package / 'infinity-build.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
         release = releases / release_id
         package.rename(release)
-    for link, destination in [(root / 'current', release), (root / 'source', repo), (Path.home() / '.local/bin/codex-infinity', release / 'bin/codex'), (Path.home() / '.bun/bin/codex-infinity', release / 'bin/codex')]:
+    for link, destination in [(root / 'current', release), (root / 'source', repo), (Path.home() / '.local/bin' / f'codex-infinity{exe}', release / f'bin/codex{exe}'), (Path.home() / '.bun/bin' / f'codex-infinity{exe}', release / f'bin/codex{exe}')]:
         link.parent.mkdir(parents=True, exist_ok=True)
+        if os.name == 'nt':
+            # Symlinks need admin or Developer Mode on Windows; junctions and hard links do not.
+            if destination.is_dir():
+                if link.is_junction():
+                    os.rmdir(link)
+                elif link.exists():
+                    raise RuntimeError(f'Refusing to replace a regular path: {link}')
+                subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(destination)], check=True)
+            else:
+                temporary = link.with_name(link.name + '.publish-' + str(os.getpid()))
+                if temporary.exists():
+                    temporary.unlink()
+                os.link(destination, temporary)
+                os.replace(temporary, link)
+            continue
         if link.exists() and not link.is_symlink():
             raise RuntimeError(f'Refusing to replace a regular file: {link}')
         temporary = link.with_name(link.name + '.publish-' + str(os.getpid()))

@@ -492,13 +492,22 @@ function cxlh { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "high" -
 function cxlxh { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxsl { Invoke-CodexModel -Model "gpt-6-astra" -ReasoningEffort "low" -CodexArgs $args }
 function cxbuild {
-    $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs") { "$HOME\code\codex" } else { $null }
+    $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs\Cargo.toml") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs\Cargo.toml") { "$HOME\code\codex" } else { $null }
     if (-not $codexDir) {
         Write-Host "No local Codex checkout found under ~/code/codex-infinity or ~/code/codex" -ForegroundColor Yellow
         return
     }
-    Push-Location $codexDir
-    try { cargo build --release -p codex } finally { Pop-Location }
+    # The Store python alias on PATH exits non-zero, so use the first interpreter that actually runs.
+    $python = $null
+    foreach ($candidate in @('python3', 'python', 'py', "$HOME\AppData\Local\Programs\Python\Python312\python.exe")) {
+        $cmd = Get-Command $candidate -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($cmd) {
+            & $cmd.Source -c 'import sys' *> $null
+            if ($LASTEXITCODE -eq 0) { $python = $cmd.Source; break }
+        }
+    }
+    if (-not $python) { Write-Host "No working Python found for codex_release" -ForegroundColor Yellow; return }
+    & $python "$HOME\code\dotfiles\lib\codex_release" $codexDir
 }
 
 function cxa { codex --auto-edit @args }

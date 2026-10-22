@@ -186,6 +186,13 @@ $targets = @(
 )
 
 foreach ($nvimConfigDir in $targets) {
+    # A stale junction/symlink (e.g. AppData\Local\nvim -> dotfiles\nvim) hides the root
+    # init.lua + lua/ and breaks `require("user.options")`. Replace it with a real directory.
+    $existing = Get-Item $nvimConfigDir -Force -ErrorAction SilentlyContinue
+    if ($existing -and $existing.LinkType) {
+        Write-Host "Replacing stale $($existing.LinkType) $nvimConfigDir -> $($existing.Target)" -ForegroundColor Yellow
+        [System.IO.Directory]::Delete($nvimConfigDir, $false)
+    }
     if (!(Test-Path $nvimConfigDir)) {
         New-Item -ItemType Directory -Path $nvimConfigDir -Force | Out-Null
         Write-Host "Created Neovim config dir: $nvimConfigDir" -ForegroundColor Green
@@ -200,12 +207,13 @@ foreach ($nvimConfigDir in $targets) {
         if ((Test-Path $targetInit) -and $Force) { Remove-Item $targetInit -Force -ErrorAction SilentlyContinue }
         if (!(Test-Path $targetInit)) {
             try {
-                New-Item -ItemType SymbolicLink -Path $targetInit -Target $nvimSourceInit -Force:$Force | Out-Null
+                New-Item -ItemType SymbolicLink -Path $targetInit -Target $nvimSourceInit -Force:$Force -ErrorAction Stop | Out-Null
                 Write-Host "  Linked init.lua" -ForegroundColor Green
             } catch {
                 Write-Host "  (init.lua link may need admin / Dev Mode): $($_.Exception.Message)" -ForegroundColor Yellow
-                # Fallback copy for robustness on Git Bash / restricted envs
-                Copy-Item $nvimSourceInit $targetInit -Force -ErrorAction SilentlyContinue
+                # Hardlink needs no admin and keeps edits in sync; copy as last resort
+                try { New-Item -ItemType HardLink -Path $targetInit -Target $nvimSourceInit -ErrorAction Stop | Out-Null }
+                catch { Copy-Item $nvimSourceInit $targetInit -Force -ErrorAction SilentlyContinue }
             }
         }
     }
@@ -216,11 +224,11 @@ foreach ($nvimConfigDir in $targets) {
         if ((Test-Path $targetLua) -and $Force) { Remove-Item $targetLua -Force -Recurse -ErrorAction SilentlyContinue }
         if (!(Test-Path $targetLua)) {
             try {
-                New-Item -ItemType SymbolicLink -Path $targetLua -Target $nvimSourceLua -Force:$Force | Out-Null
+                New-Item -ItemType SymbolicLink -Path $targetLua -Target $nvimSourceLua -Force:$Force -ErrorAction Stop | Out-Null
                 Write-Host "  Linked lua/" -ForegroundColor Green
             } catch {
-                Write-Host "  (lua/ link may need admin): $($_.Exception.Message)" -ForegroundColor Yellow
-                Copy-Item -Recurse -Force $nvimSourceLua $targetLua -ErrorAction SilentlyContinue
+                Write-Host "  (lua/ symlink needs admin/Dev Mode, using junction)" -ForegroundColor Yellow
+                New-Item -ItemType Junction -Path $targetLua -Target $nvimSourceLua -ErrorAction Stop | Out-Null
             }
         }
     }
@@ -233,10 +241,11 @@ foreach ($nvimConfigDir in $targets) {
             if ((Test-Path $dest) -and $Force) { Remove-Item $dest -Force -Recurse -ErrorAction SilentlyContinue }
             if (!(Test-Path $dest)) {
                 try {
-                    New-Item -ItemType SymbolicLink -Path $dest -Target $item.FullName -Force:$Force | Out-Null
+                    New-Item -ItemType SymbolicLink -Path $dest -Target $item.FullName -Force:$Force -ErrorAction Stop | Out-Null
                     Write-Host "  Linked extra: $($item.Name)" -ForegroundColor DarkGreen
                 } catch {
-                    Copy-Item -Recurse -Force $item.FullName $dest -ErrorAction SilentlyContinue
+                    if ($item.PSIsContainer) { New-Item -ItemType Junction -Path $dest -Target $item.FullName -ErrorAction Stop | Out-Null }
+                    else { try { New-Item -ItemType HardLink -Path $dest -Target $item.FullName -ErrorAction Stop | Out-Null } catch { Copy-Item -Force $item.FullName $dest } }
                 }
             }
         }

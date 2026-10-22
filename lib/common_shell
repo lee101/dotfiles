@@ -768,6 +768,9 @@ alias cap='cursor-agent-bun -f -p'
 alias crs='cursor-agent --yolo --model cursor-grok-4.5-high'
 alias crsf='cursor-agent --yolo --model composer-2.5-fast'
 
+# `op` runs the OpenPaths harness from source. Point OP_REPO at the checkout if it isn't ~/code/op.
+op() { bun "${OP_REPO:-$HOME/code/op}/packages/coding-agent/src/cli.ts" "$@"; }
+
 # `opfb --continue` keeps the same model while resuming the last session.
 opfb() { op --model 'google/gemini-3.7-flash:batch' "$@"; }
 opfd() { op --provider deepseek --model 'deepseek-v4-flash-vision-exp' "$@"; }
@@ -993,9 +996,19 @@ cxni() {
     _codex_local --yolo3 -m gpt-6-astra --auto-next-idea --auto-next-steps "$@"
 }
 
-# Codex build helper
+# Codex build helper. Windows ships a Store stub for python3 that fails to run,
+# so pick the first interpreter that actually works instead of the shebang.
 cxbuild() {
-    "$HOME/code/dotfiles/lib/codex_release" "$CODEX_LOCAL_SOURCE_ROOT" "$@"
+    local py="" candidate
+    for candidate in python3 python py "$HOME/AppData/Local/Programs/Python/Python312/python.exe"; do
+        if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys' >/dev/null 2>&1; then
+            py="$candidate"; break
+        fi
+    done
+    if [ -z "$py" ]; then
+        echo "No working Python found for codex_release" >&2; return 1
+    fi
+    "$py" "$HOME/code/dotfiles/lib/codex_release" "$CODEX_LOCAL_SOURCE_ROOT" "$@"
 }
 
 # ── Two-phase Codex pipeline: Plan (spark) → Execute (codex) → Git (spark) ──
