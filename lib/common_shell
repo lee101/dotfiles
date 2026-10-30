@@ -1167,6 +1167,77 @@ cld() {
     ANTHROPIC_API_KEY="" "$claude_bin" --dangerously-skip-permissions "$@"
 }
 
+_cldu_epoch_fmt() {
+    date -u -d "@$1" "$2" 2>/dev/null || date -u -r "$1" "$2" 2>/dev/null
+}
+
+_cldu_rel() {
+    local d=$(( ${1%.*} - $(date +%s) ))
+    [ "$d" -lt 0 ] && d=0
+    printf '%dh %dm' $((d / 3600)) $((d % 3600 / 60))
+}
+
+cldu() {
+    command -v curl >/dev/null || { echo "cldu: curl required" >&2; return 1; }
+    local token="${CLAUDE_CODE_OAUTH_TOKEN:-}"
+    if [ -z "$token" ] && [ -r "$HOME/.claude/.credentials.json" ]; then
+        command -v jq >/dev/null || { echo "cldu: jq required" >&2; return 1; }
+        token=$(jq -r '.claudeAiOauth.accessToken // empty' "$HOME/.claude/.credentials.json" 2>/dev/null)
+    fi
+    [ -n "$token" ] || { echo "cldu: no Claude OAuth token (run claude auth login)" >&2; return 1; }
+
+    local hdr body code line key val
+    hdr=$(mktemp) || return 1
+    body=$(mktemp) || { rm -f "$hdr"; return 1; }
+
+    code=$(curl -sS --max-time 15 -D "$hdr" -o "$body" -w '%{http_code}' \
+        -X POST "https://api.anthropic.com/v1/messages" \
+        -H "Authorization: Bearer $token" \
+        -H "anthropic-version: 2023-06-01" \
+        -H "anthropic-beta: oauth-2025-04-20" \
+        -H "content-type: application/json" \
+        -H "User-Agent: claude-cli (external, cli)" \
+        -d '{"model":"claude-haiku-4-5-20251001","max_tokens":1,"messages":[{"role":"user","content":"."}]}')
+
+    local u5 r5 s5 u7 r7 s7 over
+    while IFS= read -r line; do
+        key=$(printf '%s' "${line%%:*}" | tr '[:upper:]' '[:lower:]')
+        val=${line#*:}
+        val=${val# }
+        val=${val%$'\r'}
+        case "$key" in
+            anthropic-ratelimit-unified-5h-utilization) u5=$val ;;
+            anthropic-ratelimit-unified-5h-reset) r5=$val ;;
+            anthropic-ratelimit-unified-5h-status) s5=$val ;;
+            anthropic-ratelimit-unified-7d-utilization) u7=$val ;;
+            anthropic-ratelimit-unified-7d-reset) r7=$val ;;
+            anthropic-ratelimit-unified-7d-status) s7=$val ;;
+            anthropic-ratelimit-unified-overage-status) over=$val ;;
+        esac
+    done < "$hdr"
+
+    if [ -z "$u5$u7" ]; then
+        val=$(jq -r '.error.message // empty' "$body" 2>/dev/null)
+        echo "cldu: HTTP $code${val:+ - $val}" >&2
+        rm -f "$hdr" "$body"
+        return 1
+    fi
+    rm -f "$hdr" "$body"
+
+    local p5 p7 t5 t7
+    [ -n "$u5" ] && p5=$(awk -v u="$u5" 'BEGIN { printf "%d", u * 100 + 0.5 }')
+    [ -n "$u7" ] && p7=$(awk -v u="$u7" 'BEGIN { printf "%d", u * 100 + 0.5 }')
+    [ -n "$s5" ] && [ "$s5" != allowed ] && t5=" [$s5]"
+    [ -n "$s7" ] && [ "$s7" != allowed ] && t7=" [$s7]"
+
+    [ -n "$u5" ] && printf '%-7s %3s%% used  resets %s (in %s)%s\n' \
+        session "$p5" "$(_cldu_epoch_fmt "$r5" '+%H:%M UTC')" "$(_cldu_rel "$r5")" "$t5"
+    [ -n "$u7" ] && printf '%-7s %3s%% used  resets %s (in %s)%s\n' \
+        week "$p7" "$(_cldu_epoch_fmt "$r7" '+%b %d %H:%M UTC')" "$(_cldu_rel "$r7")" "$t7"
+    [ "$over" = rejected ] && echo "overage rejected"
+    return 0
+}
+
 cldgdfaa() {
     [ -z "$1" ] && { echo "Usage: cldgdfaa 'prompt'"; return 1; }
     { echo "$1"; echo ""; echo "Here are all the changes:"; echo ""; gunaa; } | claude
