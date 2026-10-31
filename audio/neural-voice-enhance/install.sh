@@ -6,8 +6,8 @@ deepfilter_version="1.0.2"
 deepfilter_sha256="7994ccd41d113d3f97fa1ab7cf4742af56c1b1e88f31d8a86395bd07eb019583"
 deepfilter_url="https://github.com/ismailivanov/DeepFilterNetPlus/releases/download/v${deepfilter_version}/libdeep_filter_ladspa.so"
 configured_source=""
-attenuation_db=24
-post_filter=0.02
+attenuation_db=12
+post_filter=0
 enable_service=1
 uninstall=0
 
@@ -19,7 +19,7 @@ Install a user-local DeepFilterNet microphone and OBS launcher.
 
 Options:
   --source NAME       Physical pactl source name (auto-detected by default)
-  --attenuation DB    Maximum suppression; 18-24 is natural, 30-40 stronger
+  --attenuation DB    Maximum suppression; 12 preserves quiet speech; higher values suppress more
   --post-filter N     DeepFilterNet post-filter beta, from 0 to 0.05
   --no-enable         Install files without enabling the login service
   --uninstall         Remove the managed files and restore the physical mic
@@ -99,6 +99,7 @@ if [[ -z "$configured_source" && -r "$config_dir/config" ]]; then
     existing_source="$(
         # The installer owns this user-local configuration file.
         # shellcheck disable=SC1090
+        # shellcheck disable=SC1091
         source "$config_dir/config"
         printf '%s\n' "${SOURCE:-}"
     )"
@@ -184,7 +185,9 @@ chmod 0644 "$app_dir/com.obsproject.Studio.desktop"
     printf 'ATTENUATION_DB=%q\n' "$attenuation_db"
     printf 'POST_FILTER=%q\n' "$post_filter"
     printf 'BUFFER_FRAMES=1\n'
-    printf 'LOOPBACK_LATENCY_MS=40\n'
+    printf 'LOOPBACK_LATENCY_MS=20\n'
+    printf 'MIN_THRESHOLD_DB=-15\n'
+    printf 'MAX_LATENCY_MS=60\n'
 } > "$config_dir/config"
 chmod 0600 "$config_dir/config"
 

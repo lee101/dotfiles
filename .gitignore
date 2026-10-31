@@ -33,6 +33,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# Built LADSPA plugin (gcc output next to the NVE sources)
+audio/neural-voice-enhance/train/*.so
+
 # Compiled go tools (built from tools/cmd via build.sh)
 /tools/gtree
 tools/netwrck-route-prof

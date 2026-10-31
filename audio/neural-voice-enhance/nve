@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+share="$HOME/.local/share/neural-voice-enhance"
+case "${1:-}" in
+    install)
+        ckpt="${2:-/vfast/data/voice-enhance/enh.pt}"
+        py="${NVE_PY:-/vfast/data/voice-enhance/venv/bin/python}"
+        mkdir -p "$share" "$HOME/.ladspa" "$HOME/.config/pipewire"
+        gcc -O3 -march=native -ffast-math -shared -fPIC -I"$here/train" -o "$HOME/.ladspa/libnve.so" "$here/train/nve.c" -lm
+        "$py" "$here/train/export.py" "$ckpt" "$share/enh.bin" "$here/tone.json"
+        install -m644 "$here/nve-voice.conf" "$HOME/.config/pipewire/nve-voice.conf"
+        ;;
+    start) systemd-run --user --unit=nve-voice --collect /usr/bin/pipewire -c "$HOME/.config/pipewire/nve-voice.conf" ;;
+    stop) systemctl --user stop nve-voice ;;
+    *) printf 'Usage: %s {install [ckpt]|start|stop}\n' "${0##*/}" >&2; exit 2 ;;
+esac

@@ -1,0 +1,40 @@
+Deploy Netwrck to the server and check the logs.
+I trained the CuteDSL kernels on the three thousand ninety.
+ManifoldGen needs a faster video pipeline for the farm.
+Route the request through OpenPaths and fall back to OmniServe.
+DictatorFlow should use Muse for transcription.
+The Appnz rembg service is crashing on startup.
+BinanceGo is paper trading with the new depth model.
+Rewrite this loop in Mojo and compare it with Zig.
+Hermes agent is calling the wrong tool again.
+CosyVoice and Supertonic sound better than the old text to speech.
+Open ComfyUI and load the Wan workflow.
+Build llama.cpp with CUDA and run Gemma on the GPU.
+Parakeet is fast but it misspells Netwrck every time.
+DeepFilterNet cuts out my soft voice on PipeWire.
+Ask Claude Code to refactor the Zig build file.
+Run vLLM or SGLang with the Qwen model on RunPod.
+Export the model to ONNX and test it with ONNX Runtime.
+Write a Triton kernel and benchmark it against cuBLAS.
+Commit the changes and push to the master branch.
+Run bun install and then bun run build.
+Use uv to create the virtual environment.
+The wav2vec features helped the enhancer keep consonants.
+Check the Postgres pool and the pgx connection limit.
+Add ManifoldGen and Netwrck to my custom dictionary.
+Lee is working on a speech enhancement model in Zig.
+Set the Meta API key in the dictatorflow config file.
+Why is the OmniServe gateway returning a five oh three?
+Tell Hermes to open the CuteDSL site and read the docs.
+Fix the gunicorn workers on the Netwrck API.
+Start the nve voice service with systemd.
+The Supertonic voice M2 is the one I like.
+Install the Wan two point two video model into ComfyUI.
+Mojo kernels for the Bitbank trading bot are ten times faster.
+Use OpenRouter or OpenPaths for the language model.
+Generate the story time speech with Netwrck and train the filter.
+Rebuild the docker image for the ManifoldGen site.
+Review the pull request for the dictator overlay.
+My voice sounds croaky and quiet on Google Meet.
+Add the Kimi model to the subagents script.
+Deploy the cutedsl dot com site with the new benchmarks.
