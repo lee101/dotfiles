@@ -154,7 +154,12 @@ class DependencyWarningTest(InstallTestCase):
             src = shutil.which(name)
             if src:
                 (box / name).symlink_to(src)
-        return {"PATH": str(box), "HOME": str(self.tmp / "home")}
+        # Most dev hosts have numpy somewhere on the interpreter's path, which
+        # would silently retire the "missing: numpy" warning. Shadow it so the
+        # absence path is exercised everywhere, not only on bare machines.
+        (box / "numpy.py").write_text("raise ImportError('numpy is not installed')\n")
+        return {"PATH": str(box), "HOME": str(self.tmp / "home"),
+                "PYTHONPATH": str(box)}
 
     def test_warnings_fire_when_the_tools_are_absent(self) -> None:
         r = self.install(env=self._minimal_env())
