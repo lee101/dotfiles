@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# di subagent pinned to OpenRouter stealth/space-bunny-alpha, token-frugal.
+# di subagent pinned to DIRECT DeepSeek (DEEPSEEK_API_KEY, api.deepseek.com);
+# DI_DEEPSEEK_PROVIDER overrides the route. Never via OpenRouter: DeepSeek is
+# more expensive there.
 # Everything goes to files; stdout is only a short digest. Read the digest, then
 # tail the files you care about. Usage:
 #   di-bunny.sh [-C dir] [-t secs] [-e effort] [-R] [-n name] [-f promptfile] [--] "task"
@@ -70,12 +72,16 @@ Rules (token budget is tight; input and output tokens cost real money):
 - Finish with a final message of at most 15 lines: files changed, what you verified and how, what is unverified/risky, anything needing a human (payments).
 EOF
 
-args=(ask --yolo --json --model ${DI_BUNNY_MODEL:-deepseek/deepseek-v4-flash-vision-exp})
+provider=${DI_DEEPSEEK_PROVIDER:-deepseek}
+if [ "$provider" = deepseek ]; then
+  [ -n "${DEEPSEEK_API_KEY:-}" ] || { echo "DEEPSEEK_API_KEY required for direct DeepSeek (set DI_DEEPSEEK_PROVIDER to route elsewhere)" >&2; exit 2; }
+fi
+args=(ask --yolo --json --model ${DI_BUNNY_MODEL:-deepseek-v4-flash})
 [ -n "$effort" ] && args+=(--effort "$effort")
 
 run() {
   local tag=$1 prompt=$2; shift 2
-  env -u OPENPATHS_API_KEY FX_PROVIDER=${DI_DEEPSEEK_PROVIDER:-openpaths} timeout "$tmo" "$DI" "${args[@]}" "$@" -- "$prompt" \
+  env -u OPENPATHS_API_KEY FX_PROVIDER=$provider timeout "$tmo" "$DI" "${args[@]}" "$@" -- "$prompt" \
     > "$out/$tag.json" 2> "$out/$tag.err" || echo "exit=$?" >> "$out/$tag.err"
 }
 

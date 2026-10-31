@@ -22,6 +22,7 @@ Commands:
 - `op-bunny.sh` — Space Bunny Alpha through OpenRouter stealth routing
 - `op-mimo.sh` — Xiaomi MiMo-V2.6-Pro through OpenPaths (`xiaomi/mimo-v2.6-pro`), 1M context agentic model
 - `op-runanywhere.sh` (`opany`) — GLM-5.3-Flash direct on RunAnywhere/Wally Cloud (`runanywhere` provider, `RUNANYWHERE_API_KEY`), not via OpenRouter; `OPANY_MODEL=qwen3.8-27b` swaps to the other model on the same key
+- `op-openpathsfree.sh` (`opfree`) — free-only OpenPaths op: private throwaway config, every role pinned to `nous/poolside/laguna-s-2.1:free`, no fallbacks, routing flags rejected; `OP_FREE_MODEL` overrides (must end `:free`). `openpaths/free` (Nous `stealth/missingno`) was pulled from the Nous catalog on 2026-10-20 and 502s
 
 # di subagents
 
@@ -57,9 +58,11 @@ Aliases (bashrc) and scripts:
 - `dibunny` / `di-bunny.sh` — Space Bunny Alpha via OpenRouter (unsets OPENPATHS_API_KEY so di routes to OpenRouter); logs to /tmp/di-bunny/*, prints a short digest, `-R` adds a self-review turn
 - `dimuse` / `di-muse.sh` — Meta Muse Spark 1.3 (`muse-spark-1.3-contributor`), the default for di's self-improvement loop
 - `digpt` / `di-gpt.sh` — GPT 5.6
+- `dikimi` / `di-kimi.sh` — Kimi K3.1 Pro (`kimi-k3.1-pro`) via OpenPaths, requires `OPENPATHS_API_KEY`, forces `FX_PROVIDER=openpaths` and drops `OPENROUTER_API_KEY` (else di routes the model to OpenRouter); `DI_KIMI_MODEL` swaps the model (e.g. `kimi-k3.1-pro-highspeed`)
 - `diglm` / `di-glm.sh` — GLM 5.3
 - `dideep` / `di-deep.sh` — DeepSeek V4 Flash (vision, experimental); also di's automatic fallback model
 - `dideepseek` / `di-deepseek.sh` — DeepSeek V4 Flash direct to `api.deepseek.com` (`DEEPSEEK_API_KEY`) via the `deepseek` connection in `~/.fx/settings.json`, not via OpenPaths/OpenRouter, with di-bunny's bounded steps and hard timeout (`DI_DEEPSEEK_TIMEOUT_SECONDS`); `DI_DEEPSEEK_MODEL` swaps the model; `di-deepseek-file.sh NAME PROMPT_FILE` keeps the transcript in a log and prints only the tail
+- `difree` / `di-openpathsfree.sh` — di on `nous/poolside/laguna-s-2.1:free` via OpenPaths; `DI_FREE_MODEL` overrides. Run with `FX_PROVIDER=openpaths` and without `OPENROUTER_API_KEY` so di uses the OpenPaths endpoint
 - `di`, `din`, `dini` — plain di, autonomous next steps, autonomous next steps + ideas
 - `diself` — `scripts/self-improve.sh`: one autonomous di turn on di's own tree, gated by build + tests, then commit and push
 - `diup` — `scripts/self-improve.sh --merge-upstream`: merge `vercel-labs/fx` main into di, let di resolve conflicts, gate, push

@@ -757,6 +757,20 @@ alias cldo='cld --model opus'
 alias cldf='cld --model fable'
 alias clds='cld --model sonnet'
 alias cldh='cld --model haiku'
+cldpe() { mkdir -p "$HOME/.claude-personal" && CLAUDE_CONFIG_DIR="$HOME/.claude-personal" cld "$@"; }
+cld2() { cldpe "$@"; }
+cldst() {
+	local d t
+	t=$(mktemp -d)
+	for d in .claude .claude-personal; do
+		env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR="$HOME/$d" timeout 90 claude -p /usage </dev/null >"$t/$d" 2>&1 &
+	done
+	wait
+	for d in .claude .claude-personal; do
+		rg '^Current' "$t/$d" | sed "s|^|$d: |"
+	done
+	rm -rf "$t"
+}
 
 alias cr='claude-review'
 alias creview='claude-review'
@@ -768,9 +782,27 @@ alias cap='cursor-agent-bun -f -p'
 alias crs='cursor-agent --yolo --model cursor-grok-4.5-high'
 alias crsf='cursor-agent --yolo --model composer-2.5-fast'
 
-# `op` runs the OpenPaths harness from source. Point OP_REPO at the checkout if it isn't ~/code/op.
-op() { bun "${OP_REPO:-$HOME/code/op}/packages/coding-agent/src/cli.ts" "$@"; }
-
+# `op` is the bun dev link into the OpenPaths coding-agent checkout
+# (~/.bun/bin/op -> packages/coding-agent/src/cli.ts); OP_REPO points at another
+# checkout. While that checkout is mid-merge/rebase its TS entrypoint can't
+# resolve the workspace packages, so fall back to the standalone `omp` binary.
+_op_devlink_broken() {
+    local target root
+    command -v omp >/dev/null 2>&1 || return 1
+    target=$(readlink -f "$HOME/.bun/bin/op" 2>/dev/null) || return 1
+    case $target in */packages/*) ;; *) return 1 ;; esac
+    root=${target%%/packages/*}
+    [ -e "$root/.git/MERGE_HEAD" ] || [ -e "$root/.git/rebase-merge" ] || [ -e "$root/.git/rebase-apply" ]
+}
+op() {
+    if [ -n "${OP_REPO:-}" ]; then
+        bun "$OP_REPO/packages/coding-agent/src/cli.ts" "$@"
+    elif _op_devlink_broken; then
+        omp "$@"
+    else
+        command op "$@"
+    fi
+}
 # `opfb --continue` keeps the same model while resuming the last session.
 opfb() { op --model 'google/gemini-3.7-flash:batch' "$@"; }
 opfd() { op --provider deepseek --model 'deepseek-v4-flash-vision-exp' "$@"; }
@@ -780,14 +812,14 @@ opgo() { op --model 'anthropic/claude-opus-5' "$@"; }
 opga() { op --model 'gpt-5.6-astra' "$@"; }
 opdp() { op --provider deepseek --model 'deepseek-v4-pro' "$@"; }
 opd() { op --provider deepseek --model 'deepseek-flash' "$@"; }
+opdr() { opd --resume "$@"; }
 opb() { op --model 'openrouter/stealth/space-bunny-alpha' "$@"; }
 opm() { op --model 'xiaomi/mimo-v2.6-pro' "$@"; }
 opmu() { op --model 'muse-spark-1.3-contributor' "$@"; }
 opgl() { op --model 'gpt-6-luna' "$@"; }
-opdp() { op --model 'deepseek/deepseek-v4-pro' "$@"; }
+opr() { op --resume "$@"; }
 
 # Cursor / Devin agent shortcuts
-alias crs='cursor-agent --yolo'
 alias crsa='cursor agent --trust --yolo --print '
 alias dvn='devin --permission-mode dangerous'
 alias dvni="~/programs/Devin/bin/devin-desktop"
@@ -861,10 +893,10 @@ _codex_local() {
 unalias ccx ccxl ccxm ccxh ccxf ccxs ccxsl ccxsm ccxsh ccxt ccxtl ccxtm ccxth \
     cdx cdxd cdxf cdxr cdxw cdxa cdxe cdxs cdxo cdxed \
     cx cxd cxxh cxxhn cxxhni cxhni cxi cxn cxm cxim cxl cxh \
-    cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxll cxlm cxlh cxlxh cxt cxtl cxtm cxth cxbuild 2>/dev/null || true
+    cxs cxsl cxsm cxsh cxsi cxsn cxsni cxni cxll cxlm cxlh cxlxh cxt cxtl cxtm cxth cxtxh cxbuild 2>/dev/null || true
 
-# gpt-5.6-terra is retired; drop the functions earlier reloads left behind.
-unset -f ccxt ccxtl ccxtm ccxth cxt cxtl cxtm cxth 2>/dev/null || true
+# Upstream gpt-5.6-terra is retired; drop the ccxt* functions earlier reloads left behind.
+unset -f ccxt ccxtl ccxtm ccxth 2>/dev/null || true
 
 # Upstream codex - ccx* aliases
 ccx()  { _codex_upstream --dangerously-bypass-approvals-and-sandbox --config model_reasoning_effort=xhigh "$@"; }
@@ -936,7 +968,7 @@ cxl() {
 }
 
 cxll() {
-    _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=low "$@"
+    _codex_local --yolo3 -m gpt-6-luna --config model_reasoning_effort=low "$@"
 }
 
 cxlm() {
@@ -990,6 +1022,23 @@ cxsn() {
 
 cxsni() {
     _codex_local --yolo3 -m gpt-6.1-sol --config model_reasoning_effort=xhigh --auto-next-idea --auto-next-steps "$@"
+}
+
+# gpt-6.1-terra - cxt* aliases
+cxtl() {
+    _codex_local --yolo3 -m gpt-6.1-terra --config model_reasoning_effort=low "$@"
+}
+
+cxtm() {
+    _codex_local --yolo3 -m gpt-6.1-terra --config model_reasoning_effort=medium "$@"
+}
+
+cxth() {
+    _codex_local --yolo3 -m gpt-6.1-terra --config model_reasoning_effort=high "$@"
+}
+
+cxtxh() {
+    _codex_local --yolo3 -m gpt-6.1-terra --config model_reasoning_effort=xhigh "$@"
 }
 
 cxni() {
@@ -1159,7 +1208,19 @@ $plan_content"
     rm -f "$plan_file"
 }
 
+claude_trust_root() {
+    local f="${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" t
+    command -v jq >/dev/null 2>&1 || return 0
+    if [ -f "$f" ]; then
+        [ "$(jq -r '.projects["/"].hasTrustDialogAccepted // false' "$f" 2>/dev/null)" = true ] && return 0
+        t=$(mktemp "$f.XXXXXX") && jq '.projects["/"].hasTrustDialogAccepted = true' "$f" >"$t" && mv "$t" "$f" || rm -f "$t"
+    else
+        printf '{"projects":{"/":{"hasTrustDialogAccepted":true}}}\n' >"$f"
+    fi
+}
+
 cld() {
+    claude_trust_root
     # Prefer the native installer binary; PATH may still find an older Bun copy.
     local claude_bin="$HOME/.local/bin/claude"
     [ -x "$claude_bin" ] || claude_bin="$(type -P claude 2>/dev/null || true)"

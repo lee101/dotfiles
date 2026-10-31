@@ -360,6 +360,13 @@ function cldo { cld --model opus @args }
 function cldf { cld --model fable @args }
 function clds { cld --model sonnet @args }
 function cldh { cld --model haiku @args }
+function cldpe {
+    if (-not (Test-Path "$HOME/.claude-personal")) { New-Item -ItemType Directory -Path "$HOME/.claude-personal" | Out-Null }
+    $old = $env:CLAUDE_CONFIG_DIR
+    try { $env:CLAUDE_CONFIG_DIR = "$HOME/.claude-personal"; cld @args }
+    finally { if ($null -eq $old) { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue } else { $env:CLAUDE_CONFIG_DIR = $old } }
+}
+function cld2 { cldpe @args }
 
 # Claude review aliases
 function cr { claude-review @args }
@@ -482,8 +489,8 @@ function cxm { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox"
 function cxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high") + $args) }
 function cxxh { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=xhigh") + $args) }
 function cxf { Invoke-CodexLocal (@("--dangerously-bypass-approvals-and-sandbox", "--config", "model_reasoning_effort=high", "--full-auto") + $args) }
-# gpt-5.6-terra is retired; drop the functions earlier reloads left behind.
-foreach ($terra in 'cxt', 'cxtl', 'cxtm', 'cxth', 'ccxt', 'ccxtl', 'ccxtm', 'ccxth') {
+# Upstream gpt-5.6-terra is retired; drop the ccxt* functions earlier reloads left behind.
+foreach ($terra in 'ccxt', 'ccxtl', 'ccxtm', 'ccxth') {
     if (Test-Path "Function:\$terra") { Remove-Item "Function:\$terra" -Force }
 }
 function cxll { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "low" -CodexArgs $args }
@@ -491,6 +498,10 @@ function cxlm { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "medium"
 function cxlh { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "high" -CodexArgs $args }
 function cxlxh { Invoke-CodexModel -Model "gpt-6.1-sol" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxsl { Invoke-CodexModel -Model "gpt-6-astra" -ReasoningEffort "low" -CodexArgs $args }
+function cxtl { Invoke-CodexModel -Model "gpt-6.1-terra" -ReasoningEffort "low" -CodexArgs $args }
+function cxtm { Invoke-CodexModel -Model "gpt-6.1-terra" -ReasoningEffort "medium" -CodexArgs $args }
+function cxth { Invoke-CodexModel -Model "gpt-6.1-terra" -ReasoningEffort "high" -CodexArgs $args }
+function cxtxh { Invoke-CodexModel -Model "gpt-6.1-terra" -ReasoningEffort "xhigh" -CodexArgs $args }
 function cxbuild {
     $codexDir = if (Test-Path "$HOME\code\codex-infinity\codex-rs\Cargo.toml") { "$HOME\code\codex-infinity" } elseif (Test-Path "$HOME\code\codex\codex-rs\Cargo.toml") { "$HOME\code\codex" } else { $null }
     if (-not $codexDir) {

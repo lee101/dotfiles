@@ -149,9 +149,12 @@ alias din='di --auto-next-steps'
 alias dini='di --auto-next-steps --auto-next-idea'
 alias dimuse="$HOME/code/dotfiles/subagents/di-muse.sh"
 alias digpt="$HOME/code/dotfiles/subagents/di-gpt.sh"
+alias dikimi="$HOME/code/dotfiles/subagents/di-kimi.sh"
 alias diglm="$HOME/code/dotfiles/subagents/di-glm.sh"
 alias dideep="$HOME/code/dotfiles/subagents/di-deep.sh"
 alias dideepseek="$HOME/code/dotfiles/subagents/di-deepseek.sh"
+alias difree="$HOME/code/dotfiles/subagents/di-openpathsfree.sh"
+alias opfree="$HOME/code/dotfiles/subagents/op-openpathsfree.sh"
 alias diself='/vfast/data/code/fx/scripts/self-improve.sh'
 alias diup='/vfast/data/code/fx/scripts/self-improve.sh --merge-upstream'
 alias fx='di'
@@ -243,3 +246,5 @@ function reload {
 export PATH="$HOME/.local/bin:$PATH"
 
 alias sscp='ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
+
+export PATH="$HOME/.okc/bin:$PATH"  # okc
