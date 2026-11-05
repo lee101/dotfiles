@@ -18,7 +18,7 @@ Commands:
 - `op-opus.sh` — Claude Opus 5 through OpenRouter
 - `op-gpt.sh` — GPT 6 Astra through OpenRouter
 - `op-muse.sh` — Meta Muse Spark 1.3 through OpenPaths (`muse-spark-1.3`); cheap fixer: `op-muse.sh -p --auto-approve "fix failing test X"`
-- `op-crouton.sh` — free Crouton Alpha (1M ctx) through OpenRouter stealth routing; `mjj-crouton.sh` runs the mojojojo-agent on it
+- `op-crouton.sh` (`opc`) — free Crouton Alpha (1M ctx) through OpenRouter stealth routing; `mjj-crouton.sh` runs the mojojojo-agent on it, `pi-crouton.sh` (`pic`) runs pi-infinity on it; `dic` is `di-crouton.sh`. `~/.local/bin` first in PATH shadows groff `pic`
 - `op-oxalpha.sh` — Ox Alpha through OpenRouter stealth routing
 - `op-bunny.sh` — Space Bunny Alpha through OpenRouter stealth routing
 - `op-mimo.sh` — Xiaomi MiMo-V2.6-Pro through OpenPaths (`xiaomi/mimo-v2.6-pro`), 1M context agentic model
@@ -58,7 +58,7 @@ Aliases (bashrc) and scripts:
 
 - `dibunny` / `di-bunny.sh` — Space Bunny Alpha via OpenRouter (unsets OPENPATHS_API_KEY so di routes to OpenRouter); logs to /tmp/di-bunny/*, prints a short digest, `-R` adds a self-review turn
 - `dimuse` / `di-muse.sh` — Meta Muse Spark 1.3 (`muse-spark-1.3-contributor`), the default for di's self-improvement loop
-- `dicrouton` / `di-crouton.sh` — free `stealth/crouton-alpha` via OpenRouter (strict, OpenPaths key unset)
+- `dic` / `di-crouton.sh` — free `stealth/crouton-alpha` via OpenRouter (strict, OpenPaths key unset)
 - `digpt` / `di-gpt.sh` — GPT 5.6
 - `dikimi` / `di-kimi.sh` — Kimi K3.1 Pro (`kimi-k3.1-pro`) via OpenPaths, requires `OPENPATHS_API_KEY`, forces `FX_PROVIDER=openpaths` and drops `OPENROUTER_API_KEY` (else di routes the model to OpenRouter); `DI_KIMI_MODEL` swaps the model (e.g. `kimi-k3.1-pro-highspeed`)
 - `diglm` / `di-glm.sh` — GLM 5.3

@@ -3,12 +3,12 @@ D = pathlib.Path(__file__).resolve().parents[1]
 
 class Crouton(unittest.TestCase):
     def test_syntax(self):
-        for n in ("op-crouton.sh", "di-crouton.sh", "mjj-crouton.sh"):
+        for n in ("op-crouton.sh", "di-crouton.sh", "mjj-crouton.sh", "pi-crouton.sh"):
             self.assertEqual(subprocess.run(["bash", "-n", str(D / n)]).returncode, 0)
 
     def test_key_required(self):
         env = {k: v for k, v in os.environ.items() if k != "OPENROUTER_API_KEY"}
-        for n in ("di-crouton.sh", "mjj-crouton.sh"):
+        for n in ("di-crouton.sh", "mjj-crouton.sh", "pi-crouton.sh"):
             r = subprocess.run(["bash", str(D / n)], env=env, capture_output=True, text=True)
             self.assertEqual(r.returncode, 2, n)
 

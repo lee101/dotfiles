@@ -185,6 +185,8 @@ di() { "$(. "$HOME/code/dotfiles/subagents/di-locate.sh" && di_bin di)" "$@"; }
 # dib is di. With only OPENROUTER_API_KEY set, di already defaults to
 # stealth/space-bunny-alpha, so dib needs no extra flags.
 alias dib='di'
+# dic: di on free stealth/crouton-alpha (OpenRouter).
+dic() { "$HOME/code/dotfiles/subagents/di-crouton.sh" "$@"; }
 
 unset NO_COLOR
 
