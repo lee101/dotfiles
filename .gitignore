@@ -18,6 +18,7 @@ npmrc
 idea/*
 
 # SSH sensitive files
+.secretbashrc
 .ssh/.sshpass
 bin/ssh-daisy
 bin/ssh-lee3090ti

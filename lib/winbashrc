@@ -47,11 +47,13 @@ _df_dedup_flag MSYS disable_pcon
 _df_dedup_flag CYGWIN disable_pcon
 unset -f _df_dedup_flag
 
-# Use Windows OpenSSH instead of MINGW ssh - required for Windows SSH agent access
-if [ -f /c/Windows/System32/OpenSSH/ssh.exe ]; then
-    alias ssh='/c/Windows/System32/OpenSSH/ssh.exe'
-    alias scp='/c/Windows/System32/OpenSSH/scp.exe'
-    alias sftp='/c/Windows/System32/OpenSSH/sftp.exe'
-    alias ssh-add='/c/Windows/System32/OpenSSH/ssh-add.exe'
-    alias ssh-keygen='/c/Windows/System32/OpenSSH/ssh-keygen.exe'
+# Use Windows OpenSSH instead of MINGW ssh - required for Windows SSH agent access.
+# Prepend to PATH rather than defining aliases so non-interactive helpers and
+# `git` (which may exec ssh through a shell) also resolve the native binaries.
+if [ -d /c/Windows/System32/OpenSSH ]; then
+    case ":$PATH:" in
+        *":/c/Windows/System32/OpenSSH:"*) ;;
+        *) PATH="/c/Windows/System32/OpenSSH:$PATH" ;;
+    esac
+    export PATH
 fi
