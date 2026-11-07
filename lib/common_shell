@@ -1330,11 +1330,7 @@ cld() {
     local claude_bin="$HOME/.local/bin/claude"
     [ -x "$claude_bin" ] || claude_bin="$(type -P claude 2>/dev/null || true)"
     [ -x "$claude_bin" ] || { echo "Claude Code is not installed." >&2; return 1; }
-    # Permission bypass is opt-in via CLD_BYPASS_PERMISSIONS=1, set in the private
-    # secretdotfiles/shell.sh rather than in this public repo.
-    local -a _cld_flags=()
-    [ "${CLD_BYPASS_PERMISSIONS:-0}" = 1 ] && _cld_flags+=(--dangerously-skip-permissions)
-    ANTHROPIC_API_KEY="" "$claude_bin" "${_cld_flags[@]}" "$@"
+    ANTHROPIC_API_KEY="" "$claude_bin" --dangerously-skip-permissions "$@"
 }
 
 _cldu_epoch_fmt() {

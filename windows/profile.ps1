@@ -349,8 +349,8 @@ function yr { yarn remove $args }
 # ==========================================
 # Claude Code aliases (mirrors bashrc)
 # ==========================================
-function cld { claude @(if ($env:CLD_BYPASS_PERMISSIONS -eq '1') { '--dangerously-skip-permissions' }) @args }
-function cldd { claude @(if ($env:CLD_BYPASS_PERMISSIONS -eq '1') { '--dangerously-skip-permissions' }) @args }
+function cld { claude --dangerously-skip-permissions @args }
+function cldd { claude --dangerously-skip-permissions @args }
 function cla { claude @args }
 function cldc { cld --continue @args }
 function cldcf { cld --continue --fork-session @args }
