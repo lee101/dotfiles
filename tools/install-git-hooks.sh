@@ -2,6 +2,7 @@
 # Point dotfiles, secretdotfiles and tradinginfra at the shared gitleaks hooks
 # and sync the shared gitleaks config. Safe to re-run.
 set -euo pipefail
+export PATH="$HOME/go/bin:$PATH"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 hooks="$here/tools/githooks"
 for repo in "$here" "$HOME/code/secretdotfiles" "$HOME/code/tradinginfra"; do
