@@ -423,3 +423,24 @@ else
   echo "No active desktop audio server; skipping neural voice enhancement."
   echo "Later, run: ${SCRIPT_DIR}/audio/neural-voice-enhance/install.sh"
 fi
+
+# ── Torrent + book archive tooling (see ~/secrettools) ──────────────
+echo "Installing torrent/archive tooling (aria2, qbittorrent-nox, 7z, bsdtar, poppler)..."
+sudo apt-get install -y aria2 qbittorrent-nox p7zip-full libarchive-tools poppler-utils
+
+# Markdown conversion for the archive (st md): pandoc for EPUB, calibre for
+# MOBI/AZW3, djvulibre for DJVU text layers.
+echo "Installing Markdown conversion tooling (pandoc, calibre, djvulibre)..."
+sudo apt-get install -y --no-install-recommends pandoc calibre djvulibre-bin
+
+# FlareSolverr solves the Cloudflare challenge for 1337x; the secrettools CLI
+# talks to it on 127.0.0.1:8191.
+if command -v docker >/dev/null 2>&1; then
+  if ! docker inspect flaresolverr >/dev/null 2>&1; then
+    docker run -d --name flaresolverr --restart unless-stopped \
+      -p 127.0.0.1:8191:8191 ghcr.io/flaresolverr/flaresolverr:latest
+  fi
+else
+  echo "docker not found; 1337x support in ~/secrettools will stay disabled."
+fi
+

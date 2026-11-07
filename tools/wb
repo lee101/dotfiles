@@ -1,0 +1,4 @@
+#!/bin/bash
+d="$(dirname "$(readlink -f "$0")")/web"
+[ -d "$d/node_modules" ] || (cd "$d" && bun install --silent)
+exec bun "$d/wb.mjs" "$@"

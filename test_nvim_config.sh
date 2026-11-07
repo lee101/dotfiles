@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG="$ROOT_DIR/nvim/init.lua"
+CONFIG="$ROOT_DIR/.config/nvim/init.lua"
 DOC="$ROOT_DIR/docs/nvim-navigation.md"
 TUTORIAL="$ROOT_DIR/nvim-tutorial.md"
 

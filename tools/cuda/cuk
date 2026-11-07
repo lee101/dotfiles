@@ -1,0 +1,904 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.10"
+# ///
+"""cuk: token-efficient CUDA kernel diagnosis. Subcommands: doctor plan bw roof res sass trace ncu diff"""
+
+import argparse
+import csv
+import io
+import json
+import os
+import re
+import shutil
+import sqlite3
+import statistics as st
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "cuk"
+
+SM_LIMITS = {
+    "75": dict(regs=65536, smem_kb=64, smem_blk_kb=64, thr=1024, blk=16, warps=32),
+    "80": dict(regs=65536, smem_kb=164, smem_blk_kb=163, thr=2048, blk=32, warps=64),
+    "86": dict(regs=65536, smem_kb=100, smem_blk_kb=99, thr=1536, blk=16, warps=48),
+    "87": dict(regs=65536, smem_kb=164, smem_blk_kb=163, thr=1536, blk=16, warps=48),
+    "89": dict(regs=65536, smem_kb=100, smem_blk_kb=99, thr=1536, blk=24, warps=48),
+    "90": dict(regs=65536, smem_kb=228, smem_blk_kb=227, thr=2048, blk=32, warps=64),
+    "100": dict(regs=65536, smem_kb=228, smem_blk_kb=227, thr=2048, blk=32, warps=64),
+    "120": dict(regs=65536, smem_kb=100, smem_blk_kb=99, thr=1536, blk=24, warps=48),
+}
+
+# Per-device serving defaults from omniserve-native's otune.c, plus the
+# "what to try first" order from kernels-guide ch.12.
+PROFILES = {
+    "hopper":   dict(batch=4096, ubatch=1024, kv="q8_0", flash=True, ctx=6, smem=228, warps=64),
+    "blackwell":dict(batch=4096, ubatch=1024, kv="q8_0", flash=True, ctx=4, smem=100, warps=48),
+    "blackwell-dc": dict(batch=4096, ubatch=1024, kv="q8_0", flash=True, ctx=4, smem=228, warps=64),
+    "ada":      dict(batch=2048, ubatch=512, kv="q8_0", flash=True, ctx=3, smem=100, warps=48),
+    "ampere":   dict(batch=2048, ubatch=512, kv="q8_0", flash=True, ctx=3, smem=100, warps=48),
+    "ampere-dc":dict(batch=2048, ubatch=512, kv="q8_0", flash=True, ctx=3, smem=164, warps=64),
+    "turing":   dict(batch=1024, ubatch=256, kv="f16", flash=False, ctx=1, smem=64, warps=32),
+}
+
+PLAYS = {
+    "hopper": [
+        "graph+cold-L2 harness; measure the 4.8TB/s / 989TF roof",
+        "TMA ring (2 stages, 16KB) + WGMMA m64nNk16; cp.async fallback",
+        "split-KV / persistent / stream-K to fill the grid",
+        "FP8 QK + F16 PV (convert once); cluster DSMEM merge; PDL finalize",
+        "tune stages/warps; ablate one change at a time",
+    ],
+    "blackwell": [
+        "graph+cold-L2 harness; batch geometry + q8_0 KV",
+        "FP4/FP6 mma.sync via sm_120a/f (CUTLASS atoms), FP8/FP16",
+        "TMA ring in 2-3 stages (100KB budget), no tcgen05/WGMMA",
+        "residency/offload; exact/prefix cache; VRAM broker if shared",
+        "measure spec decoding; tune stages/warps",
+    ],
+    "blackwell-dc": [
+        "graph+cold-L2 harness; TMA + tcgen05 (sm_100a/f)",
+        "2-CTA MMA / TMEM tiles; CUTLASS",
+        "FP4/FP6/FP8; 228KB shared, 4-6 stages",
+        "clusters/multicast; persistent/stream-K",
+        "tune TMEM/shared/warps; verify accuracy",
+    ],
+    "ada": [
+        "graph+cold-L2 harness; batch 2048/512 + q8_0 KV",
+        "FP8 tensor cores where accuracy allows; 72MB L2 tiling",
+        "cp.async/mma.sync; no TMA/WGMMA",
+        "residency/offload on 24GB; prefix cache",
+    ],
+    "ampere": [
+        "graph+cold-L2 harness; batch 2048/512 + q8_0 KV + flash attn",
+        "prefix cache + chunked prefill; expert offload on 24GB",
+        "cp.async/mma.sync; no TMA/WGMMA/FP8",
+        "residency/stream+VAE tile; measure spec decoding",
+    ],
+    "ampere-dc": [
+        "graph+cold-L2 harness; batch 2048/512 + q8_0 KV",
+        "cp.async/mma.sync; 40MB L2 tiling, 164KB shared",
+        "FP64 is fast (1:2); TF32/BF16/FP16 tensor",
+        "residency/offload; measure spec decoding",
+    ],
+    "turing": [
+        "graph+cold-L2 harness; batch 1024/256, f16 KV, flash off",
+        "simple mma.sync; no async copy/TMA",
+        "one context; keep it simple",
+    ],
+}
+
+
+def gpu_class(name, cc):
+    n = name.upper()
+    if cc == "90" or "H100" in n or "H200" in n:
+        return "hopper"
+    if cc == "100" or "B200" in n or "GB200" in n:
+        return "blackwell-dc"
+    if cc == "120" or "5090" in n or "5080" in n:
+        return "blackwell"
+    if cc == "89" or "4090" in n or "4080" in n or "L40" in n:
+        return "ada"
+    if cc == "80" or "A100" in n:
+        return "ampere-dc"
+    if cc in ("86", "87") or "3090" in n or "A40" in n or "A10" in n:
+        return "ampere"
+    if cc == "75" or "T4" in n or "2080" in n:
+        return "turing"
+    return "ampere"
+
+
+def out(obj, compact=True):
+    print(json.dumps(obj, separators=(",", ":") if compact else None, sort_keys=True))
+
+
+def sh(cmd, check=False, **kw):
+    r = subprocess.run(cmd, capture_output=True, text=True, **kw)
+    if check and r.returncode:
+        sys.exit(f"{cmd[0]} failed:\n{r.stderr[-800:]}")
+    return r
+
+
+def smi(fields):
+    r = sh(["nvidia-smi", f"--query-gpu={fields}", "--format=csv,noheader,nounits"])
+    return [x.strip() for x in r.stdout.strip().splitlines()[0].split(",")] if r.stdout.strip() else []
+
+
+def num(s):
+    m = re.fullmatch(r"\s*([\d.]+)\s*([kKmMgGtT]?)i?[bB]?\s*", str(s))
+    if not m:
+        sys.exit(f"bad number {s}")
+    return float(m[1]) * {"": 1, "k": 1e3, "m": 1e6, "g": 1e9, "t": 1e12}[m[2].lower()]
+
+
+def demangle(names):
+    if not names or not shutil.which("c++filt"):
+        return names
+    r = sh(["c++filt"], input="\n".join(names))
+    out = r.stdout.splitlines()
+    return out if len(out) == len(names) else names
+
+
+def short(n, w=48):
+    n = re.sub(r"\(.*", "", n) if n.count("(") and not n.startswith("(") else n
+    n = re.sub(r"^void\s+", "", n)
+    n = re.sub(r"\b(at::native::|cutlass::|cub::|at::|std::)", "", n)
+    return n if len(n) <= w else n[: w - 1] + "~"
+
+
+def table(rows, hdr, right=()):
+    w = [max(len(str(x[i])) for x in [hdr] + rows) for i in range(len(hdr))]
+    for r in [hdr] + rows:
+        print(" ".join(str(c).rjust(w[i]) if i in right else str(c).ljust(w[i]) for i, c in enumerate(r)).rstrip())
+
+
+def spec():
+    p = CACHE / "spec.json"
+    if p.exists():
+        return json.loads(p.read_text())
+    return None
+
+
+def cmd_doctor(a):
+    f = smi("name,compute_cap,memory.used,memory.total,utilization.gpu,clocks.sm,clocks.max.sm,power.draw,power.limit,temperature.gpu,clocks_throttle_reasons.active")
+    if not f:
+        sys.exit("no nvidia-smi")
+    name, cc, mu, mt, ut, ck, cm, pw, pl, tp, thr = f
+    cc = cc.replace(".", "")
+    r = sh(["nvidia-smi", "--query-compute-apps=pid,used_memory,process_name", "--format=csv,noheader,nounits"])
+    procs = []
+    for p in r.stdout.strip().splitlines():
+        if p.strip():
+            pid, mem, exe = [x.strip() for x in p.split(",", 2)]
+            procs.append(dict(pid=int(pid), mem_mb=int(float(mem)), exe=exe[:120]))
+    bits = {0x2: "app-clk", 0x4: "sw-power", 0x8: "hw-slowdown", 0x20: "sw-thermal", 0x40: "hw-thermal", 0x80: "hw-power-brake"}
+    try:
+        tv = int(thr, 16)
+    except ValueError:
+        tv = 0
+    act = [n for b, n in bits.items() if tv & b]
+    issues = []
+    if int(ut) > 15 and (not procs or any("chrome" not in x["exe"] for x in procs)):
+        issues.append(f"NOISY: gpu {ut}% busy before we start; timings inflated/unstable (check procs)")
+    if int(mt) - int(mu) < 3000:
+        issues.append(f"LOWMEM: {int(mt) - int(mu)}MiB free")
+    if float(pw) > 0.95 * float(pl):
+        issues.append("POWER: at power limit, clocks will sag")
+    if int(ck) < 0.85 * int(cm) and int(ut) > 50:
+        issues.append(f"CLOCKS: sm {ck} < 85% of max {cm}")
+    prm = Path("/proc/driver/nvidia/params")
+    restricted = bool(prm.exists() and re.search(r"RmProfilingAdminOnly:\s*1", prm.read_text()))
+    if restricted:
+        issues.append("NCU: counters restricted (ERR_NVGPUCTRPERM). fix: echo 'options nvidia NVreg_RestrictProfilingToAdminUsers=0' | sudo tee /etc/modprobe.d/nvidia-prof.conf; reboot (or unload nvidia mods). cuk trace/res/bw/roof work without it")
+    ch = os.environ.get("CUDA_HOME")
+    if ch and not Path(ch, "bin/nvcc").exists():
+        issues.append(f"CUDA_HOME={ch} has no bin/nvcc -> torch ext builds fail; export CUDA_HOME={Path(shutil.which('nvcc') or '/usr/local/cuda').parent.parent}")
+    tools = {t: bool(shutil.which(t)) for t in ("nvcc", "nsys", "ncu", "cuobjdump", "nvdisasm", "c++filt")}
+    miss = [t for t, ok in tools.items() if not ok]
+    if miss:
+        issues.append("missing: " + " ".join(miss))
+    cls = gpu_class(name, cc)
+    prof = PROFILES.get(cls, PROFILES["ampere"])
+    obj = dict(gpu=name, cc=cc, class_=cls, mem_used_mb=int(mu), mem_total_mb=int(mt),
+               util_pct=int(ut), clock_sm=int(ck), clock_max=int(cm), power_w=float(pw),
+               power_limit_w=float(pl), temp_c=int(tp), throttle=act, procs=procs,
+               profile=dict(batch=prof["batch"], ubatch=prof["ubatch"], kv=prof["kv"],
+                            flash=prof["flash"], contexts=prof["ctx"]),
+               ncu_restricted=restricted, tools=tools, issues=issues)
+    if a.json:
+        out(obj)
+        return
+    print(f"{name} sm{cc} mem {mu}/{mt}MiB util {ut}% sm {ck}/{cm}MHz pwr {pw}/{pl}W {tp}C throttle {thr}")
+    for p in procs:
+        print(f"  pid {p['pid']} {p['mem_mb']}MiB {p['exe'].split()[0] if p['exe'].startswith('/') else p['exe']}"[:150])
+    if act:
+        print("  throttling:", ",".join(act))
+    print(f"  profile {cls} batch {prof['batch']}/{prof['ubatch']} kv {prof['kv']} fa {'on' if prof['flash'] else 'off'} ctx {prof['ctx']}")
+    print("\n".join(issues) if issues else "ok: gpu idle, counters accessible")
+
+
+def build_bw():
+    cc = smi("compute_cap")[0].replace(".", "")
+    d = CACHE / f"sm{cc}"
+    d.mkdir(parents=True, exist_ok=True)
+    exe = d / "bw"
+    src = HERE / "bw.cu"
+    if not exe.exists() or exe.stat().st_mtime < src.stat().st_mtime:
+        sh(["nvcc", "-O3", f"-arch=sm_{cc}", "-Wno-deprecated-gpu-targets", "-o", str(exe), str(src)], check=True)
+    return exe
+
+
+def measure_spec(reps):
+    exe = build_bw()
+    best = None
+    for _ in range(max(1, reps)):
+        d = json.loads(sh([str(exe)], check=True).stdout)
+        if best is None:
+            best = d
+        else:
+            for k in ("rd_gbs", "copy_gbs", "l2_gbs", "fp32_tflops", "bf16_mma_tflops"):
+                best[k] = max(best[k], d.get(k, 0))
+            for k in ("launch_us", "graph_node_us"):
+                best[k] = min(best[k], d[k])
+    best["util_at_measure"] = int(smi("utilization.gpu")[0])
+    CACHE.mkdir(parents=True, exist_ok=True)
+    (CACHE / "spec.json").write_text(json.dumps(best))
+    return best
+
+
+def cmd_bw(a):
+    p = CACHE / "spec.json"
+    d = json.loads(p.read_text()) if p.exists() and not a.force else None
+    if not d or "l2_gbs" not in d:
+        d = measure_spec(a.reps)
+    if a.json:
+        out(d)
+        return
+    pct = 100 * d["rd_gbs"] / d["spec_gbs"] if d["spec_gbs"] else 0
+    print(f"{d['name']} sm{d['sm']} {d['sms']}SM L2 {d['l2_mb']}MB smem/SM {d['smem_per_sm_kb']}KB")
+    print(f"dram rd {d['rd_gbs']:.0f}GB/s ({pct:.0f}% spec) copy {d['copy_gbs']:.0f}GB/s L2 {d.get('l2_gbs', 0):.0f}GB/s")
+    print(f"fp32 {d['fp32_tflops']:.1f}TF bf16-mma {d['bf16_mma_tflops']:.1f}TF launch {d['launch_us']:.2f}us node {d['graph_node_us']:.2f}us")
+    if int(d.get("util_at_measure", 0)) > 15:
+        print(f"WARN: gpu {d['util_at_measure']}% busy by others; peaks are lower bounds. rerun: cuk bw --force")
+
+
+def cmd_roof(a):
+    d = spec()
+    if not d or "l2_gbs" not in d:
+        d = measure_spec(3)
+    by = (num(a.bytes) if a.bytes else 0) + (num(a.gb) * 1e9 if a.gb else 0)
+    fl = num(a.flops) if a.flops else 0
+    tf = d["bf16_mma_tflops"] if a.tc else d["fp32_tflops"]
+    bw = d.get("l2_gbs" if a.l2 else "rd_gbs") or d["rd_gbs"]
+    t_mem = by / (bw * 1e9) * 1e6
+    t_cmp = fl / (tf * 1e12) * 1e6
+    floor = max(t_mem, t_cmp, d["graph_node_us"])
+    bound = "launch" if floor == d["graph_node_us"] else "mem" if t_mem >= t_cmp else "compute"
+    o = dict(floor_us=floor, bound=bound, mem_us=t_mem, math_us=t_cmp, node_us=d["graph_node_us"],
+             bw_gbs=bw, tf=tf, intensity=(fl / by if by else None),
+             ridge=(tf * 1e12 / (bw * 1e9) if by else None), l2=bool(a.l2))
+    if a.us:
+        t = float(a.us)
+        o.update(actual_us=t, pct_floor=100 * floor / t, off=t / floor)
+        if by: o["achieved_gbs"] = by / t / 1e3
+        if fl: o["achieved_tf"] = fl / t / 1e6
+    if a.json:
+        out(o)
+        return
+    print(f"floor {floor:.1f}us ({bound}) mem {t_mem:.1f}us @{bw:.0f}GB/s  math {t_cmp:.1f}us @{tf:.0f}TF  node {d['graph_node_us']:.1f}us")
+    if by and fl:
+        print(f"intensity {fl / by:.1f} flop/B  ridge {tf * 1e12 / (bw * 1e9):.0f} flop/B")
+    if a.us:
+        print(f"actual {o['actual_us']:.1f}us = {o['pct_floor']:.0f}% of floor ({o['off']:.1f}x off)")
+        if o["actual_us"] < floor * 0.97:
+            print(f"IMPOSSIBLE: faster than floor -> bytes/flops overcounted, or data L2-resident (L2 {d['l2_mb']:.0f}MB)")
+        if by:
+            print(f"achieved {o['achieved_gbs']:.0f}GB/s = {100 * o['achieved_gbs'] / bw:.0f}% of {('L2' if a.l2 else 'dram')} peak")
+        if fl:
+            print(f"achieved {o['achieved_tf']:.2f}TF = {100 * o['achieved_tf'] / tf:.0f}% of peak")
+
+
+def resource_usage(path):
+    r = sh(["cuobjdump", "--dump-resource-usage", str(path)])
+    out, cur_arch = [], None
+    lines = r.stdout.splitlines()
+    i = 0
+    while i < len(lines):
+        l = lines[i]
+        if re.match(r"\s*Function (\S+):", l):
+            fn = re.match(r"\s*Function (\S+):", l)[1]
+            nxt = lines[i + 1] if i + 1 < len(lines) else ""
+            kv = dict(re.findall(r"(\w+)\s*[:=]\s*(\d+)", nxt))
+            out.append((fn, {k: int(v) for k, v in kv.items()}))
+        i += 1
+    return out
+
+
+def occupancy(regs, smem, block, cc, dyn_smem=0):
+    L = SM_LIMITS.get(cc) or SM_LIMITS["86"]
+    wpb = -(-block // 32)
+    alloc_regs = -(-regs // 8) * 8 * 32
+    by_regs = L["regs"] // (alloc_regs * wpb) if regs else L["blk"]
+    smem = max(0, smem) + max(0, dyn_smem)
+    cap = min(L["smem_kb"], L.get("smem_blk_kb", L["smem_kb"])) * 1024
+    by_smem = cap // (smem + 1024) if smem else L["blk"]
+    by_thr = L["thr"] // block
+    lim = {"regs": by_regs, "smem": by_smem, "threads": by_thr, "blocks": L["blk"]}
+    blk = max(0, min(lim.values()))
+    why = min(lim, key=lim.get)
+    return blk, 100 * blk * wpb / L["warps"], why, dict(lim, warps=L["warps"], wpb=wpb)
+
+
+def cmd_res(a):
+    cc = (a.cc or (smi("compute_cap") or ["8.6"])[0]).replace(".", "")
+    p = Path(a.path)
+    if p.is_dir():
+        c = sorted([x for x in p.rglob("*") if x.suffix in (".so", ".o", ".cubin") or x.name.endswith(".a")], key=lambda x: x.stat().st_mtime, reverse=True)
+        if not c:
+            sys.exit("no .so/.o/.cubin")
+        p = c[0]
+        if not a.json:
+            print(f"using {p}")
+    if p.suffix in (".cu",):
+        tmp = Path(tempfile.mkdtemp()) / "k.cubin"
+        sh(["nvcc", "-O3", "-cubin", f"-arch=sm_{cc}", "-o", str(tmp), str(p)] + a.nvcc, check=True)
+        p = tmp
+    rows, recs = [], []
+    fs = resource_usage(p)
+    names = demangle([f for f, _ in fs])
+    for (f, u), n in zip(fs, names):
+        if a.filter and not re.search(a.filter, n):
+            continue
+        regs, sm_, loc = u.get("REG", 0), u.get("SHARED", 0), u.get("LOCAL", 0)
+        stack = u.get("STACK", 0)
+        blk, occ, why, lim = occupancy(regs, sm_, a.block, cc, a.dyn_smem)
+        flags = []
+        if loc or stack:
+            flags.append(f"SPILL/STACK local={loc} stack={stack}")
+        if blk == 0:
+            flags.append(f"CANNOT LAUNCH at block={a.block} ({why})")
+        elif occ < 50:
+            flags.append(f"lowocc<-{why}")
+        recs.append(dict(kernel=n, regs=regs, smem=sm_, lmem=loc, stack=stack,
+                         blocks=blk, occ_pct=round(occ, 1), limit=why,
+                         limits=lim, flags=flags))
+        rows.append([short(n, 44), regs, sm_, loc, f"{blk}", f"{occ:.0f}%", why, " ".join(flags)])
+    if a.json:
+        out(dict(cc=cc, block=a.block, dyn_smem=a.dyn_smem, kernels=recs))
+        return
+    table(rows, ["kernel", "reg", "smem", "lmem", "blk/SM", "occ", "limit", "flags"], right=(1, 2, 3, 4, 5))
+    print(f"occupancy assumes block={a.block}, static smem + dyn={a.dyn_smem}, +1KB/blk reserved")
+
+
+def child_env():
+    e = dict(os.environ)
+    v = e.pop("VIRTUAL_ENV", None)
+    if v:
+        e["PATH"] = os.pathsep.join(x for x in e["PATH"].split(os.pathsep) if not x.startswith(v))
+    return e
+
+
+def nsys_profile(cmd, prefix, args):
+    base = ["nsys", "profile", "-o", str(prefix), "-f", "true", "--trace=cuda,nvtx", "--sample=none", "--cpuctxsw=none", "--cuda-graph-trace=node", "--stats=false"]
+    if args.delay:
+        base += [f"--delay={args.delay}"]
+    r = subprocess.run(base + cmd, capture_output=True, text=True, timeout=args.timeout, env=child_env())
+    rep = Path(str(prefix) + ".nsys-rep")
+    if not rep.exists():
+        sys.exit("nsys failed:\n" + (r.stdout + r.stderr)[-1000:])
+    return rep, r
+
+
+def cmd_trace(a):
+    cmd = a.cmd[1:] if a.cmd and a.cmd[0] == "--" else a.cmd
+    if not cmd and not a.rep:
+        sys.exit("usage: cuk trace [opts] -- cmd")
+    tmpd = Path(tempfile.mkdtemp())
+    if a.rep:
+        rep = Path(a.rep)
+    else:
+        rep, r = nsys_profile(cmd, tmpd / "t", a)
+        if r.returncode:
+            print(f"cmd exit {r.returncode}: {(r.stderr or r.stdout)[-300:].strip()}")
+    sq = rep.with_suffix(".sqlite") if a.rep else tmpd / "t.sqlite"
+    if not sq.exists() or a.rep and sq.stat().st_mtime < rep.stat().st_mtime:
+        sh(["nsys", "export", "--type=sqlite", "-o", str(sq), "-f", "true", str(rep)], check=True)
+    db = sqlite3.connect(sq)
+    cols = {r[1] for r in db.execute("pragma table_info(CUPTI_ACTIVITY_KIND_KERNEL)")}
+    if not cols:
+        sys.exit("no kernels traced")
+    nm = "demangledName" if "demangledName" in cols else "shortName"
+    q = f"""select k.start,k.end,s.value,k.gridX*k.gridY*k.gridZ,k.blockX*k.blockY*k.blockZ,k.registersPerThread,
+            k.staticSharedMemory+k.dynamicSharedMemory,k.streamId from CUPTI_ACTIVITY_KIND_KERNEL k join StringIds s on s.id=k.{nm} order by k.start"""
+    ks = db.execute(q).fetchall()
+    if a.skip:
+        t0 = ks[0][0] + a.skip * (ks[-1][1] - ks[0][0])
+        ks = [k for k in ks if k[0] >= t0]
+    if a.exclude:
+        ks = [k for k in ks if not re.search(a.exclude, k[2])]
+    if a.filter:
+        ks = [k for k in ks if re.search(a.filter, k[2])]
+    if not ks:
+        sys.exit("no kernels after filters")
+    busy, cur_s, cur_e = 0, ks[0][0], ks[0][1]
+    gaps, big = [], 0
+    gmax = a.gapmax * 1e3
+    for k in ks[1:]:
+        if k[0] > cur_e:
+            busy += cur_e - cur_s
+            if k[0] - cur_e > gmax:
+                big += 1
+            else:
+                gaps.append(k[0] - cur_e)
+            cur_s, cur_e = k[0], k[1]
+        else:
+            cur_e = max(cur_e, k[1])
+    busy += cur_e - cur_s
+    wall = busy + sum(gaps)
+    sum_dur = sum(k[1] - k[0] for k in ks)
+    agg = {}
+    for k in ks:
+        g = agg.setdefault((k[2], k[3], k[4]), dict(n=0, t=0, mn=1e18, mx=0, ds=[], grid=k[3], blk=k[4], reg=k[5], sm=k[6]))
+        d = k[1] - k[0]
+        g["n"] += 1
+        g["t"] += d
+        g["ds"].append(d)
+        g["mn"] = min(g["mn"], d)
+        g["mx"] = max(g["mx"], d)
+    order = sorted(agg.items(), key=lambda x: -x[1]["t"])[: a.top]
+    dn = demangle([n[0] for n, _ in order])
+    rows, recs = [], []
+    for (n, g), dm in zip(order, dn):
+        rows.append([short(dm, 40), g["n"], f"{g['t'] / 1e3:.1f}", f"{st.median(g['ds']) / 1e3:.2f}", f"{g['mn'] / 1e3:.2f}", f"{g['mx'] / 1e3:.2f}", f"{100 * g['t'] / sum_dur:.0f}%", g["grid"], g["blk"], g["reg"], g["sm"]])
+        recs.append(dict(kernel=dm, n=g["n"], tot_us=round(g["t"] / 1e3, 2),
+                         p50_us=round(st.median(g["ds"]) / 1e3, 2), min_us=round(g["mn"] / 1e3, 2),
+                         max_us=round(g["mx"] / 1e3, 2), share_pct=round(100 * g["t"] / sum_dur, 1),
+                         grid=g["grid"], block=g["blk"], regs=g["reg"], smem=g["sm"]))
+    tiny = sum(1 for k in ks if k[1] - k[0] < 5000)
+    v = []
+    if busy / wall < 0.7 and not (a.filter or a.exclude):
+        v.append(f"GPU idle {100 - 100 * busy / wall:.0f}% of span -> launch/host-bound or syncs; use CUDA graphs/fuse")
+    if (a.filter or a.exclude) and busy / wall < 0.7:
+        v.append("idle%/gaps cover filtered-out kernels too; judge by p50/min only")
+    if tiny > 0.3 * len(ks):
+        v.append(f"{tiny}/{len(ks)} kernels <5us -> launch-bound; fuse")
+    top = order[0][1]
+    for n, g in order[:3]:
+        if g["n"] >= 5 and st.median(g["ds"]) > 2 * g["mn"] and g["mn"] > 5000:
+            v.append(f"{short(n[0], 24)} p50 {st.median(g['ds']) / 1e3:.0f}us vs min {g['mn'] / 1e3:.0f}us -> unstable: GPU shared/throttled (cuk doctor) or sync spin; compare min")
+    if top["t"] / sum_dur > 0.6:
+        v.append(f"one kernel is {100 * top['t'] / sum_dur:.0f}% of GPU time -> optimize it (cuk res / cuk ncu)")
+    if sum_dur / busy > 1.2:
+        v.append("streams overlap")
+    mem = db.execute("select count(*),sum(end-start),sum(bytes) from CUPTI_ACTIVITY_KIND_MEMCPY").fetchone() if db.execute("select name from sqlite_master where name='CUPTI_ACTIVITY_KIND_MEMCPY'").fetchone() else None
+    summary = dict(launches=len(ks), unique=len(agg), span_us=round(wall / 1e3, 1),
+                   busy_pct=round(100 * busy / wall, 0), kernel_sum_us=round(sum_dur / 1e3, 1),
+                   overlap=round(sum_dur / busy, 2),
+                   gaps=dict(n=len(gaps), med_us=round(st.median(gaps) / 1e3, 2),
+                             p90_us=round(sorted(gaps)[int(0.9 * len(gaps))] / 1e3, 2),
+                             total_us=round(sum(gaps) / 1e3, 1)) if gaps else None,
+                   ignored_big_gaps=big, tiny=dict(n=tiny, total=len(ks)),
+                   memcpy=dict(n=mem[0], us=round(mem[1] / 1e3, 1), mb=round(mem[2] / 1e6, 1)) if mem and mem[0] else None,
+                   verdicts=v)
+    if a.json:
+        out(dict(summary=summary, kernels=recs))
+        return
+    table(rows, ["kernel", "n", "tot_us", "p50", "min", "max", "share", "grid", "blk", "reg", "smem"], right=range(1, 11))
+    if big:
+        print(f"ignored {big} idle gaps >{a.gapmax}ms (host phases: load/compile/sync/between iters)")
+    print(f"{len(ks)} launches {len(agg)} unique | span {wall / 1e3:.1f}us busy {100 * busy / wall:.0f}% | kernel-sum {sum_dur / 1e3:.1f}us (overlap x{sum_dur / busy:.2f})")
+    if gaps:
+        print(f"gaps: n={len(gaps)} med {st.median(gaps) / 1e3:.2f}us p90 {sorted(gaps)[int(0.9 * len(gaps))] / 1e3:.2f}us total {sum(gaps) / 1e3:.1f}us ({100 * sum(gaps) / wall:.0f}% of span)")
+    print("verdict: " + ("; ".join(v) if v else "balanced, no obvious structural issue"))
+    if mem and mem[0]:
+        print(f"memcpy: {mem[0]} {mem[1] / 1e3:.1f}us {mem[2] / 1e6:.1f}MB")
+
+
+NCU_PICK = {
+    "Duration": "dur",
+    "Memory Throughput": "mem",
+    "DRAM Throughput": "dram",
+    "Compute (SM) Throughput": "sm",
+    "L1/TEX Cache Throughput": "l1",
+    "L2 Cache Throughput": "l2",
+    "L2 Hit Rate": "l2hit",
+    "L1/TEX Hit Rate": "l1hit",
+    "Achieved Occupancy": "occ",
+    "Theoretical Occupancy": "tocc",
+    "Registers Per Thread": "reg",
+    "Block Limit Registers": "lim_reg",
+    "Block Limit Shared Mem": "lim_smem",
+    "Block Limit Warps": "lim_warps",
+    "Block Limit SM": "lim_sm",
+    "Waves Per SM": "waves",
+    "Grid Size": "grid",
+    "Block Size": "blk",
+    "Warp Cycles Per Issued Instruction": "cpi",
+    "Eligible Warps Per Scheduler": "elig",
+    "Issued Warp Per Scheduler": "ipc",
+    "Bank Conflicts": "bank",
+    "Mem Busy": "membusy",
+    "Max Bandwidth": "maxbw",
+    "Mem Pipes Busy": "mempipes",
+    "Memory Throughput [Gbyte/second]": "gbs",
+}
+
+
+def classify(m):
+    dur = m.get("dur", 0)
+    sm, dram, mem = m.get("sm", 0), m.get("dram", 0), m.get("mem", 0)
+    if dur and dur < 8:
+        return "launch-bound (tiny)"
+    if dram >= 70 and dram >= sm:
+        return "DRAM-bw bound"
+    if sm >= 70 and sm >= mem:
+        return "SM/issue bound"
+    if m.get("l2", 0) >= 70 or m.get("l1", 0) >= 80:
+        return "cache/LSU bound"
+    if max(sm, mem, m.get("l1", 0), m.get("l2", 0)) < 60:
+        return "latency-bound (stalls/occupancy/tail)"
+    return "mixed"
+
+
+def cmd_ncu(a):
+    cmd = a.cmd[1:] if a.cmd and a.cmd[0] == "--" else a.cmd
+    if not cmd:
+        sys.exit("usage: cuk ncu -k REGEX [-n N] [--skip S] -- cmd")
+    tmpd = Path(tempfile.mkdtemp())
+    args = ["ncu", "--csv", "--page", "details"]
+    if a.full:
+        args += ["--set", "full"]
+    else:
+        args += ["--section", "SpeedOfLight", "--section", "Occupancy", "--section", "LaunchStats",
+                 "--section", "WarpStateStats", "--section", "MemoryWorkloadAnalysis", "--section", "SchedulerStats"]
+    if a.stalls:
+        args += ["--metrics", r"regex:smsp__average_warps_issue_stalled_.*_per_issue_active\.ratio"]
+    if a.metrics:
+        args += ["--metrics", a.metrics]
+    if a.k:
+        args += ["-k", f"regex:{a.k}"]
+    args += ["-c", str(a.n), "-s", str(a.skip)]
+    r = subprocess.run(args + cmd, capture_output=True, text=True, timeout=a.timeout, env=child_env())
+    if "ERR_NVGPUCTRPERM" in r.stdout + r.stderr:
+        sys.exit("ncu: counters restricted. run `cuk doctor` for the fix. counter-free alternatives: cuk trace, cuk res, cuk roof")
+    lines = r.stdout.splitlines()
+    start = next((i for i, l in enumerate(lines) if l.startswith('"ID"')), None)
+    if start is None:
+        sys.exit("ncu: no data\n" + (r.stdout + r.stderr)[-800:])
+    rd = csv.DictReader(io.StringIO("\n".join(lines[start:])))
+    kers = {}
+    for row in rd:
+        key = (row["ID"], row["Kernel Name"])
+        d = kers.setdefault(key, {})
+        name, unit, val = row["Metric Name"], row["Metric Unit"], row["Metric Value"].replace(",", "")
+        try:
+            v = float(val)
+        except ValueError:
+            continue
+        if name == "Duration":
+            v = v * {"nsecond": 1e-3, "usecond": 1, "msecond": 1e3, "second": 1e6}.get(unit, 1)
+        if name == "Memory Throughput" and unit.lower().startswith("gbyte"):
+            d["gbs"] = v
+        elif name in NCU_PICK:
+            d.setdefault(NCU_PICK[name], v)
+        elif name.startswith("Stall") or "issue_stalled" in name:
+            d.setdefault("stalls", {})[re.sub(r".*stalled_(.*)_per_issue.*", r"\1", name)] = v
+        elif a.stalls and "stalled" in name:
+            d.setdefault("stalls", {})[name] = v
+    names = demangle([k[1] for k in kers])
+    rows, recs, notes = [], [], []
+    for (key, d), n in zip(kers.items(), names):
+        cls = classify(d)
+        rows.append([key[0], short(n, 36), f"{d.get('dur', 0):.1f}", f"{d.get('sm', 0):.0f}", f"{d.get('dram', 0):.0f}", f"{d.get('l2', 0):.0f}", f"{d.get('l1', 0):.0f}",
+                     f"{d.get('occ', 0):.0f}/{d.get('tocc', 0):.0f}", f"{d.get('reg', 0):.0f}", f"{d.get('waves', 0):.2f}", f"{d.get('cpi', 0):.1f}", cls])
+        recs.append(dict(id=key[0], kernel=n, dur_us=d.get("dur"), sm_pct=d.get("sm"), dram_pct=d.get("dram"),
+                         l2_pct=d.get("l2"), l1_pct=d.get("l1"), gbs=d.get("gbs"),
+                         occ=d.get("occ"), occ_theory=d.get("tocc"), regs=d.get("reg"), waves=d.get("waves"),
+                         cpi=d.get("cpi"), class_=cls, stalls=d.get("stalls", {})))
+        if d.get("waves", 9) < 0.5 and d.get("dur", 0) > 8:
+            notes.append(f"{key[0]}: waves/SM {d['waves']:.2f} -> grid too small to fill GPU")
+        elif d.get("waves", 0) and abs(d["waves"] - round(d["waves"])) > 0.25 and d["waves"] < 4:
+            notes.append(f"{key[0]}: waves/SM {d['waves']:.2f} -> tail effect")
+        if d.get("occ", 100) < 0.6 * d.get("tocc", 0):
+            notes.append(f"{key[0]}: achieved occ {d['occ']:.0f} << theoretical {d['tocc']:.0f} -> imbalance/tail")
+        if d.get("l2hit", 100) < 40 and d.get("dram", 0) > 50:
+            notes.append(f"{key[0]}: L2 hit {d['l2hit']:.0f}% with high dram -> poor reuse")
+        if d.get("bank", 0) > 1.5:
+            notes.append(f"{key[0]}: smem bank conflicts x{d['bank']:.1f}")
+        if d.get("stalls"):
+            top = sorted(d["stalls"].items(), key=lambda x: -x[1])[:3]
+            notes.append(f"{key[0]} stalls: " + " ".join(f"{k}={v:.1f}" for k, v in top))
+    if a.json:
+        out(dict(kernels=recs, notes=notes))
+        return
+    table(rows, ["id", "kernel", "us", "sm%", "dram%", "l2%", "l1%", "occ/th", "reg", "waves", "cpi", "class"], right=range(2, 11))
+    for n in notes:
+        print(" ", n)
+
+
+def sass_mix(path):
+    r = sh(["cuobjdump", "-sass", str(path)])
+    cur, funcs = None, {}
+    for line in r.stdout.splitlines():
+        m = re.match(r"\s*Function : (\S+)", line)
+        if m:
+            cur = m[1]
+            funcs[cur] = {}
+            continue
+        m = re.match(r"\s*/\*[0-9a-f]+\*/\s+(.*?);", line)
+        if not m or not cur:
+            continue
+        body = re.sub(r"^@!?P\d+\s+", "", m[1].strip())
+        op = body.split()[0].split(".")[0]
+        f = funcs[cur]
+        f[op] = f.get(op, 0) + 1
+        f["TOTAL"] = f.get("TOTAL", 0) + 1
+    return funcs
+
+
+def cmd_sass(a):
+    cc = (smi("compute_cap") or ["8.6"])[0].replace(".", "")
+    p = Path(a.path)
+    if not p.exists():
+        sys.exit(f"no {p}")
+    src = p.suffix == ".cu"
+    if a.arch in (None, "current"):
+        m = None if src else re.search(r"(?:sm[_-]?|cc)(\d+)", p.name)
+        arches = [f"sm_{m[1]}" if m else f"sm_{cc}"]
+    elif a.arch == "all":
+        arches = ["sm_80", "sm_90", "sm_120"]
+    else:
+        arches = [x if x.startswith("sm_") else f"sm_{x}" for x in a.arch.split(",")]
+    tmp = Path(tempfile.mkdtemp())
+    recs, errors = [], []
+    for arch in arches:
+        cub = p
+        if src:
+            cub = tmp / f"k_{arch}.cubin"
+            r = sh(["nvcc", "-O3", "-std=c++17", "-cubin", f"-arch={arch}", "-o", str(cub), str(p)] + a.nvcc)
+            if r.returncode:
+                msg = (r.stderr or r.stdout).strip().splitlines()[-1][:160]
+                errors.append(dict(arch=arch, error=msg))
+                if not a.json:
+                    print(f"{arch}: compile failed: {msg}")
+                continue
+        ru = {f: u for f, u in resource_usage(cub)}
+        mix = sass_mix(cub)
+        names = demangle(list(mix))
+        for mangled, n in zip(mix, names):
+            if a.filter and not re.search(a.filter, n):
+                continue
+            u, m = ru.get(mangled, {}), mix[mangled]
+            regs, stack, sm, loc = u.get("REG", 0), u.get("STACK", 0), u.get("SHARED", 0), u.get("LOCAL", 0)
+            blk, occ, why, _ = occupancy(regs, sm, a.block, arch.replace("sm_", ""))
+            recs.append(dict(arch=arch, kernel=n, regs=regs, stack=stack, smem=sm, lmem=loc,
+                             sass=m.get("TOTAL", 0), ffma=m.get("FFMA", 0), hmma=m.get("HMMA", 0),
+                             mma=m.get("MMA", 0), ldsm=m.get("LDSM", 0), ldgsts=m.get("LDGSTS", 0),
+                             ldg=m.get("LDG", 0), lds=m.get("LDS", 0), stg=m.get("STG", 0),
+                             blocks=blk, occ_pct=round(occ, 1), limit=why))
+    recs.sort(key=lambda x: (x["arch"], -x["sass"]))
+    recs = recs[: a.top]
+    if a.json:
+        out(dict(cc=cc, arches=arches, kernels=recs, errors=errors))
+        return
+    rows = []
+    for r in recs:
+        flags = []
+        if r["stack"] or r["lmem"]:
+            flags.append(f"spill stack={r['stack']} local={r['lmem']}")
+        if r["occ_pct"] < 50:
+            flags.append(f"lowocc<-{r['limit']}")
+        rows.append([r["arch"].replace("sm_", ""), short(r["kernel"], 38), r["regs"], r["stack"], r["smem"],
+                     r["sass"], r["ffma"], r["hmma"] + r["mma"], r["ldsm"], r["ldgsts"],
+                     f"{r['occ_pct']:.0f}%", " ".join(flags)])
+    if rows:
+        table(rows, ["cc", "kernel", "reg", "stk", "smem", "sass", "ffma", "hmma", "ldsm", "ldgst", "occ", "flags"], right=range(2, 11))
+    else:
+        print("no kernels matched")
+    print("sass=static instructions; hmma includes mma; occ assumes block=%d" % a.block)
+
+
+def plan_key(arg):
+    if arg in PROFILES:
+        return arg
+    return {"h200": "hopper", "h100": "hopper", "3090": "ampere", "3090ti": "ampere",
+            "a100": "ampere-dc", "5090": "blackwell", "4090": "ada", "b200": "blackwell-dc",
+            "t4": "turing"}.get(arg.lower(), arg)
+
+
+def cmd_plan(a):
+    if a.gpu and a.gpu != "auto":
+        cls = plan_key(a.gpu)
+        cc = {"h200":"90","h100":"90","3090":"86","3090ti":"86","a100":"80",
+              "5090":"120","4090":"89","t4":"75","b200":"100"}.get(a.gpu.lower(), "")
+        name = a.gpu
+    else:
+        f = smi("name,compute_cap")
+        if not f:
+            sys.exit("no nvidia-smi; pass --gpu h200|3090|5090|4090|a100|t4")
+        name, cc = f[0], f[1].replace(".", "")
+        cls = gpu_class(name, cc)
+    prof = PROFILES.get(cls, PROFILES["ampere"])
+    w = a.workload or "decode"
+    first = {
+        ("hopper", "decode"): "KV q8_0 + TMA/split-KV; WGMMA after the gather",
+        ("hopper", "prefill"): "batch geometry + WGMMA; chunked attention",
+        ("hopper", "moe"): "NVFP4 weight dequant + persistent queue; split-K",
+        ("hopper", "diffusion"): "residency; exact result cache",
+        ("blackwell", "decode"): "batch geometry + q8_0 KV; TMA/split-KV",
+        ("blackwell", "prefill"): "batch geometry + FP4/FP8; 2-3 stage TMA",
+        ("blackwell", "moe"): "FP4/FP6 + offload; persistent queue",
+        ("blackwell", "diffusion"): "residency vs stream+VAE tile; exact cache",
+        ("ampere", "decode"): "q8_0 KV + flash attention; prefix cache",
+        ("ampere", "prefill"): "wider batch + mma.sync; chunked prefill",
+        ("ampere", "moe"): "CPU expert offload (`auto`); 1.5GiB floor",
+        ("ampere", "diffusion"): "stream weights + VAE tile; exact cache",
+        ("ada", "decode"): "q8_0 KV + flash attention; FP8 where safe",
+        ("ada", "prefill"): "wider batch + FP8; 72MB L2 tiling",
+        ("ada", "moe"): "expert offload + FP8; 24GB wall",
+        ("ada", "diffusion"): "residency/stream+VAE tile; exact cache",
+        ("turing", "decode"): "1024/256, f16 KV, flash off; keep it simple",
+    }.get((cls, w), "measure the roof, remove bytes, then shape the grid")
+    obj = dict(gpu=name, cc=cc, class_=cls, workload=a.workload or "decode", first=first,
+               profile=dict(batch=prof["batch"], ubatch=prof["ubatch"], kv=prof["kv"],
+                            flash=prof["flash"], contexts=prof["ctx"]),
+               order=PLAYS.get(cls, PLAYS["ampere"]))
+    if a.json:
+        out(obj)
+        return
+    print(f"{name} sm{cc} {cls} | batch {prof['batch']}/{prof['ubatch']} kv {prof['kv']} fa {'on' if prof['flash'] else 'off'} ctx {prof['ctx']}")
+    print(f"first: {first}")
+    for i, s in enumerate(obj["order"], 1):
+        print(f"{i}. {s}")
+
+
+def _index(rows):
+    if isinstance(rows, dict) and "kernels" in rows:
+        rows = rows["kernels"]
+    if isinstance(rows, list):
+        outd = {}
+        for r in rows:
+            if not isinstance(r, dict):
+                return None
+            k = r.get("kernel") or r.get("name")
+            if not k:
+                return None
+            if r.get("arch"):
+                k = f"{r['arch']}:{k}"
+            outd[k] = r
+        return outd
+    return None
+
+
+def cmd_diff(a):
+    A, B = json.loads(Path(a.a).read_text()), json.loads(Path(a.b).read_text())
+    ia, ib = _index(A), _index(B)
+    res = []
+    if ia is not None and ib is not None:
+        for k in sorted(set(ia) | set(ib)):
+            if k not in ia or k not in ib:
+                res.append(dict(key=k, base=None, new=None, delta=None))
+                continue
+            for f in ("sass", "regs", "tot_us", "p50_us", "occ_pct", "floor_us", "rd_gbs", "copy_gbs", "l2_gbs", "fp32_tflops", "bf16_mma_tflops"):
+                if f in ia[k] or f in ib[k]:
+                    x, y = ia[k].get(f), ib[k].get(f)
+                    d = (None if x in (None, 0) or y is None else 100 * (y - x) / abs(x))
+                    res.append(dict(key=k, field=f, base=x, new=y, delta_pct=d))
+        if not res:
+            sys.exit("no comparable numeric fields")
+        res.sort(key=lambda r: -abs(r["delta_pct"] or 0))
+        if a.json:
+            out(res)
+            return
+        for r in res:
+            if r["delta_pct"] is None:
+                if a.all:
+                    print(f"{short(r['key'], 46):46} {r['field']:14} {'-':>10} -> {str(r['new']):>10}    new")
+                continue
+            if abs(r["delta_pct"]) < a.threshold and not a.all:
+                continue
+            print(f"{short(r['key'], 46):46} {r['field']:14} {str(r['base']):>10} -> {str(r['new']):>10} {r['delta_pct']:+7.1f}%")
+        return
+    if isinstance(A, dict) and isinstance(B, dict):
+        for k in sorted(set(A) | set(B)):
+            x, y = A.get(k), B.get(k)
+            if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+                d = 100 * (y - x) / abs(x) if x else None
+                res.append(dict(key=k, field=k, base=x, new=y, delta_pct=d))
+        if a.json:
+            out(res)
+            return
+        for r in sorted(res, key=lambda r: -abs(r["delta_pct"] or 0)):
+            if r["delta_pct"] is None:
+                if a.all:
+                    print(f"{r['key']:28} {'-':>12} -> {str(r['new']):>12}    new")
+                continue
+            if abs(r["delta_pct"]) < a.threshold and not a.all:
+                continue
+            print(f"{r['key']:28} {str(r['base']):>12} -> {str(r['new']):>12} {r['delta_pct']:+7.1f}%")
+        return
+    sys.exit("diff needs two JSON files from trace/bw/roof/res/sass")
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="cuk")
+    sp = ap.add_subparsers(dest="c", required=True)
+    p = sp.add_parser("doctor", help="gpu contention, clocks, ncu permission")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(f=cmd_doctor)
+    p = sp.add_parser("bw", help="measured peaks: dram/l2/copy/fp32/bf16/launch")
+    p.add_argument("--force", action="store_true")
+    p.add_argument("--reps", type=int, default=3)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(f=cmd_bw)
+    p = sp.add_parser("roof", help="speed-of-light floor: --bytes 50M --flops 2G [--us T] [--tc] [--l2]")
+    p.add_argument("--bytes")
+    p.add_argument("--gb")
+    p.add_argument("--flops")
+    p.add_argument("--us")
+    p.add_argument("--tc", action="store_true")
+    p.add_argument("--l2", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(f=cmd_roof)
+    p = sp.add_parser("res", help="regs/smem/spills/occupancy of .cu/.o/.so/.cubin/dir")
+    p.add_argument("path")
+    p.add_argument("--block", type=int, default=256)
+    p.add_argument("--filter")
+    p.add_argument("--cc")
+    p.add_argument("--dyn-smem", type=int, default=0)
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--nvcc", nargs=argparse.REMAINDER, default=[])
+    p.set_defaults(f=cmd_res)
+    p = sp.add_parser("trace", help="nsys timeline summary: kernels, gaps, busy pct, verdict")
+    p.add_argument("--top", type=int, default=8)
+    p.add_argument("--filter")
+    p.add_argument("--exclude")
+    p.add_argument("--skip", type=float, default=0.0, help="drop first fraction of time (warmup)")
+    p.add_argument("--gapmax", type=float, default=5.0, help="gaps longer than this (ms) are host phases, excluded from busy/idle")
+    p.add_argument("--delay", type=int, default=0)
+    p.add_argument("--timeout", type=int, default=600)
+    p.add_argument("--rep")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("cmd", nargs=argparse.REMAINDER)
+    p.set_defaults(f=cmd_trace)
+    p = sp.add_parser("ncu", help="per-kernel counters + class (needs counter permission)")
+    p.add_argument("-k")
+    p.add_argument("-n", type=int, default=5)
+    p.add_argument("-s", "--skip", type=int, default=0)
+    p.add_argument("--stalls", action="store_true")
+    p.add_argument("--full", action="store_true")
+    p.add_argument("--metrics")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--timeout", type=int, default=1200)
+    p.add_argument("cmd", nargs=argparse.REMAINDER)
+    p.set_defaults(f=cmd_ncu)
+    p = sp.add_parser("sass", help="cross-arch regs/spills/instruction mix: cuk sass k.cu --arch all")
+    p.add_argument("path")
+    p.add_argument("--arch", help="current|all|sm_80,sm_90,sm_120")
+    p.add_argument("--block", type=int, default=256)
+    p.add_argument("--filter")
+    p.add_argument("--top", type=int, default=20)
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--nvcc", nargs=argparse.REMAINDER, default=[])
+    p.set_defaults(f=cmd_sass)
+    p = sp.add_parser("plan", help="gpu-specific order + batch/KV profile")
+    p.add_argument("--gpu", default="auto", help="auto|h200|3090|5090|4090|a100|t4|...")
+    p.add_argument("--workload", choices=("decode", "prefill", "moe", "diffusion"), default="decode")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(f=cmd_plan)
+    p = sp.add_parser("diff", help="numeric diff of two JSON outputs (trace/bw/roof/res/sass)")
+    p.add_argument("a")
+    p.add_argument("b")
+    p.add_argument("--threshold", type=float, default=5.0)
+    p.add_argument("--all", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(f=cmd_diff)
+    a = ap.parse_args()
+    a.f(a)
+
+
+if __name__ == "__main__":
+    main()

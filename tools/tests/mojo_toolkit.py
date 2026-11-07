@@ -156,7 +156,7 @@ def duration_quantum(s: str) -> float:
     m = _TIME_RE.match(s.strip())
     if not m:
         raise ValueError(f"not a duration this suite understands: {s!r}")
-    unit, digits = m.group("unit"), len(m.group("n").split(".")[1])
+    unit, digits = m.group("unit"), len(m.group("n").partition(".")[2])
     return 10.0 ** -digits * _UNIT_US[unit]
 
 

@@ -1,0 +1,33 @@
+<!doctype html><meta charset=utf-8><style>html,body{margin:0;overflow:hidden}</style>
+<script type=importmap>{"imports":{"three":"/three/build/three.module.js","three/addons/":"/three/examples/jsm/"}}</script>
+<script type=module>
+import * as T from 'three'
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
+const q=new URLSearchParams(location.search)
+const mode=q.get('mode')||'naive',n=+(q.get('n')||5000),pr=+(q.get('pr')||1),seg=+(q.get('seg')||16),lod=q.get('lod')==='1',shadow=q.get('shadow')==='1'
+const r=new T.WebGLRenderer({antialias:q.get('aa')!=='0',powerPreference:'high-performance'})
+r.setPixelRatio(Math.min(devicePixelRatio,pr));r.setSize(innerWidth,innerHeight);document.body.append(r.domElement)
+r.shadowMap.enabled=shadow
+const s=new T.Scene();s.background=new T.Color(0x20242a)
+const c=new T.PerspectiveCamera(60,innerWidth/innerHeight,.1,5000);c.position.set(0,60,120)
+const oc=new OrbitControls(c,r.domElement)
+s.add(new T.HemisphereLight(0xffffff,0x334,1.5));const dl=new T.DirectionalLight(0xffffff,2);dl.position.set(50,100,50);dl.castShadow=shadow;s.add(dl)
+const side=Math.ceil(Math.cbrt(n)),sp=3
+let seed=1;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647
+const pos=i=>[(i%side-side/2)*sp,(Math.floor(i/side)%side-side/2)*sp,(Math.floor(i/side/side)-side/2)*sp]
+const geo=new T.SphereGeometry(1,seg,seg/2),geoLo=new T.SphereGeometry(1,6,4)
+const mat=new T.MeshStandardMaterial({roughness:.6})
+const m4=new T.Matrix4(),col=new T.Color()
+if(mode==='naive'){for(let i=0;i<n;i++){const m=new T.Mesh(geo,new T.MeshStandardMaterial({color:col.setHSL(rnd(),.3,.5).clone(),roughness:.6}));m.position.set(...pos(i));s.add(m)}}
+else if(mode==='shared'){for(let i=0;i<n;i++){const m=new T.Mesh(geo,mat);m.position.set(...pos(i));s.add(m)}}
+else if(mode==='instanced'){const m=new T.InstancedMesh(geo,mat,n);for(let i=0;i<n;i++){m4.setPosition(...pos(i));m.setMatrixAt(i,m4);m.setColorAt(i,col.setHSL(rnd(),.3,.5))}m.instanceMatrix.needsUpdate=true;m.matrixAutoUpdate=false;s.add(m)}
+else if(mode==='batched'){const m=new T.BatchedMesh(n,n*geo.attributes.position.count,n*geo.index.count,mat);const g=m.addGeometry(geo);for(let i=0;i<n;i++){const id=m.addInstance(g);m4.setPosition(...pos(i));m.setMatrixAt(id,m4);m.setColorAt(id,col.setHSL(rnd(),.3,.5))}s.add(m)}
+else if(mode==='merged'){const gs=[];for(let i=0;i<n;i++){const g=geo.clone();g.translate(...pos(i));gs.push(g)}
+const {mergeGeometries}=await import('three/addons/utils/BufferGeometryUtils.js');const m=new T.Mesh(mergeGeometries(gs),mat);m.matrixAutoUpdate=false;s.add(m)}
+if(lod&&mode==='instanced'){}
+s.matrixWorldAutoUpdate=mode==='naive'||mode==='shared'
+if(!s.matrixWorldAutoUpdate)s.updateMatrixWorld(true)
+addEventListener('resize',()=>{r.setSize(innerWidth,innerHeight);c.aspect=innerWidth/innerHeight;c.updateProjectionMatrix()})
+window.__ready=true;window.__r=r
+r.setAnimationLoop(()=>{oc.update();r.render(s,c)})
+</script>

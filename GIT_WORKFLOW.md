@@ -66,15 +66,13 @@ gst                                 # files listed as "both modified" (UU)
 git diff --name-only --diff-filter=U   # just the conflicted files
 ```
 
-Open each conflicted file and look for the markers:
+Open each conflicted file and look for the markers (all at column 0):
 
-```
-<<<<<<< HEAD
-your local version
-=======
-the incoming remote version
->>>>>>> origin/master
-```
+- `<<<<<<< HEAD` — start of **your** side
+- `your local version`
+- `=======` — divider; everything after it is the incoming side
+- `the incoming remote version`
+- `>>>>>>> origin/master` — end of the incoming side
 
 Edit to the version you want — **usually keep both sides** when the two edits are
 independent additions (e.g. one machine added btop wrappers, the other added
