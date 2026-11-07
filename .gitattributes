@@ -34,3 +34,8 @@ lib/*       text eol=lf
 # Markdown and docs - auto
 *.md        text
 *.json      text
+tools/githooks/* text eol=lf
+*.sh text eol=lf
+lib/* text eol=lf
+bashrc text eol=lf
+zshrc text eol=lf
