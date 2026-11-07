@@ -759,6 +759,8 @@ alias cldp='cld --print'
 alias cldd='cld'
 # Latest explicit model id per family (resolved by _cld_best_model, cached; falls
 # back to the bare family alias if the model list can't be fetched).
+# A stale alias with the same name (older rc files) would break the function definitions below.
+unalias cldo cldf clds cldh cld2o cld2f cld2s cld2h 2>/dev/null
 cldo() { cld --model "$(_cld_best_model opus)" "$@"; }
 cldf() { cld --model "$(_cld_best_model fable)" "$@"; }
 clds() { cld --model "$(_cld_best_model sonnet)" "$@"; }
