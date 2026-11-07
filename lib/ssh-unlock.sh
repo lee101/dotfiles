@@ -65,6 +65,10 @@ _df_ssh_add_key() {
 
 _df_ssh_unlock_keys() {
     _df_ssh_is_windows || return 0
+    # The rotation/mesh tooling stores the passphrase as GIT_SSH_KEY_PASSPHRASE on
+    # Linux hosts; accept either name so one ~/.secretbashrc works everywhere.
+    [ -n "${SSH_KEY_PW:-}" ] || SSH_KEY_PW="${GIT_SSH_KEY_PASSPHRASE:-}"
+    export SSH_KEY_PW
     [ -n "${SSH_KEY_PW:-}" ] || return 0
 
     local key

@@ -97,6 +97,8 @@ muhelp() {
 }
 # Go
 export GOPATH=$HOME/go
+# go install targets (gitleaks, gopls, ...) must be on PATH for hooks and tools
+case ":$PATH:" in *":$GOPATH/bin:"*) ;; *) [ -d "$GOPATH/bin" ] && export PATH="$GOPATH/bin:$PATH" ;; esac
 if [ -d "/usr/local/go/bin" ]; then
     export GOROOT=/usr/local/go
 elif [ -d "/usr/local/Cellar/go" ]; then
@@ -1311,6 +1313,17 @@ claude_trust_root() {
 
 cld() {
     claude_trust_root
+    # Make sure the Claude session (and the Bash tool it spawns) inherits a working
+    # SSH setup: Windows agent socket + native OpenSSH first on PATH + keys loaded.
+    # No-op on Linux/macOS, where the normal ssh-agent block already ran.
+    case "$(uname -s 2>/dev/null)" in
+        MINGW*|MSYS*|CYGWIN*)
+            export SSH_AUTH_SOCK='\\.\pipe\openssh-ssh-agent'
+            unset SSH_AGENT_PID GIT_SSH_COMMAND
+            [ -d /c/Windows/System32/OpenSSH ] && case "$PATH" in /c/Windows/System32/OpenSSH:*) ;; *) PATH="/c/Windows/System32/OpenSSH:$PATH" ;; esac
+            command -v _df_ssh_unlock_keys >/dev/null 2>&1 && _df_ssh_unlock_keys
+            ;;
+    esac
     # Prefer the native installer binary; PATH may still find an older Bun copy.
     local claude_bin="$HOME/.local/bin/claude"
     [ -x "$claude_bin" ] || claude_bin="$(type -P claude 2>/dev/null || true)"
@@ -1742,6 +1755,18 @@ case "$(uname -s 2>/dev/null)" in
     MINGW*|MSYS*|CYGWIN*)
         export SSH_AUTH_SOCK='\\.\pipe\openssh-ssh-agent'
         unset SSH_AGENT_PID GIT_SSH_COMMAND
+        # The agent is a Windows named pipe, which only the native OpenSSH client can
+        # talk to. Git's MSYS /usr/bin/ssh and ssh-add otherwise win on PATH, cannot
+        # reach the pipe ("Device or resource busy"), and then fail every
+        # passphrase-protected key in BatchMode (looks like "Permission denied").
+        # Put the native client first so ssh/scp/ssh-add all agree with the agent.
+        for _df_ossh in /c/Windows/System32/OpenSSH /c/WINDOWS/System32/OpenSSH; do
+            if [ -x "$_df_ossh/ssh.exe" ]; then
+                case "$PATH" in "$_df_ossh":*) ;; *) PATH="$_df_ossh:$PATH" ;; esac
+                break
+            fi
+        done
+        unset _df_ossh
         [ -f ~/code/dotfiles/lib/ssh-unlock.sh ] && . ~/code/dotfiles/lib/ssh-unlock.sh
         command -v _df_ssh_unlock_keys >/dev/null 2>&1 && _df_ssh_unlock_keys
         ;;
