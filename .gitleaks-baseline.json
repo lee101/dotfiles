@@ -19,5 +19,26 @@
   "Message": "unset key",
   "Tags": [],
   "Fingerprint": "25fcd6cc7121442d5bf8f1a9e82d62ae350bf9a8:bashrc:generic-api-key:719"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 719,
+  "EndLine": 719,
+  "StartColumn": 3,
+  "EndColumn": 45,
+  "Match": "ANTHROPIC_API_KEY=\"\" REDACTED ",
+  "Secret": "REDACTED",
+  "File": "bashrc",
+  "SymlinkFile": "",
+  "Commit": "95f925b31eadd5b6a482e17f3401919967630292",
+  "Link": "https://github.com/lee101/dotfiles/blob/95f925b31eadd5b6a482e17f3401919967630292/bashrc#L719",
+  "Entropy": 4.106603,
+  "Author": "Lee Penkman",
+  "Email": "leepenkman@gmail.com",
+  "Date": "2025-09-08T22:56:12Z",
+  "Message": "unset key",
+  "Tags": [],
+  "Fingerprint": "95f925b31eadd5b6a482e17f3401919967630292:bashrc:generic-api-key:719"
  }
 ]
