@@ -245,6 +245,5 @@ function reload {
 # user-local builds (ffmpeg n9 + NVENC)
 export PATH="$HOME/.local/bin:$PATH"
 
-alias sscp='ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
 
 export PATH="$HOME/.okc/bin:$PATH"  # okc

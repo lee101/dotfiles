@@ -46,3 +46,6 @@ tools/netwrck-route-prof
 /tools/golang/go-line-profiler/go-line-profiler.exe
 browserautomation/
 *.log
+
+# gitleaks local reports
+gitleaks-report*.json

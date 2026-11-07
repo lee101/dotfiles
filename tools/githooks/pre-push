@@ -1,0 +1,28 @@
+#!/bin/sh
+# Scan the commits being pushed for secrets, then run the repo's fast tests.
+# Bypass: SKIP_GITLEAKS=1 (scan) / SKIP_TESTS=1 (tests) / git push --no-verify (both).
+root=$(git rev-parse --show-toplevel)
+zero=0000000000000000000000000000000000000000
+cfg=
+[ -f "$root/.gitleaks.toml" ] && cfg="--config $root/.gitleaks.toml"
+base=
+[ -f "$root/.gitleaks-baseline.json" ] && base="--baseline-path $root/.gitleaks-baseline.json"
+
+if [ "${SKIP_GITLEAKS:-0}" != 1 ] && command -v gitleaks >/dev/null 2>&1; then
+    while read -r _ lsha _ rsha; do
+        [ "$lsha" = "$zero" ] && continue
+        if [ "$rsha" = "$zero" ]; then range="$lsha --not --remotes"; else range="$rsha..$lsha"; fi
+        # shellcheck disable=SC2086
+        gitleaks detect --redact --no-banner --source "$root" --log-opts="$range" $cfg $base >/dev/null 2>&1 || {
+            echo "pre-push: gitleaks found secrets in $range" >&2
+            # shellcheck disable=SC2086
+            gitleaks detect --redact --no-banner -v --source "$root" --log-opts="$range" $cfg $base 2>&1 | head -40 >&2
+            exit 1
+        }
+    done
+fi
+
+if [ "${SKIP_TESTS:-0}" != 1 ] && [ -x "$root/tools/test-fast.sh" ]; then
+    "$root/tools/test-fast.sh" || { echo "pre-push: tests failed (SKIP_TESTS=1 to bypass)" >&2; exit 1; }
+fi
+exit 0

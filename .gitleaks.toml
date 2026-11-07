@@ -1,0 +1,24 @@
+# gitleaks config shared by dotfiles, secretdotfiles and tradinginfra
+# (the other repos copy this file; tools/install-git-hooks.sh keeps them in sync).
+title = "lee101 repos"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Editor settings: JSON \"key\" fields are keybindings, not credentials"
+paths = [
+  '''(^|/)keybindings\.json$''',
+  '''(^|/)jetbrains/.*\.xml$''',
+]
+
+[[allowlists]]
+description = "Empty / placeholder assignments"
+regexes = [
+  '''(?i)(api_?key|token|secret|password)\s*[=:]\s*["']?(""|''|<[^>]*>|\$\{?\w+\}?|your[-_ ]?\w*|xxx+|changeme|example)["']?''',
+  '''ANTHROPIC_API_KEY=""''',
+]
+
+[[allowlists]]
+description = "Rotated 2020 npm token in history (npmrc is gitignored now); see .gitleaks-baseline.json"
+paths = ['''^npmrc$''']

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Block commits that add secrets. Fast: scans only the staged diff.
+[ "${SKIP_GITLEAKS:-0}" = 1 ] && exit 0
+command -v gitleaks >/dev/null 2>&1 || { echo "pre-commit: gitleaks not installed, skipping (go install github.com/zricethezav/gitleaks/v8@latest)" >&2; exit 0; }
+root=$(git rev-parse --show-toplevel)
+cfg=
+[ -f "$root/.gitleaks.toml" ] && cfg="--config $root/.gitleaks.toml"
+# shellcheck disable=SC2086
+gitleaks protect --staged --redact --no-banner -v $cfg || {
+    echo "pre-commit: gitleaks found secrets in staged changes (bypass once: SKIP_GITLEAKS=1)" >&2
+    exit 1
+}

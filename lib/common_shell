@@ -249,6 +249,7 @@ alias n=nvim
 
 # OpenRouter Ox Alpha launcher (available from any directory)
 alias opx="op --model 'openrouter/stealth/ox-alpha'"
+opc() { "$HOME/code/dotfiles/subagents/op-crouton.sh" "$@"; }
 # RunAnywhere (Wally Cloud) GLM-5.3-Flash, direct to the provider via RUNANYWHERE_API_KEY
 alias opany="$HOME/code/dotfiles/subagents/op-runanywhere.sh"
 alias ni=nvim
@@ -754,13 +755,18 @@ alias cldcf='cld --continue --fork-session'
 alias cldr='cld --resume'
 alias cldp='cld --print'
 alias cldd='cld'
-# Bare family names so Claude Code picks the latest of each series, no pinned versions
-alias cldo='cld --model opus'
-alias cldf='cld --model fable'
-alias clds='cld --model sonnet'
-alias cldh='cld --model haiku'
+# Latest explicit model id per family (resolved by _cld_best_model, cached; falls
+# back to the bare family alias if the model list can't be fetched).
+cldo() { cld --model "$(_cld_best_model opus)" "$@"; }
+cldf() { cld --model "$(_cld_best_model fable)" "$@"; }
+clds() { cld --model "$(_cld_best_model sonnet)" "$@"; }
+cldh() { cld --model "$(_cld_best_model haiku)" "$@"; }
 cldpe() { mkdir -p "$HOME/.claude-personal" && CLAUDE_CONFIG_DIR="$HOME/.claude-personal" cld "$@"; }
 cld2() { cldpe "$@"; }
+cld2o() { cld2 --model "$(_cld_best_model opus)" "$@"; }
+cld2f() { cld2 --model "$(_cld_best_model fable)" "$@"; }
+cld2s() { cld2 --model "$(_cld_best_model sonnet)" "$@"; }
+cld2h() { cld2 --model "$(_cld_best_model haiku)" "$@"; }
 cldst() {
 	local d t
 	t=$(mktemp -d)
@@ -842,8 +848,6 @@ clinst() {
 }
 alias cinst='npm install -g @openai/codex@latest'
 
-# Remote host shortcut
-alias sscp='ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
 
 # Claude Git workflow
 alias ccmt='cldcmt'
@@ -1210,6 +1214,90 @@ $plan_content"
     rm -f "$plan_file"
 }
 
+# --- Claude model resolution -------------------------------------------------
+# Family aliases mean "whatever version this CLI build points at". The models
+# API reports what the account can actually use, so resolve the newest explicit
+# id per family and cache it: helpers then cost a stat + jq, not a request.
+_cld_models_file() {
+    printf '%s\n' "${CLAUDE_MODELS_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/cld/models.json}"
+}
+
+_cld_models_refresh() {
+    local f tmp d token ok=
+    f=$(_cld_models_file)
+    command -v jq >/dev/null 2>&1 && command -v curl >/dev/null 2>&1 || return 1
+    mkdir -p "$(dirname "$f")" 2>/dev/null || return 1
+    tmp="$f.$$"
+    # Prefer the active profile's token, but a 401 (e.g. Pro vs Max scopes)
+    # just moves on to the next profile's credentials.
+    for d in "${CLAUDE_CONFIG_DIR:-}" "$HOME/.claude" "$HOME/.claude-personal"; do
+        [ -r "$d/.credentials.json" ] || continue
+        token=$(jq -r '.claudeAiOauth.accessToken // empty' "$d/.credentials.json" 2>/dev/null) || continue
+        [ -n "$token" ] || continue
+        curl -fsS --connect-timeout 2 --max-time 4 \
+            -H "Authorization: Bearer $token" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-beta: oauth-2025-04-20" \
+            -H "User-Agent: claude-cli (external, cli)" \
+            "https://api.anthropic.com/v1/models?limit=1000" -o "$tmp" 2>/dev/null || continue
+        jq -e '.data | type == "array"' "$tmp" >/dev/null 2>&1 || continue
+        ok=1
+        break
+    done
+    if [ -n "$ok" ]; then mv -f "$tmp" "$f"; else rm -f "$tmp"; fi
+    [ -n "$ok" ]
+}
+
+_cld_models_ensure() {
+    local f stamp ttl now
+    f=$(_cld_models_file)
+    ttl=${CLAUDE_MODELS_TTL:-86400}
+    now=$(date +%s)
+    if [ -s "$f" ]; then
+        stamp=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null) || stamp=0
+        [ $((now - stamp)) -lt "$ttl" ] && return 0
+    fi
+    _cld_models_refresh && return 0
+    [ -s "$f" ]
+}
+
+# Newest active model id for a family, ignoring trailing dated snapshots when
+# ranking (claude-sonnet-4-5-20250929 is 4.5, not 4.5.20250929).
+_cld_best_model() {
+    local line=$1 f id
+    [ -n "$line" ] || return 1
+    f=$(_cld_models_file)
+    if _cld_models_ensure; then
+        id=$(jq -r --arg line "$line" '
+            def vkey($l):
+              ltrimstr("claude-" + $l + "-")
+              | split("-")
+              | map(select(test("^[0-9]{8}$") | not))
+              | map(tonumber? // 0)
+              | map(("0000" + tostring)[-4:])
+              | join(".");
+            [ .data[]
+              | select((.lifecycle // "active") == "active")
+              | select(.line == $line)
+              | {id, c: .created_at, v: (.id | vkey($line))} ]
+            | sort_by([.v, .c])
+            | if length == 0 then empty else .[-1].id end
+        ' "$f" 2>/dev/null)
+        [ -n "$id" ] && { printf '%s\n' "$id"; return 0; }
+    fi
+    # Fall back to the alias; Claude Code still resolves it to its newest.
+    printf '%s\n' "$line"
+}
+
+# Show (or refresh) the resolved ids: cldm [--refresh]
+cldm() {
+    [ "$1" = --refresh ] && _cld_models_refresh
+    local l
+    for l in opus sonnet haiku fable; do
+        printf '%-6s %s\n' "$l" "$(_cld_best_model "$l")"
+    done
+}
+
 claude_trust_root() {
     local f="${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" t
     command -v jq >/dev/null 2>&1 || return 0
@@ -1227,7 +1315,11 @@ cld() {
     local claude_bin="$HOME/.local/bin/claude"
     [ -x "$claude_bin" ] || claude_bin="$(type -P claude 2>/dev/null || true)"
     [ -x "$claude_bin" ] || { echo "Claude Code is not installed." >&2; return 1; }
-    ANTHROPIC_API_KEY="" "$claude_bin" --dangerously-skip-permissions "$@"
+    # Permission bypass is opt-in via CLD_BYPASS_PERMISSIONS=1, set in the private
+    # secretdotfiles/shell.sh rather than in this public repo.
+    local -a _cld_flags=()
+    [ "${CLD_BYPASS_PERMISSIONS:-0}" = 1 ] && _cld_flags+=(--dangerously-skip-permissions)
+    ANTHROPIC_API_KEY="" "$claude_bin" "${_cld_flags[@]}" "$@"
 }
 
 _cldu_epoch_fmt() {
@@ -1504,6 +1596,11 @@ algrp() {
 # Source secrets and lib files
 # ============================================================
 [ -f ~/.secretbashrc ] && . ~/.secretbashrc
+# Private sibling repo (lee101/secretdotfiles): host aliases, permission bypass,
+# ssh autounlock. Optional; the public setup works without it.
+[ -f "${SECRETDOTFILES:-$HOME/code/secretdotfiles}/shell.sh" ] && . "${SECRETDOTFILES:-$HOME/code/secretdotfiles}/shell.sh"
+# Passphrase may only be known now (secretbashrc); re-run is a no-op for loaded keys.
+command -v _df_ssh_unlock_keys >/dev/null 2>&1 && _df_ssh_unlock_keys
 
 # Source cross-platform utilities
 [ -f ~/code/dotfiles/lib/cross_platform_utils ] && . ~/code/dotfiles/lib/cross_platform_utils
