@@ -5,6 +5,13 @@
   mojobench --reps 30 ./old ./new
   mojobench a.mojo b.mojo                # builds each first (excluded from timing)
   mojobench --label baseline=./old --label simd=./new
+  mojobench --bin old=./a --bin new=./b --reps 9 --interleave --out-file /dev/shm/x/{label}.f64 -- /dev/shm/x/{label}
+                                         # A/B/A/B order, outputs compared byte for byte, bootstrap CI of the ratio
+
+`{label}` in --out-file and in the arguments after `--` is replaced by the target's name, so every target writes its own
+file; after the runs each target's file must equal the first target's (exit 1 and "OUTPUT DIFFERS" otherwise). A speed-up
+whose outputs differ is a different program, not an optimisation. --interleave alternates the targets inside every
+repetition: on a loaded box, back-to-back blocks of one target measure the neighbours' schedule.
 
 Reports median, MAD, min and a Mann-Whitney-ish verdict. Uses min and median
 rather than mean: on a loaded box the mean measures your neighbours, not your code.
@@ -13,7 +20,9 @@ The single most common Mojo benchmarking mistake is timing `mojo run`, which
 includes ~1.2s of JIT. This tool builds first and times the binary.
 """
 import argparse
+import filecmp
 import os
+import random
 import shutil
 import statistics
 import subprocess
@@ -79,6 +88,27 @@ def timeit(argv, reps, warmup):
     return sorted(ts)
 
 
+def run_once(argv):
+    t0 = time.perf_counter()
+    r = subprocess.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    dt = time.perf_counter() - t0
+    if r.returncode != 0:
+        bail(f"{argv[0]} exited {r.returncode}")
+    return dt
+
+
+def ratio_ci(base, new, n=4000, seed=0):
+    """bootstrap 95% CI of median(base) / median(new)."""
+    rng = random.Random(seed)
+    out = []
+    for _ in range(n):
+        b = statistics.median(rng.choices(base, k=len(base)))
+        m = statistics.median(rng.choices(new, k=len(new)))
+        out.append(b / m if m else float("inf"))
+    out.sort()
+    return out[int(0.025 * n)], out[int(0.975 * n) - 1]
+
+
 def fmt(t):
     if t < 1e-3:
         return f"{t * 1e6:.0f}us"
@@ -95,13 +125,21 @@ def mad(xs):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("targets", nargs="*", help="binaries or .mojo files")
-    ap.add_argument("--label", action="append", default=[],
+    ap.add_argument("--label", "--bin", action="append", default=[],
                     help="name=path (repeatable)")
+    ap.add_argument("--interleave", action="store_true", help="alternate the targets inside every repetition")
+    ap.add_argument("--out-file", default=None,
+                    help="file every run writes ({label} = target name); compared byte for byte across targets")
     ap.add_argument("--reps", type=int, default=15)
     ap.add_argument("--warmup", type=int, default=2)
     ap.add_argument("-O", dest="opt", default=None, help="optimization level for builds")
     ap.add_argument("--args", default="", help="args passed to every target")
-    a = ap.parse_args()
+    argv = sys.argv[1:]
+    tail = []
+    if "--" in argv:
+        i = argv.index("--")
+        argv, tail = argv[:i], argv[i + 1:]
+    a = ap.parse_args(argv)
 
     items = []
     for lab in a.label:
@@ -117,9 +155,10 @@ def main():
         # otherwise every target reports "no median for empty data" as a traceback
         ap.error(f"--reps must be at least 1, got {a.reps}")
 
-    extra = a.args.split() if a.args else []
+    extra = (a.args.split() if a.args else []) + tail
     results = []
     with tempfile.TemporaryDirectory() as td:
+        cmds = []
         for name, path in items:
             build_s = None
             if path.endswith(".mojo"):
@@ -128,8 +167,27 @@ def main():
                 bail(f"no such target: {path}")
             if not os.access(path, os.X_OK):
                 bail(f"{path} is not executable")
-            ts = timeit([path] + extra, a.reps, a.warmup)
-            results.append({"name": name, "ts": ts, "build": build_s})
+            cmds.append([path] + [x.replace("{label}", name) for x in extra])
+            results.append({"name": name, "ts": [], "build": build_s})
+        if a.interleave:
+            for c in cmds:
+                for _ in range(a.warmup):
+                    subprocess.run(c, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            for _ in range(a.reps):
+                for r, c in zip(results, cmds):
+                    r["ts"].append(run_once(c))
+            for r in results:
+                r["ts"].sort()
+        else:
+            for r, c in zip(results, cmds):
+                r["ts"] = timeit(c, a.reps, a.warmup)
+        same = None
+        if a.out_file:
+            outs = [a.out_file.replace("{label}", r["name"]) for r in results]
+            for o in outs:
+                if not os.path.exists(o):
+                    bail(f"--out-file: {o} was not written")
+            same = [filecmp.cmp(outs[0], o, shallow=False) for o in outs]
 
     print(f"# mojobench — {a.reps} reps, {a.warmup} warmup\n")
     print("| target | median | min | MAD | max | build |")
@@ -156,9 +214,18 @@ def main():
                 v = f"{spd:.2f}x faster"
             else:
                 v = f"**{1 / spd:.2f}x SLOWER**"
+            if len(base["ts"]) >= 5 and len(r["ts"]) >= 5:
+                lo, hi = ratio_ci(base["ts"], r["ts"])
+                v += f"; 95% CI {lo:.2f}x-{hi:.2f}x"
             print(f"| {r['name']} | {fmt(m)} | {spd:.2f}x | {v} |")
         print("\n_Noise gate is 2x the larger MAD. A difference inside it is not a "
               "result — raise --reps or make the workload longer._")
+    if a.out_file:
+        bad = [r["name"] for r, ok in zip(results, same) if not ok]
+        if bad:
+            print(f"\n**OUTPUT DIFFERS** from `{results[0]['name']}`: {', '.join(bad)}")
+            sys.exit(1)
+        print(f"\noutputs bit-identical across {len(results)} targets ({a.out_file})")
 
 
 if __name__ == "__main__":
