@@ -83,7 +83,7 @@ Measured on a market simulator that went from 42.9 ms to about 1 ms of CPU per c
   0.7 M misses per call. When the index lists and arrays are fixed across calls, gather the columns once into one contiguous
   table in walk order and stream it (23 ms -> 1 ms). Next step if a memo fixes the visited rows: copy those rows into the memo
   itself (7 values per name, one stream per night) so that not even the table is walked.
-* **Recomputed constants.** Key every expensive intermediate on the knobs it actually reads (here 3 of 35) and build it once per
+* **Recomputed constants.** Key every expensive intermediate on the knobs it actually reads (here 9 of 35, one of them swept) and build it once per
   key; validate a memo against its real inputs (the held names), never against a guess about them.
 * **Copy getters.** `def lab(self, name) -> List[T]: return self.cache[name].copy()` copied 20 MB per call. Offer take / put.
 * **Fresh lists from helpers.** 53 k allocations per call came from helpers that `return w^` per row or per night; mojomem's
