@@ -356,6 +356,32 @@ class MojobenchTest(ToolTestCase):
         self.assertEqual(r.rc, 2, r.text)
         self.assertRegex(r.err.lower(), r"mojo not found|build failed")
 
+    # ---- A/B with an output check (--bin, --interleave, --out-file) ----------
+
+    def _ab(self, text_a: str, text_b: str, *extra):
+        a = sh_script(self.tmp / "wa.sh", f'printf {text_a} > "$1"\n')
+        b = sh_script(self.tmp / "wb.sh", f'sleep 0.03\nprintf {text_b} > "$1"\n')
+        out = str(self.tmp / "{label}.out")
+        return self.run_tool("--bin", f"old={b}", "--bin", f"new={a}", "--reps", "5", "--warmup", "0", "--interleave",
+                             "--out-file", out, *extra, "--", out)
+
+    def test_identical_outputs_pass_and_the_faster_target_wins(self) -> None:
+        r = self._ab("abc", "abc")
+        self.assertEqual(r.rc, 0, r.text)
+        self.assertIn("outputs bit-identical across 2 targets", r.out)
+        self.assertRegex(r.out, r"\| new \|.*faster; 95% CI \d+\.\d+x-\d+\.\d+x")
+        self.assertEqual((self.tmp / "old.out").read_text(), "abc")
+
+    def test_a_different_output_is_a_finding_not_a_speedup(self) -> None:
+        r = self._ab("abd", "abc")
+        self.assertEqual(r.rc, 1, r.text)
+        self.assertIn("**OUTPUT DIFFERS** from `old`: new", r.out)
+
+    def test_out_file_that_was_never_written_is_a_usage_error(self) -> None:
+        r = self.run_tool("--bin", f"a={self.fast}", "--reps", "2", "--warmup", "0", "--out-file", str(self.tmp / "{label}.none"))
+        self.assertEqual(r.rc, 2, r.text)
+        self.assertIn("was not written", r.err)
+
 
 if __name__ == "__main__":
     unittest.main()
