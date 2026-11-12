@@ -25,6 +25,7 @@ mojomem ./mybin --stacks                # allocation churn with inline chains
 mojoasm kernel.mojo dot --listing       # annotated asm of the hot loop
 mojolint src/                           # exits 1 on errors — usable in CI
 mojobench --label old=a.mojo --label new=b.mojo --reps 20
+mojobench --bin old=./a --bin new=./b --reps 9 --interleave --out-file out/{label}.f64 -- out/{label}   # A/B/A/B, outputs must be bit-identical
 mojogpu --check                         # is the GPU usable right now?
 mojoffi kernels/capi.mojo --check dist/lib.so   # export audit + link proof
 mojoffi --emit bridge kernels/capi.mojo > python/pkg/_lib.py
