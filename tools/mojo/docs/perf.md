@@ -74,6 +74,39 @@ Closure goes in the **parameter** list (`parallelize[work](n, w)`), not the argu
 count for compute-bound work — hyperthreads help only latency-bound loops.
 Chunk so each work item is >= ~50us, or scheduling overhead dominates.
 
+## Sweeps: one function called per configuration (pm-simfast, 2026-11-12)
+
+Measured on a market simulator that went from 42.9 ms to about 1 ms of CPU per configuration with byte-identical outputs
+(predictionmojo `tests/simfast`). None of it was arithmetic; in order of size:
+
+* **Scattered gathers.** `A[t * S + j]` with `j` from an index list, over 5-9 arrays of 40-160 MB, is a cache miss per read:
+  0.7 M misses per call. When the index lists and arrays are fixed across calls, gather the columns once into one contiguous
+  table in walk order and stream it (23 ms -> 1 ms). Next step if a memo fixes the visited rows: copy those rows into the memo
+  itself (7 values per name, one stream per night) so that not even the table is walked.
+* **Recomputed constants.** Key every expensive intermediate on the knobs it actually reads (here 3 of 35) and build it once per
+  key; validate a memo against its real inputs (the held names), never against a guess about them.
+* **Copy getters.** `def lab(self, name) -> List[T]: return self.cache[name].copy()` copied 20 MB per call. Offer take / put.
+* **Fresh lists from helpers.** 53 k allocations per call came from helpers that `return w^` per row or per night; mojomem's
+  size histogram shows it, MA301 does not (the constructor is in the callee). Kernels take pointers into a per-thread scratch.
+* **List indexing is bounds-checked in `-O3` builds**: `std.collections.check_bounds` was 15% of mojoflame samples. Take
+  `unsafe_ptr()` once outside the loop.
+* **Do not trade a sort for an O(n^2) count.** Counting smaller / equal values to avoid `sort` on 40 elements was 2x slower than
+  the sort; insertion sort into scratch plus a walk over runs of equal values gave the same ranks without allocating.
+* **Exact shortcuts beat fast-math.** `Int(per / pc + 0.5) < 1` needs the division only when `pc > per`; with
+  `--fp-mode contract=off` every such rewrite can be checked with `cmp` on the output files.
+* **Division-bound loops do not vectorise on Haswell / Broadwell**: `vdivpd ymm` has the per-element throughput of `divsd`.
+  Check the divider before writing SIMD lanes for a loop that is 3 divisions and a square root per element.
+* **FMA chains.** `acc = x.fma(w, acc)` is a 4-5 cycle dependency; with two FMA ports a block needs 8+ independent accumulators
+  to fill them. Four accumulators measured 15% of a trainer's time where an 8-wide block is bit-identical.
+
+Threads: build the shared tables in a serial pass (first cell of every key), then `parallelize` over blocks of cells that only
+read them, with one scratch object per task. 1 thread == 12 threads byte for byte, and no lock is needed.
+
+Tool notes: `mojoflame --threads all` on a binary with 72 runtime threads took 9 samples in 7 s (every sample dumps every
+thread); set the worker count to 1 and use the default `--threads main` (`parallelize(..., 1)` runs on the main thread). In
+wait loops, `pgrep -f pattern` matches the waiting shell itself whenever the pattern text appears anywhere in its own command
+line, including a later command of the same line: wait on an output file or a pid instead.
+
 ## Numbers to keep in your head (this box)
 
 | op | cost |
