@@ -94,8 +94,9 @@ Measured on a market simulator that went from 42.9 ms to about 1 ms of CPU per c
   the sort; insertion sort into scratch plus a walk over runs of equal values gave the same ranks without allocating.
 * **Exact shortcuts beat fast-math.** `Int(per / pc + 0.5) < 1` needs the division only when `pc > per`; with
   `--fp-mode contract=off` every such rewrite can be checked with `cmp` on the output files.
-* **Division-bound loops do not vectorise on Haswell / Broadwell**: `vdivpd ymm` has the per-element throughput of `divsd`.
-  Check the divider before writing SIMD lanes for a loop that is 3 divisions and a square root per element.
+* **Division-bound loops barely vectorise on Haswell / Broadwell**: measured 2.08 ns per float64 division scalar, 1.77 ns with
+  2 lanes, 1.73 ns with 4 lanes (1.2x). Time the divider before writing SIMD lanes for a loop that is 3 divisions and a square
+  root per element.
 * **FMA chains.** `acc = x.fma(w, acc)` is a 4-5 cycle dependency; with two FMA ports a block needs 8+ independent accumulators
   to fill them. Four accumulators measured 15% of a trainer's time where an 8-wide block is bit-identical.
 
