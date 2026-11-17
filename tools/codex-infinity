@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "codex-infinity compatibility mode: upstream still ships Codex 0.95.0, which current GPT-5.4/GPT-5.5 endpoints reject. Running latest OpenAI Codex instead." >&2
+exec bunx @openai/codex@0.142.2 "$@"
