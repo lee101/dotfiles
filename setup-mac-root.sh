@@ -84,12 +84,13 @@ ok "automatic checks + security responses on"
 # ── Permissions helper (not root, but needs you at the screen) ──────
 if [ "$WITH_PERMS" = 1 ]; then
     step "App permissions"
-    for app in Rectangle AltTab Raycast Stats Ghostty; do
+    for app in Rectangle AltTab Raycast Stats Maccy Karabiner-Elements Ghostty; do
         [ -d "/Applications/$app.app" ] && open -ga "$app" && ok "launched $app"
     done
     sleep 2
     open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-    echo "  Toggle ON: Rectangle, AltTab, Raycast (and your terminal if you want it to control apps)."
+    echo "  Toggle ON: Rectangle, AltTab, Raycast, Maccy (and your terminal if you want it to control apps)."
+    echo "  Karabiner also needs Input Monitoring + its driver extension approved (General > Login Items & Extensions)."
     read -r -p "  Press Enter when done to open Screen Recording (AltTab window previews)..." _ </dev/tty || true
     open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
 fi

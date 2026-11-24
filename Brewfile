@@ -102,6 +102,8 @@ brew "yarn"
 brew "oven-sh/bun/bun"
 brew "go"
 brew "rustup"
+brew "zig"
+brew "pixi"            # mojo/conda envs
 brew "rbenv"
 brew "ruby-build"
 brew "openjdk"
@@ -149,6 +151,8 @@ cask "zed"
 cask "firefox"
 cask "rectangle"      # Spectacle successor; mac-setup.sh sets Spectacle-style shortcuts
 cask "jumpcut"
+cask "maccy"            # clipboard history (free, open source): Cmd+Shift+C
+cask "karabiner-elements" # Caps Lock: tap = Esc, hold = Ctrl (config: karabiner/karabiner.json)
 cask "alt-tab"
 cask "raycast"
 cask "stats"

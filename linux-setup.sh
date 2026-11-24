@@ -224,7 +224,7 @@ ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 for repo in zsh-users/zsh-autosuggestions zsh-users/zsh-syntax-highlighting zsh-users/zsh-completions; do
     d="$ZSH_CUSTOM/plugins/${repo#*/}"; [ -d "$d" ] || git clone -q --depth=1 "https://github.com/$repo" "$d" || warn "clone $repo"
 done
-mkdir -p ~/.zsh/cache ~/.yarn/bin   # ~/.yarn/bin stops the omz yarn plugin running `yarn global bin` (~130ms) each shell
+mkdir -p ~/.git-templates ~/.zsh/cache ~/.yarn/bin   # ~/.yarn/bin stops the omz yarn plugin running `yarn global bin` (~130ms) each shell
 [ "$(getent passwd "$USER" | cut -d: -f7)" = "$(command -v zsh)" ] || { sudo chsh -s "$(command -v zsh)" "$USER" && ok "login shell -> zsh"; }
 
 # ── Dotfiles ─────────────────────────────────────────────────────────

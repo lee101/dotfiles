@@ -1849,11 +1849,5 @@ case "$(uname -s 2>/dev/null)" in
         }
 
         _ensure_default_ssh_key
-        # Passphrase-protected keys: unlock with SSH_KEY_PW from ~/.secretbashrc
-        # (macOS also stores it in the Keychain). Skipped inside ssh sessions.
-        if [ -z "${SSH_CONNECTION:-}" ] && [ -f ~/code/dotfiles/lib/ssh-unlock.sh ]; then
-            . ~/code/dotfiles/lib/ssh-unlock.sh
-            _df_ssh_unlock_keys
-        fi
         ;;
 esac

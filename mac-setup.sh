@@ -200,6 +200,19 @@ fi
     && git -C "$DOTFILES" config core.hooksPath .githooks && ok "dotfiles git hooks enabled"
 
 mkdir -p ~/code ~/Pictures/Screenshots ~/.config
+mkdir -p ~/.git-templates   # gitconfig init.templatedir
+
+# Karabiner: copy (not symlink - Karabiner rewrites its file atomically, which breaks links).
+# Only installs when there's no config yet, or ours isn't in it, so GUI edits are kept.
+KJ=~/.config/karabiner/karabiner.json
+if [ -d /Applications/Karabiner-Elements.app ]; then
+    if grep -qs 'Caps Lock: tap = Escape, hold = Control' "$KJ"; then ok "karabiner caps-lock rule present"
+    else
+        mkdir -p "$(dirname "$KJ")"
+        [ -f "$KJ" ] && cp "$KJ" "$KJ.bak.$(date +%Y%m%d%H%M%S)"
+        cp "$DOTFILES/karabiner/karabiner.json" "$KJ" && ok "karabiner: Caps Lock tap=Esc hold=Ctrl"
+    fi
+fi
 
 # ── macOS defaults: make it feel snappy/Linux-like ───────────────────
 if [ "$WITH_DEFAULTS" = 1 ]; then
@@ -267,7 +280,7 @@ Next:
   exec zsh                 # reload shell;  time zsh -i -c exit  to check startup
   gh auth login            # GitHub CLI
   ./setup-mac-root.sh --permissions   # sudo steps: Touch ID sudo, firewall, limits; then app permissions
-  echo "export SSH_KEY_PW='...'" >> ~/.secretbashrc   # auto-unlock passphrase-protected ssh key
+  open -a Karabiner-Elements          # approve its driver/extension once (System Settings prompts)
   open -a OrbStack         # finish docker setup
   Grant Rectangle / AltTab / Raycast accessibility permission when prompted.
 EOF
