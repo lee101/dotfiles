@@ -1,1 +1,1 @@
-/home/lee/code/dotfiles/.config/nvim/init.lua
+../.config/nvim/init.lua

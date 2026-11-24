@@ -35,7 +35,6 @@ plugins=(
     git
     python
     node
-    pyenv
     terraform
     yarn
     aws
@@ -50,12 +49,8 @@ plugins=(
 # Disable AWS region/profile in prompt (from aws plugin)
 SHOW_AWS_PROMPT=false
 
-# Pyenv (must init before oh-my-zsh pyenv plugin)
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d "$PYENV_ROOT/bin" ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-if [[ -d "$PYENV_ROOT" ]] && command -v pyenv >/dev/null 2>&1; then
-    eval "$(pyenv init --path)"
-fi
+# Pyenv: shims go on PATH in lib/common_shell; `pyenv init` runs lazily on first
+# `pyenv` call (the omz pyenv plugin / eager init cost ~100ms per shell).
 
 # Load oh-my-zsh
 [[ -f $ZSH/oh-my-zsh.sh ]] && source $ZSH/oh-my-zsh.sh
@@ -112,9 +107,14 @@ zstyle ':completion:*:warnings' format '%F{red}-- no matches found --%f'
 zstyle ':completion::complete:*' use-cache on
 zstyle ':completion::complete:*' cache-path ~/.zsh/cache
 
-# Kubectl completion
-if command -v kubectl >/dev/null 2>&1; then
-    source <(kubectl completion zsh 2>/dev/null) || true
+# Kubectl completion (cached; regenerated when the kubectl binary changes)
+if (( $+commands[kubectl] )); then
+    _kc_cache=~/.zsh/cache/kubectl_completion.zsh
+    if [[ ! -s $_kc_cache || $commands[kubectl] -nt $_kc_cache ]]; then
+        mkdir -p ${_kc_cache:h} && kubectl completion zsh >| $_kc_cache 2>/dev/null
+    fi
+    source $_kc_cache
+    unset _kc_cache
 fi
 
 # ============================================================
@@ -259,4 +259,4 @@ if [[ "$(uname -s)" == "Darwin" ]] && [ -x /usr/local/bin/go-wrapper ]; then
     alias go="/usr/local/bin/go-wrapper"
 fi
 
-. "$HOME/.local/bin/env"
+[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"

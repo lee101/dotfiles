@@ -95,6 +95,39 @@ muhelp() {
         'mut      run and improve the repository tests' \
         'muplan   read-only planning pass'
 }
+# ============================================================
+# macOS: Homebrew + GNU userland first on PATH (Linux-like ls/sed/grep/find/tar)
+# Static exports only - no `brew shellenv` subprocess per shell.
+# ============================================================
+if [ "$(uname -s)" = "Darwin" ]; then
+    for _bp in /opt/homebrew /usr/local; do
+        if [ -x "$_bp/bin/brew" ]; then
+            export HOMEBREW_PREFIX="$_bp" HOMEBREW_CELLAR="$_bp/Cellar"
+            export HOMEBREW_REPOSITORY="$_bp"; [ "$_bp" = /usr/local ] && HOMEBREW_REPOSITORY=/usr/local/Homebrew
+            case ":$PATH:" in *":$_bp/bin:"*) ;; *) PATH="$_bp/bin:$_bp/sbin:$PATH" ;; esac
+            break
+        fi
+    done
+    unset _bp
+    if [ -n "$HOMEBREW_PREFIX" ]; then
+        export HOMEBREW_NO_ENV_HINTS=1 HOMEBREW_NO_AUTO_UPDATE=1
+        for _g in coreutils findutils gnu-sed gnu-tar grep gnu-which make; do
+            _d="$HOMEBREW_PREFIX/opt/$_g/libexec/gnubin"
+            [ -d "$_d" ] && case ":$PATH:" in *":$_d:"*) ;; *) PATH="$_d:$PATH" ;; esac
+            [ -d "$HOMEBREW_PREFIX/opt/$_g/libexec/gnuman" ] && MANPATH="$HOMEBREW_PREFIX/opt/$_g/libexec/gnuman:${MANPATH:-}"
+        done
+        unset _g _d
+        # Keg-only tools that should be on PATH
+        for _d in "$HOMEBREW_PREFIX/opt/rustup/bin" "$HOMEBREW_PREFIX/opt/openjdk/bin" "$HOMEBREW_PREFIX/opt/curl/bin"; do
+            [ -d "$_d" ] && case ":$PATH:" in *":$_d:"*) ;; *) PATH="$_d:$PATH" ;; esac
+        done
+        unset _d
+        export PATH MANPATH
+    fi
+    # OrbStack docker CLI
+    [ -d "$HOME/.orbstack/bin" ] && case ":$PATH:" in *":$HOME/.orbstack/bin:"*) ;; *) PATH="$PATH:$HOME/.orbstack/bin" ;; esac
+fi
+
 # Go
 export GOPATH=$HOME/go
 # go install targets (gitleaks, gopls, ...) must be on PATH for hooks and tools
@@ -192,7 +225,7 @@ dic() { "$HOME/code/dotfiles/subagents/di-crouton.sh" "$@"; }
 
 unset NO_COLOR
 
-if [ -x /usr/bin/dircolors ]; then
+if command -v dircolors >/dev/null 2>&1; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
 fi
 alias grep='grep --color=auto'
@@ -1424,9 +1457,15 @@ alias usag='du -sh * * | sort -h'
 alias usager='du -sh * * | sort -h'
 alias webserver='python -m SimpleHTTPServer 9090'
 alias mailserver='sudo python -m smtpd -n -c DebuggingServer localhost:25'
-alias install='sudo apt-get install'
-alias ains='sudo apt install'
-alias ainst='sudo apt install'
+if [ "$(uname -s)" = "Darwin" ]; then
+    alias install='brew install'
+    alias ains='brew install'
+    alias ainst='brew install'
+else
+    alias install='sudo apt-get install'
+    alias ains='sudo apt install'
+    alias ainst='sudo apt install'
+fi
 alias goo='go mod tidy && go run .'
 
 # Lynx with cookies
@@ -1655,28 +1694,27 @@ export NVM_DIR="$HOME/.nvm"
 # whole file. This MUST be its own statement: bash parses the entire if-block
 # below before executing it, so an unalias inside the block would be too late.
 unalias nvm node npm npx 2>/dev/null
-if [ -n "$ZSH_VERSION" ]; then
-    # In zsh, load nvm directly (lazy loading breaks zsh completion)
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" --no-use 2>/dev/null
-else
-    # In bash, use lazy loading for speed; put newest installed node on PATH without sourcing nvm
-    for _nv in "$NVM_DIR"/versions/node/v*; do :; done
-    [ -d "$_nv/bin" ] && case ":$PATH:" in *":$_nv/bin:"*) ;; *) PATH="$_nv/bin:$PATH" ;; esac
-    unset _nv
-    _lazy_load_nvm() {
-        unset -f nvm 2>/dev/null
-        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-    }
-    nvm()  { _lazy_load_nvm; nvm "$@"; }
-fi
+# Lazy in both shells (sourcing nvm.sh costs ~200ms+ per shell): put the default
+# (or newest) installed node on PATH directly, load nvm itself on first `nvm` call.
+_nv=
+[ -r "$NVM_DIR/alias/default" ] && read -r _nv < "$NVM_DIR/alias/default" 2>/dev/null
+case "$_nv" in v[0-9]*) _nv="$NVM_DIR/versions/node/$_nv" ;; *) _nv= ;; esac
+[ -n "$_nv" ] && [ -d "$_nv/bin" ] || for _nv in "$NVM_DIR"/versions/node/v*; do :; done
+[ -d "$_nv/bin" ] && case ":$PATH:" in *":$_nv/bin:"*) ;; *) PATH="$_nv/bin:$PATH" ;; esac
+unset _nv
+_lazy_load_nvm() {
+    unset -f nvm 2>/dev/null
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    [ -n "${BASH_VERSION:-}" ] && [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+}
+nvm()  { _lazy_load_nvm; nvm "$@"; }
 
 # ============================================================
 # Pyenv (zsh inits before oh-my-zsh; bash needs it here)
 # ============================================================
 export PYENV_ROOT="$HOME/.pyenv"
 [ -d "$PYENV_ROOT/bin" ] && export PATH="$PYENV_ROOT/bin:$PATH"
-if [ -z "$ZSH_VERSION" ] && [ -d "$PYENV_ROOT/shims" ]; then
+if [ -d "$PYENV_ROOT/shims" ]; then
     # Skip `pyenv init` (spawns pyenv + rehash, racy across concurrent shells); init lazily on first `pyenv` call
     case ":$PATH:" in *":$PYENV_ROOT/shims:"*) ;; *) PATH="$PYENV_ROOT/shims:$PATH" ;; esac
     pyenv() { unset -f pyenv; eval "$(command pyenv init - --no-rehash 2>/dev/null)"; pyenv "$@"; }
@@ -1775,12 +1813,22 @@ case "$(uname -s 2>/dev/null)" in
             chmod 600 "${SSH_ENV}"
             . "${SSH_ENV}" > /dev/null
         }
-        if [ -f "${SSH_ENV}" ]; then
-            . "${SSH_ENV}" > /dev/null
-            ps -p "${SSH_AGENT_PID}" > /dev/null 2>&1 || _start_ssh_agent
-        else
-            _start_ssh_agent
-        fi
+        case "${SSH_AUTH_SOCK:-}" in
+            */com.apple.launchd.*/Listeners)
+                # macOS launchd agent: one agent shared by every terminal and GUI app
+                # (git in editors, etc). Don't shadow it with a private agent.
+                ;;
+            *)
+                if [ -n "${SSH_CONNECTION:-}" ] && [ -S "${SSH_AUTH_SOCK:-}" ]; then
+                    :   # forwarded agent over ssh - use it
+                elif [ -f "${SSH_ENV}" ]; then
+                    . "${SSH_ENV}" > /dev/null
+                    ps -p "${SSH_AGENT_PID}" > /dev/null 2>&1 || _start_ssh_agent
+                else
+                    _start_ssh_agent
+                fi
+                ;;
+        esac
 
         _ensure_default_ssh_key() {
             local default_key="$HOME/.ssh/id_ed25519"
@@ -1801,5 +1849,11 @@ case "$(uname -s 2>/dev/null)" in
         }
 
         _ensure_default_ssh_key
+        # Passphrase-protected keys: unlock with SSH_KEY_PW from ~/.secretbashrc
+        # (macOS also stores it in the Keychain). Skipped inside ssh sessions.
+        if [ -z "${SSH_CONNECTION:-}" ] && [ -f ~/code/dotfiles/lib/ssh-unlock.sh ]; then
+            . ~/code/dotfiles/lib/ssh-unlock.sh
+            _df_ssh_unlock_keys
+        fi
         ;;
 esac

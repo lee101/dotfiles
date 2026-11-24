@@ -54,6 +54,9 @@ skip_list = [
     '.*', 'linkdotfiles', 'README.markdown', '*.ps1', '*.sh',
     'lua', 'init.lua', 'gitconfig', 'gitconfig.windows',
     'vscode-extensions.txt', 'cursor-extensions.txt', 'devin-extensions.txt',
+    # docs/scripts/junk that shouldn't become ~/.<name>
+    '*.md', '*.py', '*.bat', '*.bak', '*.js', '*.txt', '*.json', '*.lua',
+    'Brewfile', 'Brewfile.lock.json',
 ]
 cwd = str(script_dir)
 homedir = os.path.expanduser('~')
@@ -169,11 +172,13 @@ if os.path.exists(nvim_source_init) or os.path.exists(nvim_source_lua):
     # Link lua directory
     if os.path.exists(nvim_source_lua):
         nvim_dest_lua = os.path.join(nvim_config_dir, 'lua')
-        if os.path.lexists(nvim_dest_lua):
+        if os.path.islink(nvim_dest_lua) and os.readlink(nvim_dest_lua) == nvim_source_lua:
+            pass  # already correct
+        elif os.path.lexists(nvim_dest_lua):
             if options.force:
                 log('Removing existing %s' % nvim_dest_lua)
                 try:
-                    if os.path.isdir(nvim_dest_lua):
+                    if os.path.isdir(nvim_dest_lua) and not os.path.islink(nvim_dest_lua):
                         rmtree(nvim_dest_lua)
                     else:
                         os.remove(nvim_dest_lua)
@@ -230,8 +235,32 @@ if os.path.exists(config_source):
             log('Creating link %s -> %s' % (src, dst))
             create_link(src, dst)
 
+# macOS: VS Code-family editors read ~/Library/Application Support/<App>/User,
+# not ~/.config/<App>/User. Link the same files there.
+if platform.system() == 'Darwin' and os.path.exists(config_source):
+    app_support = os.path.join(homedir, 'Library', 'Application Support')
+    for app in ('Code', 'Cursor', 'Antigravity', 'Devin'):
+        src_dir = os.path.join(config_source, app, 'User')
+        if not os.path.isdir(src_dir):
+            continue
+        dst_dir = os.path.join(app_support, app, 'User')
+        os.makedirs(dst_dir, exist_ok=True)
+        for file in os.listdir(src_dir):
+            src = os.path.join(src_dir, file)
+            dst = os.path.join(dst_dir, file)
+            if not os.path.isfile(src):
+                continue
+            if os.path.islink(dst) and os.readlink(dst) == src:
+                continue
+            if os.path.lexists(dst):
+                if os.path.isdir(dst) and not os.path.islink(dst):
+                    rmtree(dst)
+                else:
+                    os.remove(dst)
+            log('Creating link %s -> %s' % (src, dst))
+            create_link(src, dst)
+
 # Link Windows-specific gitconfig on Windows only
-import platform
 if platform.system() == 'Windows' or os.name == 'nt':
     win_gitconfig = os.path.join(cwd, 'gitconfig.windows')
     if os.path.exists(win_gitconfig):
