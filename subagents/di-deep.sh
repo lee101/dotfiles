@@ -3,4 +3,4 @@
 set -euo pipefail
 . "$(dirname "$0")/di-locate.sh"
 DI=${DI:-$(di_bin di)}
-FX_MODEL='deepseek/deepseek-v4-flash-vision-exp' exec "$DI" "$@"
+FX_PROVIDER=openpaths FX_MODEL="${DI_DEEP_MODEL:-deepseek-v4-flash}" exec "$DI" "$@"

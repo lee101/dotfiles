@@ -793,26 +793,66 @@ alias cldd='cld'
 # Latest explicit model id per family (resolved by _cld_best_model, cached; falls
 # back to the bare family alias if the model list can't be fetched).
 # A stale alias with the same name (older rc files) would break the function definitions below.
-unalias cldo cldf clds cldh cld2o cld2f cld2s cld2h 2>/dev/null
-cldo() { cld --model "$(_cld_best_model opus)" "$@"; }
-cldf() { cld --model "$(_cld_best_model fable)" "$@"; }
-clds() { cld --model "$(_cld_best_model sonnet)" "$@"; }
-cldh() { cld --model "$(_cld_best_model haiku)" "$@"; }
-cldpe() { mkdir -p "$HOME/.claude-personal" && CLAUDE_CONFIG_DIR="$HOME/.claude-personal" cld "$@"; }
+unalias cldpe cld2 cld3 cld4 \
+	cldo cldf clds cldh cld2o cld2f cld2s cld2h \
+	cld3o cld3f cld3s cld3h cld4o cld4f cld4s cld4h 2>/dev/null
+# Account profiles: each launcher runs Claude Code against its own config dir, so
+# logins, plan limits and session history stay separate.
+#   cld  -> ~/.claude          cld2 -> ~/.claude-personal
+#   cld3 -> ~/.claude-3        cld4 -> ~/.claude-4
+_cld_profiles() { # every config dir, the active one first
+	local d
+	for d in "${CLAUDE_CONFIG_DIR:-}" "$HOME/.claude" "$HOME/.claude-personal" \
+		"$HOME/.claude-3" "$HOME/.claude-4"; do
+		[ -n "$d" ] && printf '%s\n' "$d"
+	done
+}
+_cld_prof() { # <config dir> [cld args...]
+	local dir=$1
+	shift
+	mkdir -p "$dir" && CLAUDE_CONFIG_DIR="$dir" cld "$@"
+}
+_cld_m() { # <launcher> <family> [args...]
+	local launcher=$1 fam=$2
+	shift 2
+	"$launcher" --model "$(_cld_best_model "$fam")" "$@"
+}
+cldo() { _cld_m cld opus "$@"; }
+cldf() { _cld_m cld fable "$@"; }
+clds() { _cld_m cld sonnet "$@"; }
+cldh() { _cld_m cld haiku "$@"; }
+cldpe() { _cld_prof "$HOME/.claude-personal" "$@"; }
 cld2() { cldpe "$@"; }
-cld2o() { cld2 --model "$(_cld_best_model opus)" "$@"; }
-cld2f() { cld2 --model "$(_cld_best_model fable)" "$@"; }
-cld2s() { cld2 --model "$(_cld_best_model sonnet)" "$@"; }
-cld2h() { cld2 --model "$(_cld_best_model haiku)" "$@"; }
+cld3() { _cld_prof "$HOME/.claude-3" "$@"; }
+cld4() { _cld_prof "$HOME/.claude-4" "$@"; }
+cld2o() { _cld_m cld2 opus "$@"; }
+cld2f() { _cld_m cld2 fable "$@"; }
+cld2s() { _cld_m cld2 sonnet "$@"; }
+cld2h() { _cld_m cld2 haiku "$@"; }
+cld3o() { _cld_m cld3 opus "$@"; }
+cld3f() { _cld_m cld3 fable "$@"; }
+cld3s() { _cld_m cld3 sonnet "$@"; }
+cld3h() { _cld_m cld3 haiku "$@"; }
+cld4o() { _cld_m cld4 opus "$@"; }
+cld4f() { _cld_m cld4 fable "$@"; }
+cld4s() { _cld_m cld4 sonnet "$@"; }
+cld4h() { _cld_m cld4 haiku "$@"; }
+# Per-account plan usage. Claude Code's `-p /usage` no longer emits slash-command
+# output, so fetch from the account's unified rate-limit headers via _cldu_usage.
 cldst() {
-	local d t
+	local d lbl= t
 	t=$(mktemp -d)
-	for d in .claude .claude-personal; do
-		env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR="$HOME/$d" timeout 90 claude -p /usage </dev/null >"$t/$d" 2>&1 &
+	for d in .claude .claude-personal .claude-3 .claude-4; do
+		_cldu_usage "$HOME/$d" >"$t/$d" 2>&1 &
+		lbl="$lbl $d"
 	done
 	wait
-	for d in .claude .claude-personal; do
-		rg '^Current' "$t/$d" | sed "s|^|$d: |"
+	for d in $lbl; do
+		if [ -s "$t/$d" ]; then
+			sed "s|^|$d: |" "$t/$d"
+		else
+			echo "$d: usage unavailable"
+		fi
 	done
 	rm -rf "$t"
 }
@@ -1267,7 +1307,7 @@ _cld_models_refresh() {
     tmp="$f.$$"
     # Prefer the active profile's token, but a 401 (e.g. Pro vs Max scopes)
     # just moves on to the next profile's credentials.
-    for d in "${CLAUDE_CONFIG_DIR:-}" "$HOME/.claude" "$HOME/.claude-personal"; do
+    while IFS= read -r d; do
         [ -r "$d/.credentials.json" ] || continue
         token=$(jq -r '.claudeAiOauth.accessToken // empty' "$d/.credentials.json" 2>/dev/null) || continue
         [ -n "$token" ] || continue
@@ -1280,7 +1320,7 @@ _cld_models_refresh() {
         jq -e '.data | type == "array"' "$tmp" >/dev/null 2>&1 || continue
         ok=1
         break
-    done
+    done < <(_cld_profiles)
     if [ -n "$ok" ]; then mv -f "$tmp" "$f"; else rm -f "$tmp"; fi
     [ -n "$ok" ]
 }
@@ -1376,16 +1416,16 @@ _cldu_rel() {
     printf '%dh %dm' $((d / 3600)) $((d % 3600 / 60))
 }
 
-cldu() {
+_cldu_usage() { # config dir
+    local dir=$1 token="${CLAUDE_CODE_OAUTH_TOKEN:-}" cred=
+    local hdr body code line key val
     command -v curl >/dev/null || { echo "cldu: curl required" >&2; return 1; }
-    local token="${CLAUDE_CODE_OAUTH_TOKEN:-}"
-    if [ -z "$token" ] && [ -r "$HOME/.claude/.credentials.json" ]; then
-        command -v jq >/dev/null || { echo "cldu: jq required" >&2; return 1; }
-        token=$(jq -r '.claudeAiOauth.accessToken // empty' "$HOME/.claude/.credentials.json" 2>/dev/null)
+    if [ -n "$dir" ] && [ -r "$dir/.credentials.json" ]; then
+        command -v jq >/dev/null && cred=$(jq -r '.claudeAiOauth.accessToken // empty' "$dir/.credentials.json" 2>/dev/null)
+        [ -n "$cred" ] && token=$cred
     fi
     [ -n "$token" ] || { echo "cldu: no Claude OAuth token (run claude auth login)" >&2; return 1; }
 
-    local hdr body code line key val
     hdr=$(mktemp) || return 1
     body=$(mktemp) || { rm -f "$hdr"; return 1; }
 
@@ -1435,6 +1475,10 @@ cldu() {
         week "$p7" "$(_cldu_epoch_fmt "$r7" '+%b %d %H:%M UTC')" "$(_cldu_rel "$r7")" "$t7"
     [ "$over" = rejected ] && echo "overage rejected"
     return 0
+}
+
+cldu() {
+    _cldu_usage "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 }
 
 cldgdfaa() {

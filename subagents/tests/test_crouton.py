@@ -19,7 +19,7 @@ class Crouton(unittest.TestCase):
             fake.chmod(0o755)
             env = dict(os.environ, DI=str(fake), OPENROUTER_API_KEY="k", OPENPATHS_API_KEY="x")
             r = subprocess.run(["bash", str(D / "di-crouton.sh")], env=env, capture_output=True, text=True)
-            self.assertEqual(r.stdout.strip(), "stealth/crouton-alpha openpaths unset", r.stderr)
+            self.assertEqual(r.stdout.strip(), "deepseek/deepseek-v4-flash openpaths unset", r.stderr)
 
 if __name__ == "__main__":
     unittest.main()
